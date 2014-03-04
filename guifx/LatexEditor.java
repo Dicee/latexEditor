@@ -1,65 +1,30 @@
 package guifx;
 
-import java.awt.event.ActionListener;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.io.*;
+import java.util.*;
+
+import javafx.scene.*;
+import javafx.scene.image.*;
+import javafx.scene.control.*;
+import javafx.stage.*;
+import javafx.event.*;
+import javafx.geometry.*;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.geometry.Point2D;
-import javafx.scene.Node;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.ToolBar;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCharacterCombination;
-import javafx.scene.input.KeyCombination;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
+
+import java.awt.event.ActionListener;
 import javax.swing.JOptionPane;
+
 import latex.LateXFilter;
 import latex.LateXMaker;
-import latex.elements.Chapter;
-import latex.elements.Inclusion;
-import latex.elements.LateXCode;
-import latex.elements.LateXElement;
+import latex.elements.*;
 import latex.elements.List;
-import latex.elements.Paragraph;
-import latex.elements.ProgrammingCode;
-import latex.elements.Section;
-import latex.elements.SubSubSection;
-import latex.elements.Subsection;
-import latex.elements.Title;
+import utils.*;
 import utils.FilterWriter;
-import utils.ListeNommee;
-import utils.TokenReader;
 
 /**
  *
