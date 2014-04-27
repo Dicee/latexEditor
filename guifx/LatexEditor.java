@@ -15,12 +15,9 @@ import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-<<<<<<< HEAD
 import java.awt.event.ActionListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-=======
->>>>>>> 9e78ca3b87bb899951f77d4aa194b50a9e916962
 import javax.swing.JOptionPane;
 
 import latex.LateXFilter;
@@ -44,7 +41,7 @@ public class LatexEditor extends Application {
     private ArrayList<LateXElement> lateXElements = new ArrayList<>();
     
     private boolean saved            = true;
-    private DocumentState savedState = new DocumentState(new ArrayList<>());
+    private DocumentState savedState = new DocumentState(new ArrayList<LateXElement>());
     
     private Stage primaryStage;
     private TreeView<LateXElement> tree;
@@ -65,6 +62,8 @@ public class LatexEditor extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        setUserAgentStylesheet(STYLESHEET_CASPIAN);
+        
         VBox root = new VBox(10);
         setTree();
         setEditZone();
@@ -366,6 +365,16 @@ public class LatexEditor extends Application {
             System.exit(0);
         });
         menuBar.getMenus().addAll(menuFile,menuEdit,menuHelp);
+        
+        Menu chooseStyle = new Menu("Apparence");
+        MenuItem modena  = new MenuItem("Modena");        
+        MenuItem caspian = new MenuItem("Caspian");
+        
+        modena.setOnAction((ActionEvent ev) -> setUserAgentStylesheet(STYLESHEET_MODENA));
+        caspian.setOnAction((ActionEvent ev) -> setUserAgentStylesheet(STYLESHEET_CASPIAN));
+        
+        chooseStyle.getItems().addAll(modena,caspian);
+        menuHelp.getItems().add(chooseStyle);
     }
     
     private void save() {
