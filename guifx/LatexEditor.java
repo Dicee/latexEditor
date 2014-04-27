@@ -10,15 +10,17 @@ import javafx.stage.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+<<<<<<< HEAD
 import java.awt.event.ActionListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+=======
+>>>>>>> 9e78ca3b87bb899951f77d4aa194b50a9e916962
 import javax.swing.JOptionPane;
 
 import latex.LateXFilter;
@@ -42,7 +44,7 @@ public class LatexEditor extends Application {
     private ArrayList<LateXElement> lateXElements = new ArrayList<>();
     
     private boolean saved            = true;
-    private DocumentState savedState = new DocumentState(new ArrayList<LateXElement>());
+    private DocumentState savedState = new DocumentState(new ArrayList<>());
     
     private Stage primaryStage;
     private TreeView<LateXElement> tree;
@@ -94,30 +96,19 @@ public class LatexEditor extends Application {
         Button preview = new Button("Prévisualisation",previewIcon);
         Button pdf     = new Button("Générer le fichier pdf",pdfIcon);        
         
-        tex.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                generate();
+        tex.setOnAction(event -> generate());
+        preview.setOnAction((ActionEvent event) -> {
+            try {
+                preview();
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
         });
-        preview.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                try {
-                    preview();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        pdf.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                try {
-                    toPdf();
-                } catch (IOException ex) {
-                    Logger.getLogger(LatexEditor.class.getName()).log(Level.SEVERE, null, ex);
-                }
+        pdf.setOnAction((ActionEvent t) -> {
+            try {
+                toPdf();
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
         });
         ToolBar tb = new ToolBar(tex,preview,pdf);
@@ -150,7 +141,7 @@ public class LatexEditor extends Application {
     }
 
     private void setTree() {
-        treeRoot = new TreeItem<LateXElement>(new Title("Test", lm),rootIcon);
+        treeRoot = new TreeItem<>(new Title("Test", lm),rootIcon);
         tree = new TreeView<>(treeRoot);
         tree.setMinSize(200,50);
         treeRoot.setExpanded(true); 
@@ -188,11 +179,8 @@ public class LatexEditor extends Application {
                         for (final String type : nodesTypesMap.get(depth)) {
                             final MenuItem item = new MenuItem(type);
                             addChild.getItems().add(item);
-                            item.setOnAction(new EventHandler<ActionEvent>() {
-                                @Override
-                                public void handle(ActionEvent t) {
-                                    addChild(type);
-                                }
+                            item.setOnAction((ActionEvent t) -> {
+                                addChild(type);
                             });
                         }
                     }
@@ -206,12 +194,7 @@ public class LatexEditor extends Application {
                         for (final String type : nodesTypesMap.get(depth)) {
                             final MenuItem item = new MenuItem(type);
                             addSibling.getItems().add(item);
-                            item.setOnAction(new EventHandler<ActionEvent>() {
-                                @Override
-                                public void handle(ActionEvent t) {
-                                    addSibling(type);
-                                }
-                            });
+                            item.setOnAction(event -> addSibling(type));
                         }
                     }
                 }
@@ -221,25 +204,19 @@ public class LatexEditor extends Application {
         });
         tree.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         tree.getSelectionModel().selectedItemProperty().addListener(
-                new ChangeListener<TreeItem<LateXElement>>() {
-                    @Override
-                    public void changed(ObservableValue<? extends TreeItem<LateXElement>> ov,
-                            TreeItem<LateXElement> formerItem,
-                            TreeItem<LateXElement> newItem
-                    ) {
-                        if (formerItem != null) {
-                            String text = textArea.getText();
-                            if (!currentNode.getValue().getText().equals(text))
-                                setSaved(false);
-                            formerItem.getValue().setText(textArea.getText());
-                        }
-                        if (newItem != null && newItem.getValue() != null) {
-                            textArea.setText(newItem.getValue().getText());
-                            info.setText(helpers.get(newItem.getValue().getName()));
-                            currentNode = newItem;
-                        }                      
+                (ObservableValue<? extends TreeItem<LateXElement>> ov, TreeItem<LateXElement> formerItem, TreeItem<LateXElement> newItem) -> {
+                    if (formerItem != null) {
+                        String text = textArea.getText();
+                        if (!currentNode.getValue().getText().equals(text))
+                            setSaved(false);
+                        formerItem.getValue().setText(textArea.getText());                      
                     }
-                });
+                    if (newItem != null && newItem.getValue() != null) {
+                        textArea.setText(newItem.getValue().getText());
+                        info.setText(helpers.get(newItem.getValue().getName()));
+                        currentNode = newItem;
+                    }
+        });
     }
     
     private void addSibling(String command) {
@@ -304,21 +281,15 @@ public class LatexEditor extends Application {
 			 };
         Image img = new Image(LatexEditor.class.getResourceAsStream("/data/Operateurs.png"));
         IconSelectionView operateurs = new IconSelectionView(img,5,5,operators,"Opérateurs");
-        operateurs.setActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {                
-                textArea.cut();
-                textArea.insertText(textArea.getCaretPosition(),e.getActionCommand()); 
-            }
+        operateurs.setActionListener((java.awt.event.ActionEvent e) -> {
+            textArea.cut();
+            textArea.insertText(textArea.getCaretPosition(),e.getActionCommand());
         });
         img = new Image(LatexEditor.class.getResourceAsStream("/data/AlphabetGrec.png"));
         IconSelectionView alphabetGrec = new IconSelectionView(img,5,5,ctes,"Alphabet grec");
-        alphabetGrec.setActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {                
-                textArea.cut();
-                textArea.insertText(textArea.getCaretPosition(),e.getActionCommand()); 
-            }
+        alphabetGrec.setActionListener((java.awt.event.ActionEvent e) -> {
+            textArea.cut();
+            textArea.insertText(textArea.getCaretPosition(),e.getActionCommand());
         });
         IconSelectionBox box = new IconSelectionBox();
         box.addSelectionView(operateurs);
@@ -374,43 +345,25 @@ public class LatexEditor extends Application {
                                 KeyCharacterCombination.CONTROL_DOWN));
         generate.setDisable(true);
         
-        newDoc.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                createDocument();
-                lateXElements = new ArrayList<>();
-            }
+        newDoc.setOnAction((ActionEvent ev) -> {
+            createDocument();
+            lateXElements = new ArrayList<>();
         });
-        save.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                save();
-            }
+        save.setOnAction((ActionEvent ev) -> {
+            save();
         });
-        saveAs.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                createDocument();
-                save();
-            }
+        saveAs.setOnAction((ActionEvent ev) -> {
+            createDocument();
+            save();
         });
-        load.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-               load();
-            }
+        load.setOnAction((ActionEvent ev) -> {
+            load();
         });
-        generate.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-               generate();
-            }
+        generate.setOnAction((ActionEvent ev) -> {
+            generate();
         });
-        quit.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                System.exit(0);
-            }
+        quit.setOnAction((ActionEvent ev) -> {
+            System.exit(0);
         });
         menuBar.getMenus().addAll(menuFile,menuEdit,menuHelp);
     }
