@@ -4,15 +4,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 import latex.elements.LateXElement;
-import latex.formules.Equation;
 import utils.FilterWriter;
 
 public class LateXMaker {
 	private int chapterCount = 0, figureCount = 1;	
-	private String[] romanNumbers = { "I","II","III","IV","VI","VII","VIII","IX" };
+	private static final String[] romanNumbers = { "I","II","III","IV","VI","VII","VIII","IX" };
 	private DocumentParameters parameters;
 	
 	public LateXMaker(DocumentParameters dp) {
@@ -124,14 +123,7 @@ public class LateXMaker {
 		return "\\end{document}";
 	}
 
-	public String makeEquation(Equation eq) {
-		String result = "\\begin{equation}\n";
-		result += eq.getLateXCode() + "\n";	
-		result += "\\end{equation}\n";
-		return result;
-	}
-
-	public void save(File f, ArrayList<LateXElement> latexElements) throws IOException {
+	public void save(File f, List<LateXElement> latexElements) throws IOException {
 		chapterCount = 0;
 		figureCount  = 1;
 		FilterWriter fw = null;

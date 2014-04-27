@@ -17,6 +17,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.awt.event.ActionListener;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 import latex.LateXFilter;
@@ -69,7 +71,6 @@ public class LatexEditor extends Application {
         setMenuBar();
         setHelpers();
         this.primaryStage = primaryStage;
-        System.out.println(System.getProperty("os.name").toLowerCase().contains("windows"));
         
         VBox header = setHeader();
         root.getChildren().addAll(header,editZone);
@@ -418,8 +419,7 @@ public class LatexEditor extends Application {
         try {
             currentNode.getValue().setText(textArea.getText());
             if (currentFile != null) {
-                String path = currentFile.getAbsolutePath();
-                File f = new File(path.substring(0, path.indexOf(".") + 1) + "javatex");
+                File f = new File(currentFile.getAbsolutePath());
                 FilterWriter fw = new FilterWriter(new BufferedWriter(new FileWriter(f)), new LateXFilter());
                 ListeNommee<LateXElement> elements = getElements();
                 Iterator<String> names = elements.getA().iterator();
@@ -453,7 +453,10 @@ public class LatexEditor extends Application {
         try {
             if (savedState.getCurrentState().isEmpty())
                 save();
-            lm.save(currentFile, savedState.getCurrentState());
+            String path = currentFile.getAbsolutePath();
+            int i       = path.lastIndexOf(".");
+            path        = i == -1 ? path + ".tex" : path.substring(0,i) + ".tex"; 
+            lm.save(new File(path), savedState.getCurrentState());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, e.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }
@@ -463,7 +466,7 @@ public class LatexEditor extends Application {
         FileChooser f = new FileChooser();
         f.setTitle("Nouveau document");
         f.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Fichier LateX","*.tex"));
+                new FileChooser.ExtensionFilter("Fichier LateX","*.javatex"));
 
         if (currentDir != null) {
             f.setInitialDirectory(currentDir);
@@ -475,11 +478,11 @@ public class LatexEditor extends Application {
             String s = file.getPath();
             int i = s.indexOf(".");
             if (i == -1 || !s.substring(i).equals(".javatex")) {
-                file = new File(s + ".tex");
+                file = new File(s + ".javatex");
             }
             currentFile = file;
             save();
-            primaryStage.setTitle(s + ".tex" + " - LateXEditor 3.0");
+            primaryStage.setTitle(currentFile.getName() + " - LateXEditor 3.0");
             generate.setDisable(false); 
         }       
     }
@@ -586,7 +589,7 @@ public class LatexEditor extends Application {
     public void load() {
         try {
             FileChooser f = new FileChooser();
-            f.setTitle("Nouveau document");
+            f.setTitle("Charger un document");
             f.getExtensionFilters().addAll(
                     new FileChooser.ExtensionFilter("Fichier JavateX", "*.javatex"));
 
@@ -600,7 +603,7 @@ public class LatexEditor extends Application {
                 String s = file.getPath();
                 int i = s.indexOf(".");
                 if (i == -1 || !s.substring(i).equals(".javatex")) {
-                    file = new File(s + ".tex");
+                    file = new File(s + ".javatex");
                 }
                 currentFile = file;
 
@@ -609,15 +612,12 @@ public class LatexEditor extends Application {
                 ArrayList<LateXElement> elements = new ArrayList<>();
                 ArrayList<String> names = new ArrayList<>();
 
-                while ((s = tr.readToNextToken()) != null) {
+                while ((s = tr.readToNextToken()) != null) 
                     buffer.add(s.trim());
-                }
 
-                String path = file.getAbsolutePath();
-                currentFile = new File(path.substring(0, path.indexOf(".") + 1) + "tex");
                 Iterator<String> it = buffer.iterator();
                 while (it.hasNext()) {
-		//Si le fichier est bien forme on devrait toujours pouvoir faire deux next() de suite
+                    //Si le fichier est bien forme on devrait toujours pouvoir faire deux next() de suite
                     //des lors qu'on peut en faire un !
                     //createLateXElement(it.next(),it.next(),lateXElements);
                     String declaration = it.next();
@@ -632,7 +632,7 @@ public class LatexEditor extends Application {
                 //Si apres tout cela il n'y a aucune erreur, on peut enfin ecraser les precedents buffers
                 tr.close();
                 setElements(new ListeNommee<>(names, elements));
-                primaryStage.setTitle(path + " - LateXEditor 3.0");
+                primaryStage.setTitle(currentFile.getName() + " - LateXEditor 3.0");
                 setSaved(true);
                 generate.setDisable(false);
             }
