@@ -11,13 +11,11 @@ import javafx.event.*;
 import javafx.geometry.*;
 import javafx.application.Application;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.awt.event.ActionListener;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 import latex.LateXFilter;
@@ -33,6 +31,9 @@ import utils.FilterWriter;
  */
 public class LatexEditor extends Application {
     
+    private static final int INSERT_HEAD = 0;
+    private static final int INSERT_TAIL = 1;
+    
     private final Node rootIcon = 
         new ImageView(new Image(getClass().getResourceAsStream("/data/texIcon.png")));
     private File currentDir        = null;
@@ -41,12 +42,12 @@ public class LatexEditor extends Application {
     private ArrayList<LateXElement> lateXElements = new ArrayList<>();
     
     private boolean saved            = true;
-    private DocumentState savedState = new DocumentState(new ArrayList<LateXElement>());
+    private DocumentState savedState = new DocumentState(new ArrayList<>());
     
     private Stage primaryStage;
     private TreeView<LateXElement> tree;
     private TreeItem<LateXElement> treeRoot;
-    private LateXMaker lm = new LateXMaker();
+    private final LateXMaker lm = new LateXMaker();
     private TextArea textArea;
     private HBox editZone;
     private ContextMenu addMenu;
@@ -54,10 +55,10 @@ public class LatexEditor extends Application {
     private MenuItem generate;
     private Label info;
 
-    private HashMap<Integer,String[]> nodesTypesMap;
-    private HashMap<String,String> icons;
-    private HashMap<String,String> helpers;
-
+    private static final HashMap<Integer,String[]> nodesTypesMap;
+    private static final HashMap<String,String> icons;
+    private static final HashMap<String,String> helpers;
+    
     private TreeItem<LateXElement> currentNode = null;
 
     @Override
@@ -67,10 +68,7 @@ public class LatexEditor extends Application {
         VBox root = new VBox(10);
         setTree();
         setEditZone();
-        initializeNodesTypesMap();
-        setIconsMap();
         setMenuBar();
-        setHelpers();
         this.primaryStage = primaryStage;
         
         VBox header = setHeader();
@@ -114,16 +112,6 @@ public class LatexEditor extends Application {
         header.getChildren().addAll(menuBar,tb);
         return header;
     }
-    private void setIconsMap() {
-        icons = new HashMap<>();
-        icons.put("Titre","/data/texIcon.png");
-        icons.put("Chapitre","/data/chapterIcon.png");
-        icons.put("Section","/data/sectionIcon.png");
-        icons.put("Sous-section","/data/subSectionIcon.png");
-        icons.put("Sous-sous section","/data/subsubSectionIcon.png");
-        for (String name : nodesTypesMap.get(5))
-            icons.put(name,"/data/leafIcon.png");
-    }
     
     private TreeItem<LateXElement> newTreeItem(LateXElement l) {
         String url;
@@ -133,14 +121,14 @@ public class LatexEditor extends Application {
            icon = new ImageView(new Image(getClass().getResourceAsStream(url)));        
         TreeItem<LateXElement> newElt;
         if (icon == null)
-            newElt = new TreeItem<>(newLateXElement(command,l.getText()));
+            newElt = new TreeItem<>(LateXElement.newLateXElement(command,l.getText(),lm));
         else
-            newElt = new TreeItem<>(newLateXElement(command,l.getText()),icon);
+            newElt = new TreeItem<>(LateXElement.newLateXElement(command,l.getText(),lm),icon);
         return newElt;
     }
 
     private void setTree() {
-        treeRoot = new TreeItem<>(new Title("Test", lm),rootIcon);
+        treeRoot = new TreeItem<>(new Title("", lm),rootIcon);
         tree = new TreeView<>(treeRoot);
         tree.setMinSize(200,50);
         treeRoot.setExpanded(true); 
@@ -160,47 +148,69 @@ public class LatexEditor extends Application {
                 addMenu.hide();
                 addMenu.getItems().removeAll(addMenu.getItems());
                 LateXElement elt = currentNode.getValue();
-                Menu addChild = null, addSibling = null;
+                Menu addChildHead, addChildTail, addSibling = null;
+                MenuItem delete = null;
+                
+                Map<Menu,Integer> map = null;
+                        
                 //Determination des elements principaux du popup
                 if (elt.getDepth() != LateXElement.DEPTH_MAX) {
-                    addMenu.getItems().add(addChild = new Menu("Ajouter un fils"));
+                    addMenu.getItems().add(addChildHead = new Menu("Ajouter un fils en tête"));
+                    addMenu.getItems().add(addChildTail = new Menu("Ajouter un fils en queue"));
+                    map = new HashMap() {{
+                        put(addChildHead,INSERT_HEAD);
+                        put(addChildTail,INSERT_TAIL);
+                    }};
                 }
-                if (elt.getDepth() != LateXElement.DEPTH_MIN) {
+                
+                if (elt.getDepth() != LateXElement.DEPTH_MIN) 
                     addMenu.getItems().add(addSibling = new Menu("Ajouter un frère"));
-                }
+                
+                if (!(elt instanceof Title))
+                    addMenu.getItems().add(delete = new MenuItem("Supprimer"));
+                
                 //Determination des elements secondaires du popup
                 for (Integer depth : nodesTypesMap.keySet()) {
                     //D'abord les elements fils
-                    if (addChild != null && depth > elt.getDepth()) {
-                        if (addChild.getItems().size() != 0) {
-                            addChild.getItems().add(new SeparatorMenuItem());
-                        }
-                        for (final String type : nodesTypesMap.get(depth)) {
-                            final MenuItem item = new MenuItem(type);
-                            addChild.getItems().add(item);
-                            item.setOnAction((ActionEvent t) -> {
-                                addChild(type);
-                            });
-                        }
+                    if (map != null) {
+                        map.entrySet().stream().forEach((Map.Entry<Menu, Integer> entry) -> {
+                            Menu addChild = entry.getKey();
+                            if (depth > elt.getDepth()) {
+                                if (addChild.getItems().size() != 0) {
+                                    addChild.getItems().add(new SeparatorMenuItem());
+                                }
+
+                                for (final String type : nodesTypesMap.get(depth)) {
+                                    final MenuItem item = new MenuItem(type);
+                                    addChild.getItems().add(item);
+                                    item.setOnAction((ActionEvent t) -> {
+                                        addChild(type,entry.getValue());
+                                    });
+                                }
+                            }
+                        });
                     }
                     //Ensuite les elements freres
-                    if (addSibling != null && depth == elt.getDepth()) {
-                        if (depth > elt.getDepth()) {
-                            if (addSibling.getItems().size() != 0) {
-                                addSibling.getItems().add(new SeparatorMenuItem());
-                            }
-                        }
+                    if (addSibling != null && depth == elt.getDepth()) 
                         for (final String type : nodesTypesMap.get(depth)) {
                             final MenuItem item = new MenuItem(type);
                             addSibling.getItems().add(item);
                             item.setOnAction(event -> addSibling(type));
                         }
-                    }
                 }
+                
+                if (delete != null)
+                    delete.setOnAction((ActionEvent ev) -> { 
+                        TreeItem<LateXElement> parent = currentNode.getParent();
+                        parent.getChildren().remove(currentNode);
+                        currentNode = parent;
+                    });
+                    
                 //Affichage du popup
                 addMenu.show(editZone,pt.getX() + 10, pt.getY() + 10);
             }
         });
+        
         tree.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         tree.getSelectionModel().selectedItemProperty().addListener(
                 (ObservableValue<? extends TreeItem<LateXElement>> ov, TreeItem<LateXElement> formerItem, TreeItem<LateXElement> newItem) -> {
@@ -219,35 +229,24 @@ public class LatexEditor extends Application {
     }
     
     private void addSibling(String command) {
-        TreeItem<LateXElement> newElt = newTreeItem(newLateXElement(command,""));
-        currentNode.getParent().getChildren().add(newElt);
-        currentNode = newElt;
+        TreeItem<LateXElement> newElt = newTreeItem(LateXElement.newLateXElement(command,"",lm));
+        ObservableList<TreeItem<LateXElement>> childrens = currentNode.getParent().getChildren();
+        int i = childrens.indexOf(currentNode); 
+        if (i == childrens.size() - 1)
+            childrens.add(newElt);
+        else         
+            childrens.add(i + 1,newElt);
         setSaved(false);
     }
 
-    private void addChild(String command) {
-        TreeItem<LateXElement> newElt = newTreeItem(newLateXElement(command,""));
-        currentNode.getChildren().add(newElt);
+    private void addChild(String command, int option) {
+        TreeItem<LateXElement> newElt = newTreeItem(LateXElement.newLateXElement(command,"",lm));
+        if (option == INSERT_TAIL)
+            currentNode.getChildren().add(newElt);
+        else
+            currentNode.getChildren().add(0,newElt);
         currentNode.setExpanded(true);
-        currentNode = newElt;
         setSaved(false);
-    }
-    
-    private LateXElement newLateXElement(String opName, String content) {
-	LateXElement newElt;
-	switch (opName) {
-            case "Titre"             : newElt = new Title(content,lm); break;
-            case "Chapitre"          : newElt = new Chapter(content,lm);	break;
-            case "Section"           : newElt = new Section(content,lm); break;
-            case "Sous-section"      : newElt = new Subsection(content,lm); break;
-            case "Sous-sous section" : newElt = new SubSubSection(content,lm); break;
-            case "Paragraphe"        : newElt = new Paragraph(content,lm); break;
-            case "Liste"             : newElt = new List(content,lm); break;
-            case "Code"              : newElt = new ProgrammingCode(content,lm); break;
-            case "Code LateX"        : newElt = new LateXCode(content,lm); break;
-            default                  : newElt = new Inclusion(content,lm); break;
-	}
-	return newElt;
     }
     
     private void setEditZone() {
@@ -255,12 +254,7 @@ public class LatexEditor extends Application {
         textArea  = new TextArea();
         textArea.setPrefSize(600, 500);
         VBox vbox = new VBox(); 
-      /*  textArea.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> ov, String t, String t1) {
-                System.out.println(t+" " +t1);
-            }
-        });*/
+        
         vbox.setPadding(new Insets(5));
         vbox.setSpacing(5);
         /*ScrollPane scrollPane = new ScrollPane();
@@ -300,18 +294,8 @@ public class LatexEditor extends Application {
         editZone.setPadding(new Insets(15));      
     }
 
-    private void initializeNodesTypesMap() {
-        nodesTypesMap = new HashMap<>();
-        nodesTypesMap.put(0, new String[]{"Titre"});
-        nodesTypesMap.put(1, new String[]{"Chapitre"});
-        nodesTypesMap.put(2, new String[]{"Section"});
-        nodesTypesMap.put(3, new String[]{"Sous-section"});
-        nodesTypesMap.put(4, new String[]{"Sous-sous section"});
-        nodesTypesMap.put(5, new String[]{"Paragraphe", "Liste", "Inclusion d'image", "Code", "Code LateX"});
-    }
-
     private void setMenuBar() {
-        menuBar = new MenuBar();
+        menuBar       = new MenuBar();
         Menu menuFile = new Menu("Fichier");
         Menu menuEdit = new Menu("Editer");
         Menu menuHelp = new Menu("Aide");
@@ -553,7 +537,7 @@ public class LatexEditor extends Application {
             FileChooser f = new FileChooser();
             f.setTitle("Charger un document");
             f.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("Fichier JavateX", "*.javatex"));
+                    new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
 
             if (currentDir != null) {
                 f.setInitialDirectory(currentDir);
@@ -569,7 +553,7 @@ public class LatexEditor extends Application {
                 }
                 currentFile = file;
 
-                TokenReader tr = new TokenReader(new FileReader(file), "#");
+                TokenReader tr = new TokenReader(new FileReader(file),"#");
                 ArrayList<String> buffer = new ArrayList<>();
                 ArrayList<LateXElement> elements = new ArrayList<>();
                 ArrayList<String> names = new ArrayList<>();
@@ -589,7 +573,7 @@ public class LatexEditor extends Application {
                     String type = i == -1 ? declaration : declaration.substring(i + 1).trim();
 
                     names.add(name);
-                    elements.add(newLateXElement(type, content));
+                    elements.add(LateXElement.newLateXElement(type,content,lm));
                 }
                 //Si apres tout cela il n'y a aucune erreur, on peut enfin ecraser les precedents buffers
                 tr.close();
@@ -619,7 +603,17 @@ public class LatexEditor extends Application {
         launch(args);
     }
 
-    private void setHelpers() {
+    static {
+        nodesTypesMap = new HashMap<>();
+        nodesTypesMap.put(0, new String[]{"Titre"});
+        nodesTypesMap.put(1, new String[]{"Chapitre"});
+        nodesTypesMap.put(2, new String[]{"Section"});
+        nodesTypesMap.put(3, new String[]{"Sous-section"});
+        nodesTypesMap.put(4, new String[]{"Sous-sous section"});
+        nodesTypesMap.put(5, new String[]{"Paragraphe", "Liste", "Inclusion d'image", "Code", "Code LateX"});
+    }
+    
+    static {
         helpers = new HashMap<>();
         helpers.put("Titre", "Saisissez ici le titre du document et le nom de l'auteur "
                 + "séparés par un ;");
@@ -633,6 +627,17 @@ public class LatexEditor extends Application {
                 + " rapport d'échelle séparés par des ;");
         helpers.put("Code", "Saisissez votre code ici");
         helpers.put("Code LateX", "Saisissez votre code ici");
+    }
+    
+    static {
+        icons = new HashMap<>();
+        icons.put("Titre","/data/texIcon.png");
+        icons.put("Chapitre","/data/chapterIcon.png");
+        icons.put("Section","/data/sectionIcon.png");
+        icons.put("Sous-section","/data/subSectionIcon.png");
+        icons.put("Sous-sous section","/data/subsubSectionIcon.png");
+        for (String name : nodesTypesMap.get(5))
+            icons.put(name,"/data/leafIcon.png");
     }
 }
 

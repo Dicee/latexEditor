@@ -48,4 +48,21 @@ public abstract class LateXElement implements Textifiable {
 	public int getDepth() {
 		return depth;
 	}
+    
+    public static LateXElement newLateXElement(String opName, String content,LateXMaker lm) {
+        LateXElement elt;
+        switch (opName) {
+            case "Titre"             : elt = new Title(content,lm);           break;
+            case "Chapitre"          : elt = new Chapter(content,lm);	     break;
+            case "Section"           : elt = new Section(content,lm);         break;
+            case "Sous-section"      : elt = new Subsection(content,lm);      break;
+            case "Sous-sous section" : elt = new SubSubSection(content,lm);   break;
+            case "Paragraphe"        : elt = new Paragraph(content,lm);       break;
+            case "Liste"             : elt = new List(content,lm);            break;
+            case "Code"              : elt = new ProgrammingCode(content,lm); break;
+            case "Code LateX"        : elt = new LateXCode(content,lm);       break;
+            default                  : elt = new Inclusion(content,lm);       break;
+        }
+        return elt;
+    }
 }
