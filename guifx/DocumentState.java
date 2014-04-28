@@ -1,16 +1,16 @@
 package guifx;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import latex.elements.LateXElement;
 
-public class DocumentState extends State<ArrayList<LateXElement>> {
+public class DocumentState extends State<List<LateXElement>> {
 
-    public DocumentState(ArrayList<LateXElement> state) {
+    public DocumentState(List<LateXElement> state) {
         super(state);
     }
 
-    public int compareTo(State<ArrayList<LateXElement>> state) {
+    public int compareTo(State<List<LateXElement>> state) {
 
         int l1 = currentState.size(), l2 = state.currentState.size();
         if (l1 != l2) {

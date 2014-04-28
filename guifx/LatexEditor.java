@@ -2,6 +2,7 @@ package guifx;
 
 import java.io.*;
 import java.util.*;
+import java.util.List;
 
 import javafx.scene.*;
 import javafx.scene.image.*;
@@ -21,7 +22,6 @@ import javax.swing.JOptionPane;
 import latex.LateXFilter;
 import latex.LateXMaker;
 import latex.elements.*;
-import latex.elements.List;
 import utils.*;
 import utils.FilterWriter;
 
@@ -365,14 +365,14 @@ public class LatexEditor extends Application {
         try {
             currentNode.getValue().setText(textArea.getText());
             if (currentFile != null) {
-                File f = new File(currentFile.getAbsolutePath());
-                FilterWriter fw = new FilterWriter(new BufferedWriter(new FileWriter(f)), new LateXFilter());
+                File f                             = new File(currentFile.getAbsolutePath());
+                FilterWriter fw                    = new FilterWriter(new BufferedWriter(new FileWriter(f)), new LateXFilter());
                 ListeNommee<LateXElement> elements = getElements();
-                Iterator<String> names = elements.getA().iterator();
-                lateXElements = elements.getB();
-                ArrayList<LateXElement> state = new ArrayList<>();
+                Iterator<String> names             = elements.getA().iterator();
+                lateXElements                      = new ArrayList<>(elements.getB());
+                ArrayList<LateXElement> state      = new ArrayList<>();
                 for (LateXElement l : lateXElements) {
-                    fw.write(names.next() + " " + l.textify() + "\n");
+                    fw.write(String.format("%s %s\n",names.next(),l.textify()));
                     state.add(l.clone());
                 }
                 fw.flush();
@@ -387,11 +387,10 @@ public class LatexEditor extends Application {
     }
    
     public void setSaved(boolean b) {
-        if (!saved && b) {
+        if (!saved && b) 
             primaryStage.setTitle(primaryStage.getTitle().substring(1));
-        } else if (saved && !b) {
+         else if (saved && !b) 
             primaryStage.setTitle("*" + primaryStage.getTitle());
-        }
         saved = b;
     }
     
@@ -412,7 +411,7 @@ public class LatexEditor extends Application {
         FileChooser f = new FileChooser();
         f.setTitle("Nouveau document");
         f.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Fichier LateX","*.javatex"));
+                new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
 
         if (currentDir != null) {
             f.setInitialDirectory(currentDir);
@@ -454,8 +453,8 @@ public class LatexEditor extends Application {
     
     private TreeItem<LateXElement> setElements(ListeNommee<LateXElement> elts,
             TreeItem<LateXElement> parentNode, int index, int max) {
-        ArrayList<String> names         = elts.getA();
-        ArrayList<LateXElement> objects = elts.getB();
+        List<String> names         = elts.getA();
+        List<LateXElement> objects = elts.getB();
         int level = names.get(index).length();
 
         for (int i = index + 1; i < max && level < names.get(i).length(); i++) {
@@ -536,27 +535,25 @@ public class LatexEditor extends Application {
         try {
             FileChooser f = new FileChooser();
             f.setTitle("Charger un document");
-            f.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
+            f.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
 
-            if (currentDir != null) {
+            if (currentDir != null) 
                 f.setInitialDirectory(currentDir);
-            }
 
             File file = f.showOpenDialog(primaryStage);
             if (file != null) {
                 currentDir = file.getParentFile();
                 String s = file.getPath();
                 int i = s.indexOf(".");
-                if (i == -1 || !s.substring(i).equals(".javatex")) {
+                if (i == -1 || !s.substring(i).equals(".javatex")) 
                     file = new File(s + ".javatex");
-                }
+				
                 currentFile = file;
 
-                TokenReader tr = new TokenReader(new FileReader(file),"#");
-                ArrayList<String> buffer = new ArrayList<>();
-                ArrayList<LateXElement> elements = new ArrayList<>();
-                ArrayList<String> names = new ArrayList<>();
+                TokenReader tr              = new TokenReader(new FileReader(file),"#");
+                List<String> buffer         = new ArrayList<>();
+                List<LateXElement> elements = new ArrayList<>();
+                List<String> names          = new ArrayList<>();
 
                 while ((s = tr.readToNextToken()) != null) 
                     buffer.add(s.trim());
@@ -580,6 +577,7 @@ public class LatexEditor extends Application {
                 setElements(new ListeNommee<>(names, elements));
                 primaryStage.setTitle(currentFile.getName() + " - LateXEditor 3.0");
                 setSaved(true);
+				savedState = new DocumentState(elements);
                 generate.setDisable(false);
             }
         }catch (FileNotFoundException e) {
@@ -591,14 +589,6 @@ public class LatexEditor extends Application {
         }
      }
     
-    /**
-     * The main() method is ignored in correctly deployed JavaFX application.
-     * main() serves only as fallback in case the application can not be
-     * launched through deployment artifacts, e.g., in IDEs with limited FX
-     * support. NetBeans ignores main().
-     *
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
         launch(args);
     }

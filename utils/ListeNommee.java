@@ -1,9 +1,9 @@
 package utils;
 
-import java.util.ArrayList;
+import java.util.List;
 
-public class ListeNommee<E> extends Couple<ArrayList<String>,ArrayList<E>> {
-	public ListeNommee(ArrayList<String> a, ArrayList<E> b) {
+public class ListeNommee<E> extends Couple<List<String>,List<E>> {
+	public ListeNommee(List<String> a, List<E> b) {
 		super(a, b);
 	}
 }
