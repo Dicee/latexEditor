@@ -35,15 +35,12 @@ public class IconSelectionView extends ImageView {
         this.cols     = cols;
         this.commands = commandsArr;
         this.name     = name;
-        setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent t) {
-                 fireListener(commands[pixToVect(new Point((int) t.getX(),(int) t.getY()))]);
-            }
-        });
+        setOnMouseClicked((MouseEvent ev) -> {
+                 fireListener(commands[pixToVect(new Point((int) ev.getX(),(int) ev.getY()))]);
+         });
     }
     
-       public void setActionListener(ActionListener al) {
+    public void setActionListener(ActionListener al) {
         listener = al;
     }
 
@@ -63,8 +60,8 @@ public class IconSelectionView extends ImageView {
      * Conversion des coordonnees pixelliques de la souris en coordonnees de bloc.
      */
     private Point mouseToBlock(Point p) {
-        int blockHeight = ((int) height) / cols;
-        int blockWidth = ((int) width) / rows;
+        int blockHeight = ((int) height) / rows;
+        int blockWidth  = ((int) width)  / cols;
         return new Point((int) (p.getY()) / blockHeight, (int) p.getX() / blockWidth);
     }
     

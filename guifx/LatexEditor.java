@@ -18,6 +18,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import javax.swing.JOptionPane;
+import javax.swing.tree.TreeNode;
 
 import latex.LateXFilter;
 import latex.LateXMaker;
@@ -60,6 +61,7 @@ public class LatexEditor extends Application {
     private static final HashMap<String,String> helpers;
     
     private TreeItem<LateXElement> currentNode = null;
+    private TreeItem<LateXElement> clipBoard   = null;
 
     @Override
     public void start(Stage primaryStage) {
@@ -146,69 +148,16 @@ public class LatexEditor extends Application {
                 if (addMenu == null)
                     addMenu = new ContextMenu();
                 addMenu.hide();
-                addMenu.getItems().removeAll(addMenu.getItems());
+                addMenu.getItems().clear();
                 LateXElement elt = currentNode.getValue();
-                Menu addChildHead, addChildTail, addSibling = null;
-                MenuItem delete = null;
                 
-                Map<Menu,Integer> map = null;
-                        
-                //Determination des elements principaux du popup
-                if (elt.getDepth() != LateXElement.DEPTH_MAX) {
-                    addMenu.getItems().add(addChildHead = new Menu("Ajouter un fils en tête"));
-                    addMenu.getItems().add(addChildTail = new Menu("Ajouter un fils en queue"));
-                    map = new HashMap() {{
-                        put(addChildHead,INSERT_HEAD);
-                        put(addChildTail,INSERT_TAIL);
-                    }};
-                }
+                buildAddMenus(elt);
+				//buildClipboardMenus(elt);
+                buildDeleteMenu(elt);				
                 
-                if (elt.getDepth() != LateXElement.DEPTH_MIN) 
-                    addMenu.getItems().add(addSibling = new Menu("Ajouter un frère"));
-                
-                if (!(elt instanceof Title))
-                    addMenu.getItems().add(delete = new MenuItem("Supprimer"));
-                
-                //Determination des elements secondaires du popup
-                for (Integer depth : nodesTypesMap.keySet()) {
-                    //D'abord les elements fils
-                    if (map != null) {
-                        map.entrySet().stream().forEach((Map.Entry<Menu, Integer> entry) -> {
-                            Menu addChild = entry.getKey();
-                            if (depth > elt.getDepth()) {
-                                if (addChild.getItems().size() != 0) {
-                                    addChild.getItems().add(new SeparatorMenuItem());
-                                }
-
-                                for (final String type : nodesTypesMap.get(depth)) {
-                                    final MenuItem item = new MenuItem(type);
-                                    addChild.getItems().add(item);
-                                    item.setOnAction((ActionEvent t) -> {
-                                        addChild(type,entry.getValue());
-                                    });
-                                }
-                            }
-                        });
-                    }
-                    //Ensuite les elements freres
-                    if (addSibling != null && depth == elt.getDepth()) 
-                        for (final String type : nodesTypesMap.get(depth)) {
-                            final MenuItem item = new MenuItem(type);
-                            addSibling.getItems().add(item);
-                            item.setOnAction(event -> addSibling(type));
-                        }
-                }
-                
-                if (delete != null)
-                    delete.setOnAction((ActionEvent ev) -> { 
-                        TreeItem<LateXElement> parent = currentNode.getParent();
-                        parent.getChildren().remove(currentNode);
-                        currentNode = parent;
-                    });
-                    
                 //Affichage du popup
                 addMenu.show(editZone,pt.getX() + 10, pt.getY() + 10);
-            }
+            }           
         });
         
         tree.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -226,6 +175,104 @@ public class LatexEditor extends Application {
                         currentNode = newItem;
                     }
         });
+    }
+
+	private void buildClipboardMenus(LateXElement elt) {
+		if (!(elt instanceof Title)) {
+			MenuItem copy  = new MenuItem("Copier");
+			MenuItem cut   = new MenuItem("Couper");			
+			MenuItem paste = new MenuItem("Coller");			
+			
+			copy.setOnAction((ActionEvent ev) -> clipBoard = currentNode);
+			cut.setOnAction((ActionEvent ev) -> deleteNode(true));
+			paste.setOnAction((ActionEvent ev) -> {
+				if (clipBoard == null) {
+					//Still need to create my own dialog class...
+				} else {
+					LateXElement clipboardElt = clipBoard.getValue();
+					if (elt.getDepth() < clipboardElt.getDepth())
+						currentNode.getChildren().add(0,clipBoard);
+					else if (elt.getDepth() == clipboardElt.getDepth()) {
+						TreeItem<LateXElement> parent = currentNode.getParent();
+						int                    index  = parent.getChildren().indexOf(currentNode);
+						if (index < parent.getChildren().size() - 1)
+							parent.getChildren().add(index + 1,clipBoard);
+						else
+							parent.getChildren().add(clipBoard);
+					}
+				}
+			});
+			
+			addMenu.getItems().add(copy);
+			addMenu.getItems().add(cut);
+			addMenu.getItems().add(paste);
+		}
+	}
+	
+	private void deleteNode(boolean saveInClipboard) {
+        TreeItem<LateXElement> parent = currentNode.getParent();
+        parent.getChildren().remove(currentNode);
+		clipBoard   = saveInClipboard ? currentNode : clipBoard; 
+		currentNode = parent;
+    }	
+
+    private void buildDeleteMenu(LateXElement elt) {
+        MenuItem delete;
+        if (!(elt instanceof Title)) {
+            addMenu.getItems().add(delete = new MenuItem("Supprimer"));
+            delete.setOnAction((ActionEvent ev) -> deleteNode(false));
+        }
+    }
+    
+    private void buildAddMenus(LateXElement elt) {
+        Menu addChildHead, addChildTail, addSibling = null;
+        Map<Menu, Integer> map = null;
+        
+        //Determination des elements principaux du popup
+        if (elt.getDepth() != LateXElement.DEPTH_MAX) {
+            addMenu.getItems().add(addChildHead = new Menu("Ajouter un fils en tête"));
+            addMenu.getItems().add(addChildTail = new Menu("Ajouter un fils en queue"));
+            map = new HashMap() {
+                {
+                    put(addChildHead, INSERT_HEAD);
+                    put(addChildTail, INSERT_TAIL);
+                }
+            };
+        }
+
+        if (elt.getDepth() != LateXElement.DEPTH_MIN) 
+            addMenu.getItems().add(addSibling = new Menu("Ajouter un frère"));
+
+        //Determination des elements secondaires du popup
+        for (Integer depth : nodesTypesMap.keySet()) {
+            //D'abord les elements fils
+            if (map != null) {
+                map.entrySet().stream().forEach((Map.Entry<Menu, Integer> entry) -> {
+                    Menu addChild = entry.getKey();
+                    if (depth > elt.getDepth()) {
+                        if (addChild.getItems().size() != 0) {
+                            addChild.getItems().add(new SeparatorMenuItem());
+                        }
+
+                        for (final String type : nodesTypesMap.get(depth)) {
+                            final MenuItem item = new MenuItem(type);
+                            addChild.getItems().add(item);
+                            item.setOnAction((ActionEvent t) -> {
+                                addChild(type, entry.getValue());
+                            });
+                        }
+                    }
+                });
+            }
+            //Ensuite les elements freres
+            if (addSibling != null && depth == elt.getDepth()) {
+                for (final String type : nodesTypesMap.get(depth)) {
+                    final MenuItem item = new MenuItem(type);
+                    addSibling.getItems().add(item);
+                    item.setOnAction(event -> addSibling(type));
+                }
+            }
+        }
     }
     
     private void addSibling(String command) {
@@ -266,14 +313,15 @@ public class LatexEditor extends Application {
 				"\\forall","\\partial","\\exists","\\nexists","\\varnothing",
 		 		"\\bigcap","\\bigcup","\\bigint","\\prod","\\sum",
 		 		"\\nabla","\\in","\\notin","\\ni","",
-		 		"^{}","_{}"
+		 		"^{}","_{}","\\leq","\\geq","\\neq",
+				"\\mid\\mid.\\mid\\mid"
 		       };
         String[] ctes = { "\\alpha","\\beta","\\gamma","\\delta","\\epsilon","\\mu","\\nu","\\xi","\\pi","\\rho",
 			   "\\omega","\\Omega","\\theta","\\Delta","\\Psi","\\eta","\\lambda","\\sigma","\\tau",
 			   "\\khi","\\phi","\\infty"
 			 };
         Image img = new Image(LatexEditor.class.getResourceAsStream("/data/Operateurs.png"));
-        IconSelectionView operateurs = new IconSelectionView(img,5,5,operators,"Opérateurs");
+        IconSelectionView operateurs = new IconSelectionView(img,6,5,operators,"Opérateurs");
         operateurs.setActionListener((java.awt.event.ActionEvent e) -> {
             textArea.cut();
             textArea.insertText(textArea.getCaretPosition(),e.getActionCommand());
