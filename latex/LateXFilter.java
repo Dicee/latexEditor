@@ -22,13 +22,16 @@ public class LateXFilter implements TextFilter {
 		tokens.put("î","\\^{i}");
 		tokens.put("ç","\\c{c}");
 		tokens.put("œ","\\oe{}");		
-		tokens.put("ï","\\\"{i}");		
-		tokens.put("%","\\%");		
+		tokens.put("ï","\\\"{i}");				
+		//tokens.put("(?i)([^\\\\]|\\A)%","$1\\\\%");			
 	}
 	
+	@Override
 	public String filter(String s) {
 		for (String key : tokens.keySet()) 
 			s = s.replace(key,tokens.get(key));
+		//The LateX commentaries are a bit particular case
+		s = s.replaceAll("(?i)([^\\\\]|\\A)%","$1\\\\%");
 		return s;
 	}
 }
