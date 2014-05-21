@@ -18,7 +18,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import javax.swing.JOptionPane;
-import javax.swing.tree.TreeNode;
 
 import latex.LateXFilter;
 import latex.LateXMaker;
@@ -163,7 +162,7 @@ public class LatexEditor extends Application {
         tree.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         tree.getSelectionModel().selectedItemProperty().addListener(
                 (ObservableValue<? extends TreeItem<LateXElement>> ov, TreeItem<LateXElement> formerItem, TreeItem<LateXElement> newItem) -> {
-                    if (formerItem != null) {
+                    if (formerItem != null && currentNode != null) {
                         String text = textArea.getText();
                         if (!currentNode.getValue().getText().equals(text))
                             setSaved(false);
@@ -213,7 +212,7 @@ public class LatexEditor extends Application {
         TreeItem<LateXElement> parent = currentNode.getParent();
         parent.getChildren().remove(currentNode);
 		clipBoard   = saveInClipboard ? currentNode : clipBoard; 
-		currentNode = parent;
+		currentNode = null;
     }	
 
     private void buildDeleteMenu(LateXElement elt) {
@@ -318,7 +317,7 @@ public class LatexEditor extends Application {
 		       };
         String[] ctes = { "\\alpha","\\beta","\\gamma","\\delta","\\epsilon","\\mu","\\nu","\\xi","\\pi","\\rho",
 			   "\\omega","\\Omega","\\theta","\\Delta","\\Psi","\\eta","\\lambda","\\sigma","\\tau",
-			   "\\khi","\\phi","\\infty"
+			   "\\chi","\\phi","\\infty"
 			 };
         Image img = new Image(LatexEditor.class.getResourceAsStream("/data/Operateurs.png"));
         IconSelectionView operateurs = new IconSelectionView(img,6,5,operators,"Opérateurs");
@@ -475,6 +474,7 @@ public class LatexEditor extends Application {
             }
             currentFile = file;
             save();
+			
             primaryStage.setTitle(currentFile.getName() + " - LateXEditor 3.0");
             generate.setDisable(false); 
         }       

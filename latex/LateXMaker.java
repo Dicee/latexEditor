@@ -129,8 +129,8 @@ public class LateXMaker {
 		FilterWriter fw = null;
 		try {
 			fw = new FilterWriter(new BufferedWriter(new FileWriter(f)),new LateXFilter());
-			for (LateXElement elt : latexElements)
-				fw.writeln(elt.latexify());
+			for (LateXElement elt : latexElements) 
+				fw.writeln(elt.latexify());			
 			fw.writeln(finishDocument());
 		} finally {
 			if (fw != null) {
