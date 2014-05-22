@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.event.EventHandler;
 
 import javax.swing.JOptionPane;
 
@@ -25,10 +26,6 @@ import latex.elements.*;
 import utils.*;
 import utils.FilterWriter;
 
-/**
- *
- * @author David
- */
 public class LatexEditor extends Application {
     
     private static final int INSERT_HEAD = 0;
@@ -298,15 +295,12 @@ public class LatexEditor extends Application {
     private void setEditZone() {
         info      = new Label("Saisissez votre texte ici");
         textArea  = new TextArea();
-        textArea.setPrefSize(600, 500);
+		textArea.setPrefSize(600, 500);		
         VBox vbox = new VBox(); 
         
         vbox.setPadding(new Insets(5));
         vbox.setSpacing(5);
-        /*ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setContent(textArea);
-        scrollPane.setPrefSize(600, 500);*/
-        vbox.getChildren().addAll(info,textArea);//scrollPane);
+		vbox.getChildren().addAll(info,textArea);
         
         String[] operators = { "\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
 				"\\forall","\\partial","\\exists","\\nexists","\\varnothing",
@@ -336,7 +330,7 @@ public class LatexEditor extends Application {
         box.addSelectionView(alphabetGrec);
                 
         editZone = new HBox(10);       
-        editZone.getChildren().addAll(box,tree, vbox);
+        editZone.getChildren().addAll(box,tree,vbox);
         editZone.setLayoutX(20);
         editZone.setPadding(new Insets(15));      
     }
@@ -514,16 +508,18 @@ public class LatexEditor extends Application {
                 parentNode.getChildren().add(childNode);
             }
         }
+		parentNode.setExpanded(false);
         return parentNode;
     }
     
     public void setElements(ListeNommee<LateXElement> elts) {
-        treeRoot.getChildren().removeAll(treeRoot.getChildren());
+        treeRoot.getChildren().clear();
         tree.getSelectionModel().select(treeRoot);
         treeRoot.setValue(elts.getB().get(0));
         textArea.setText(currentNode.getValue().getText());
         setElements(elts,treeRoot,0,elts.getA().size());
         tree.getSelectionModel().select(treeRoot);
+		treeRoot.setExpanded(false);
         textArea.setDisable(false);
     }
     
