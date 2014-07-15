@@ -33,7 +33,7 @@ public class LatexEditor extends Application {
     
     private final Node rootIcon = 
         new ImageView(new Image(getClass().getResourceAsStream("/data/texIcon.png")));
-    private File currentDir        = null;
+    private File currentDir        = System.getenv("LATEX_HOME") == null ? null : new File(System.getenv("LATEX_HOME"));
     private File currentFile       = null;
     
     private ArrayList<LateXElement> lateXElements = new ArrayList<>();
@@ -87,9 +87,9 @@ public class LatexEditor extends Application {
         ImageView previewIcon = new ImageView(
                 new Image(LatexEditor.class.getResourceAsStream("/data/previewIcon.png")));
         
-        Button tex     = new Button("GÃ©nÃ©rer le fichier LateX",texIcon);
-        Button preview = new Button("PrÃ©visualisation",previewIcon);
-        Button pdf     = new Button("GÃ©nÃ©rer le fichier pdf",pdfIcon);        
+        Button tex     = new Button("Générer le fichier LateX",texIcon);
+        Button preview = new Button("Prévisualisation",previewIcon);
+        Button pdf     = new Button("Générer le fichier pdf",pdfIcon);        
         
         tex.setOnAction(event -> generate());
         preview.setOnAction((ActionEvent event) -> {
@@ -226,9 +226,9 @@ public class LatexEditor extends Application {
         
         //Determination des elements principaux du popup
         if (elt.getDepth() != LateXElement.DEPTH_MAX) {
-            addMenu.getItems().add(addChildHead = new Menu("Ajouter un fils en tÃªte"));
+            addMenu.getItems().add(addChildHead = new Menu("Ajouter un fils en tête"));
             addMenu.getItems().add(addChildTail = new Menu("Ajouter un fils en queue"));
-            map = new HashMap() {
+            map = new HashMap<Menu,Integer>() {
                 {
                     put(addChildHead, INSERT_HEAD);
                     put(addChildTail, INSERT_TAIL);
@@ -237,7 +237,7 @@ public class LatexEditor extends Application {
         }
 
         if (elt.getDepth() != LateXElement.DEPTH_MIN) 
-            addMenu.getItems().add(addSibling = new Menu("Ajouter un frÃ¨re"));
+            addMenu.getItems().add(addSibling = new Menu("Ajouter un frère"));
 
         //Determination des elements secondaires du popup
         for (Integer depth : nodesTypesMap.keySet()) {
@@ -314,7 +314,7 @@ public class LatexEditor extends Application {
 			   "\\chi","\\phi","\\infty"
 			 };
         Image img = new Image(LatexEditor.class.getResourceAsStream("/data/Operateurs.png"));
-        IconSelectionView operateurs = new IconSelectionView(img,6,5,operators,"OpÃ©rateurs");
+        IconSelectionView operateurs = new IconSelectionView(img,6,5,operators,"Opérateurs");
         operateurs.setActionListener((java.awt.event.ActionEvent e) -> {
             textArea.cut();
             textArea.insertText(textArea.getCaretPosition(),e.getActionCommand());
@@ -351,7 +351,7 @@ public class LatexEditor extends Application {
         menuFile.getItems().add(load     = new MenuItem("Charger"));
         menuFile.getItems().add(save     = new MenuItem("Enregistrer"));
         menuFile.getItems().add(saveAs   = new MenuItem("Enregistrer sous"));
-        menuFile.getItems().add(generate = new MenuItem("GÃ©nÃ©rer le code LateX"));
+        menuFile.getItems().add(generate = new MenuItem("Générer le code LateX"));
         menuFile.getItems().add(quit     = new MenuItem("Quitter"));
         
         newDoc  .setAccelerator(new KeyCharacterCombination("N",
@@ -628,7 +628,7 @@ public class LatexEditor extends Application {
             JOptionPane.showMessageDialog(null, "Fichier introuvable.", "Erreur", JOptionPane.ERROR_MESSAGE);
         }catch (IOException e) {
             JOptionPane.showMessageDialog(null, "Une erreur est survenue lors du chargement du fichier.\nVeuillez "
-                    + "vÃ©rifier que sa syntaxe est conforme.",
+                    + "vérifier que sa syntaxe est conforme.",
                     "Erreur", JOptionPane.ERROR_MESSAGE);
         }
      }
@@ -650,15 +650,15 @@ public class LatexEditor extends Application {
     static {
         helpers = new HashMap<>();
         helpers.put("Titre", "Saisissez ici le titre du document et le nom de l'auteur "
-                + "sÃ©parÃ©s par un ;");
+                + "séparés par un ;");
         helpers.put("Chapitre", "Saisissez le titre du chapitre ici");
         helpers.put("Section", "Saisissez le titre de la section ici");
         helpers.put("Sous-section", "Saisissez le titre de la sous-section ici");
         helpers.put("Sous-sous section", "Saisissez le titre de la sous-sous section ici");
         helpers.put("Paragraphe", "Saisissez le contenu du paragraphe ici");
-        helpers.put("Liste", "Saisissez ici les items de la liste sÃ©parÃ©s par des ;");
-        helpers.put("Inclusion d'image", "Saisissez ici l'URL, la lÃ©gende de la figure et son"
-                + " rapport d'Ã©chelle sÃ©parÃ©s par des ;");
+        helpers.put("Liste", "Saisissez ici les items de la liste séparés par des ;");
+        helpers.put("Inclusion d'image", "Saisissez ici l'URL, la légende de la figure et son"
+                + " rapport d'échelle séparés par des ;");
         helpers.put("Code", "Saisissez votre code ici");
         helpers.put("Code LateX", "Saisissez votre code ici");
     }
