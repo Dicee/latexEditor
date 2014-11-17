@@ -23,7 +23,7 @@ public abstract class LateXElement implements Textifiable {
 	public abstract String latexify();
 	
 	public String textify() {
-		return getName() + " #\n" + getText() + "\n#"; 
+		return getName() + " ##\n" + getText() + "\n##"; 
 	}
 	
 	public String getName() {
@@ -39,7 +39,6 @@ public abstract class LateXElement implements Textifiable {
 	}
 	
 	public String toString() {
-		//return getText();
 		return name;
 	}
 	

@@ -25,6 +25,7 @@ import latex.LateXMaker;
 import latex.elements.*;
 import utils.*;
 import utils.FilterWriter;
+import static javafx.scene.input.KeyCharacterCombination.*;
 
 public class LatexEditor extends Application {
     
@@ -34,6 +35,9 @@ public class LatexEditor extends Application {
     private final Node rootIcon = 
         new ImageView(new Image(getClass().getResourceAsStream("/data/texIcon.png")));
     private File currentDir        = System.getenv("LATEX_HOME") == null ? null : new File(System.getenv("LATEX_HOME"));
+    static {
+    	System.out.println(System.getenv("LATEX_HOME"));
+    }
     private File currentFile       = null;
     
     private ArrayList<LateXElement> lateXElements = new ArrayList<>();
@@ -71,7 +75,7 @@ public class LatexEditor extends Application {
         
         VBox header = setHeader();
         root.getChildren().addAll(header,editZone);
-        
+		
         Scene scene = new Scene(root, 1100, 600);
         primaryStage.setTitle("LateX Editor 3.0");
         primaryStage.setScene(scene);
@@ -87,9 +91,9 @@ public class LatexEditor extends Application {
         ImageView previewIcon = new ImageView(
                 new Image(LatexEditor.class.getResourceAsStream("/data/previewIcon.png")));
         
-        Button tex     = new Button("GÈnÈrer le fichier LateX",texIcon);
-        Button preview = new Button("PrÈvisualisation",previewIcon);
-        Button pdf     = new Button("GÈnÈrer le fichier pdf",pdfIcon);        
+        Button tex     = new Button("G√©n√©rer le fichier LateX",texIcon);
+        Button preview = new Button("Pr√©visualisation",previewIcon);
+        Button pdf     = new Button("G√©n√©rer le fichier pdf",pdfIcon);        
         
         tex.setOnAction(event -> generate());
         preview.setOnAction((ActionEvent event) -> {
@@ -226,9 +230,9 @@ public class LatexEditor extends Application {
         
         //Determination des elements principaux du popup
         if (elt.getDepth() != LateXElement.DEPTH_MAX) {
-            addMenu.getItems().add(addChildHead = new Menu("Ajouter un fils en tÍte"));
+            addMenu.getItems().add(addChildHead = new Menu("Ajouter un fils en t√™te"));
             addMenu.getItems().add(addChildTail = new Menu("Ajouter un fils en queue"));
-            map = new HashMap<Menu,Integer>() {
+            map = new HashMap() {
                 {
                     put(addChildHead, INSERT_HEAD);
                     put(addChildTail, INSERT_TAIL);
@@ -237,7 +241,7 @@ public class LatexEditor extends Application {
         }
 
         if (elt.getDepth() != LateXElement.DEPTH_MIN) 
-            addMenu.getItems().add(addSibling = new Menu("Ajouter un frËre"));
+            addMenu.getItems().add(addSibling = new Menu("Ajouter un fr√®re"));
 
         //Determination des elements secondaires du popup
         for (Integer depth : nodesTypesMap.keySet()) {
@@ -314,7 +318,7 @@ public class LatexEditor extends Application {
 			   "\\chi","\\phi","\\infty"
 			 };
         Image img = new Image(LatexEditor.class.getResourceAsStream("/data/Operateurs.png"));
-        IconSelectionView operateurs = new IconSelectionView(img,6,5,operators,"OpÈrateurs");
+        IconSelectionView operateurs = new IconSelectionView(img,6,5,operators,"Op√©rateurs");
         operateurs.setActionListener((java.awt.event.ActionEvent e) -> {
             textArea.cut();
             textArea.insertText(textArea.getCaretPosition(),e.getActionCommand());
@@ -336,60 +340,35 @@ public class LatexEditor extends Application {
     }
 
     private void setMenuBar() {
-        menuBar       = new MenuBar();
-        Menu menuFile = new Menu("Fichier");
-        Menu menuEdit = new Menu("Editer");
-        Menu menuHelp = new Menu("Aide");
+        menuBar          = new MenuBar();
+        Menu menuFile    = new Menu("Fichier");
+        Menu menuEdit    = new Menu("Editer");
+        Menu menuOptions = new Menu("Options");
         
-        MenuItem newDoc;
-        MenuItem save;
-        MenuItem saveAs;
-        MenuItem load;
-        MenuItem quit;
+        MenuItem newDoc  = new MenuItem("Nouveau document"     );
+        MenuItem save    = new MenuItem("Enregistrer"          );
+        MenuItem saveAs  = new MenuItem("Enregistrer sous"     );
+        MenuItem load    = new MenuItem("Charger"              );
+        MenuItem quit    = new MenuItem("Quitter"              );
+        generate         = new MenuItem("G√©n√©rer le code LateX");
+        menuFile.getItems().addAll(newDoc,load,save,saveAs,generate,quit);
         
-        menuFile.getItems().add(newDoc   = new MenuItem("Nouveau document"));
-        menuFile.getItems().add(load     = new MenuItem("Charger"));
-        menuFile.getItems().add(save     = new MenuItem("Enregistrer"));
-        menuFile.getItems().add(saveAs   = new MenuItem("Enregistrer sous"));
-        menuFile.getItems().add(generate = new MenuItem("GÈnÈrer le code LateX"));
-        menuFile.getItems().add(quit     = new MenuItem("Quitter"));
-        
-        newDoc  .setAccelerator(new KeyCharacterCombination("N",
-                                KeyCombination.CONTROL_DOWN));
-        save    .setAccelerator(new KeyCharacterCombination("S",
-                                KeyCharacterCombination.CONTROL_DOWN));
-        saveAs  .setAccelerator(new KeyCharacterCombination("S",
-                                KeyCharacterCombination.CONTROL_DOWN,
-                                KeyCharacterCombination.ALT_DOWN));
-        load    .setAccelerator(new KeyCharacterCombination("L",
-                                KeyCharacterCombination.CONTROL_DOWN));
-        generate.setAccelerator(new KeyCharacterCombination("G",
-                                KeyCharacterCombination.CONTROL_DOWN));
-        quit    .setAccelerator(new KeyCharacterCombination("Q",
-                                KeyCharacterCombination.CONTROL_DOWN));
+        newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
+        save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
+        saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
+        load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
+        generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
+        quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
         generate.setDisable(true);
         
-        newDoc.setOnAction((ActionEvent ev) -> {
-            createDocument();
-            lateXElements = new ArrayList<>();
-        });
-        save.setOnAction((ActionEvent ev) -> {
-            save();
-        });
-        saveAs.setOnAction((ActionEvent ev) -> {
-            createDocument();
-            save();
-        });
-        load.setOnAction((ActionEvent ev) -> {
-            load();
-        });
-        generate.setOnAction((ActionEvent ev) -> {
-            generate();
-        });
-        quit.setOnAction((ActionEvent ev) -> {
-            System.exit(0);
-        });
-        menuBar.getMenus().addAll(menuFile,menuEdit,menuHelp);
+        newDoc  .setOnAction(ev -> { createDocument(); lateXElements = new ArrayList<>(); });
+        save    .setOnAction(ev -> save());
+        saveAs  .setOnAction(ev -> { createDocument(); save(); });
+        load    .setOnAction(ev -> load());
+        generate.setOnAction(ev -> generate());
+        quit    .setOnAction(ev -> System.exit(0));
+        
+        menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions);
         
         Menu chooseStyle = new Menu("Apparence");
         MenuItem modena  = new MenuItem("Modena");        
@@ -399,7 +378,7 @@ public class LatexEditor extends Application {
         caspian.setOnAction((ActionEvent ev) -> setUserAgentStylesheet(STYLESHEET_CASPIAN));
         
         chooseStyle.getItems().addAll(modena,caspian);
-        menuHelp.getItems().add(chooseStyle);
+        menuOptions.getItems().add(chooseStyle);
     }
     
     private void save() {
@@ -451,21 +430,19 @@ public class LatexEditor extends Application {
     private void createDocument() {
         FileChooser f = new FileChooser();
         f.setTitle("Nouveau document");
-        f.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
+        f.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
 
-        if (currentDir != null) {
+        if (currentDir != null) 
             f.setInitialDirectory(currentDir);
-        }
         
         File file = f.showSaveDialog(primaryStage);       
         if (file != null) {
             currentDir = file.getParentFile();
             String s = file.getPath();
             int i = s.indexOf(".");
-            if (i == -1 || !s.substring(i).equals(".javatex")) {
+            if (i == -1 || !s.substring(i).equals(".javatex")) 
                 file = new File(s + ".javatex");
-            }
+            
             currentFile = file;
             save();
 			
@@ -475,8 +452,8 @@ public class LatexEditor extends Application {
     }
     
     private ListeNommee<LateXElement> getElements(TreeItem<LateXElement> node, String level) {
-        ArrayList<LateXElement> elements = new ArrayList<>();
-        ArrayList<String> names = new ArrayList<>();
+        List<LateXElement> elements = new LinkedList<>();
+        List<String>       names    = new LinkedList<>();
         elements.add(node.getValue());
         names.add(level);
         if (!node.isLeaf()) {
@@ -490,7 +467,7 @@ public class LatexEditor extends Application {
     }
     
     public ListeNommee<LateXElement> getElements() {
-	return getElements(treeRoot,"");
+    	return getElements(treeRoot,"");
     }
     
     private TreeItem<LateXElement> setElements(ListeNommee<LateXElement> elts,
@@ -594,28 +571,28 @@ public class LatexEditor extends Application {
 				
                 currentFile = file;
 
-                TokenReader tr              = new TokenReader(new FileReader(file),"#");
+                TokenReader tr              = new TokenReader(new FileReader(file),"##");
                 List<String> buffer         = new ArrayList<>();
                 List<LateXElement> elements = new ArrayList<>();
                 List<String> names          = new ArrayList<>();
 
                 while ((s = tr.readToNextToken()) != null) 
                     buffer.add(s.trim());
-
+                
                 Iterator<String> it = buffer.iterator();
                 while (it.hasNext()) {
                     //Si le fichier est bien forme on devrait toujours pouvoir faire deux next() de suite
                     //des lors qu'on peut en faire un !
-                    //createLateXElement(it.next(),it.next(),lateXElements);
                     String declaration = it.next();
-                    String content = it.next();
-                    i = declaration.lastIndexOf('>');
+                    String content     = it.next();
+                    i                  = declaration.lastIndexOf('>');
                     String name = i == -1 ? "" : declaration.substring(0, i + 1);
                     String type = i == -1 ? declaration : declaration.substring(i + 1).trim();
 
                     names.add(name);
                     elements.add(LateXElement.newLateXElement(type,content,lm));
                 }
+                
                 //Si apres tout cela il n'y a aucune erreur, on peut enfin ecraser les precedents buffers
                 tr.close();
                 setElements(new ListeNommee<>(names, elements));
@@ -628,7 +605,7 @@ public class LatexEditor extends Application {
             JOptionPane.showMessageDialog(null, "Fichier introuvable.", "Erreur", JOptionPane.ERROR_MESSAGE);
         }catch (IOException e) {
             JOptionPane.showMessageDialog(null, "Une erreur est survenue lors du chargement du fichier.\nVeuillez "
-                    + "vÈrifier que sa syntaxe est conforme.",
+                    + "v√©rifier que sa syntaxe est conforme.",
                     "Erreur", JOptionPane.ERROR_MESSAGE);
         }
      }
@@ -650,16 +627,16 @@ public class LatexEditor extends Application {
     static {
         helpers = new HashMap<>();
         helpers.put("Titre", "Saisissez ici le titre du document et le nom de l'auteur "
-                + "sÈparÈs par un ;");
+                + "s√©par√©s par un ;");
         helpers.put("Chapitre", "Saisissez le titre du chapitre ici");
         helpers.put("Section", "Saisissez le titre de la section ici");
         helpers.put("Sous-section", "Saisissez le titre de la sous-section ici");
         helpers.put("Sous-sous section", "Saisissez le titre de la sous-sous section ici");
         helpers.put("Paragraphe", "Saisissez le contenu du paragraphe ici");
-        helpers.put("Liste", "Saisissez ici les items de la liste sÈparÈs par des ;");
-        helpers.put("Inclusion d'image", "Saisissez ici l'URL, la lÈgende de la figure et son"
-                + " rapport d'Èchelle sÈparÈs par des ;");
-        helpers.put("Code", "Saisissez votre code ici");
+        helpers.put("Liste", "Saisissez ici les items de la liste s√©par√©s par des ;");
+        helpers.put("Inclusion d'image", "Saisissez ici l'URL, la l√©gende de la figure et son"
+                + " rapport d'√©chelle s√©par√©s par des ;");
+        helpers.put("Code", "Saisissez le langage utilis√© suivi du code, s√©par√© par un saut de ligne");
         helpers.put("Code LateX", "Saisissez votre code ici");
     }
     

@@ -1,0 +1,19 @@
+\definecolor{purple}{rgb}{0.5,0,0.41}
+\geometry{top=3cm, bottom=3cm, left=2.6cm , right=2.6cm}
+\lstset{
+language=java,
+basicstyle=\normalsize,
+upquote=true,
+aboveskip={1.5\baselineskip},
+columns=fullflexible,
+showstringspaces=false,
+extendedchars=true,
+breaklines=true,
+showtabs=false,
+showspaces=false,
+tabsize=4,
+showstringspaces=false,
+identifierstyle=\ttfamily,
+keywordstyle=\bf\color[rgb]{0.5,0,0.41},
+commentstyle=\color[rgb]{0.25,0.37,0.75},
+stringstyle=\color[rgb]{0.16,0,1},}

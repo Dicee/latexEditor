@@ -4,28 +4,33 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class TokenReader extends BufferedReader {
 	
-	private String tokens;
+	private List<Character> token;
 
-	public TokenReader(Reader reader, String tokens) throws FileNotFoundException {
+	public TokenReader(Reader reader, String token) throws FileNotFoundException {
 		super(reader);
-		this.tokens = tokens;
+		this.token = token.chars().mapToObj(i -> (char) i).collect(Collectors.toList());
 	}
 	
 	public String readToNextToken() throws IOException {
-		String result = "";
-		int n;
-		while ((n =  read()) != -1 && !isToken((char) n)) 
-			result += (char) n;
-		return n == -1 ? null : result;
-	}
-
-	private boolean isToken(char c) {
-		int l = tokens.length();
-		for (int i=0 ; i<l ; i++)
-			if (tokens.charAt(i) == c) return true;
-		return false;
+		StringBuilder    result = new StringBuilder();
+		Deque<Character> delim  = new LinkedList<>();
+		int              len    = token.size();
+		
+		int c;
+		while ((c = read()) != -1 && !delim.equals(token)) {
+			if (delim.size() >= len) 
+				delim.pollFirst();
+			char ch = (char) c;
+			result.append(ch);
+			delim.addLast(ch);
+		}
+		return result.length() == 0 ? null : result.substring(0,result.length() - len);
 	}
 }

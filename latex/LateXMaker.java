@@ -23,40 +23,14 @@ public class LateXMaker {
 	}
 	
 	 private String beginDocument() {
-		 String result = "";		
-		 result += "\\usepackage[T1]{fontenc}\n";
-		 result += "\\usepackage[francais]{babel}\n";
-		 result += "\\usepackage{color}\n";
-		 result += "\\usepackage{graphicx}\n";
-		 result += "\\usepackage{geometry}\n";
-		 result += "\\usepackage{listings}\n";
-		 result += "\\usepackage{textcomp}\n";
-		 result += "\\usepackage{amssymb}\n";
-		 result += "\\usepackage{amsmath}\n";
-		 result += "\\definecolor{purple}{rgb}{0.5,0,0.41}";
-		 result += "\\geometry{top=3cm, bottom=3cm, left=2.6cm , right=2.6cm}\n";
-		 result += "\\lstset{\n";
-		 result += "language=Java,\n";
-		 result += "basicstyle=\\normalsize,\n";
-		 result += "upquote=true,\n";
-		 result += "aboveskip={1.5\\baselineskip},\n";
-		 result += "columns=fullflexible,\n";
-		 result += "showstringspaces=false,\n";
-		 result += "extendedchars=true,\n";
-		 result += "breaklines=true,\n";
-		 result += "showtabs=false,\n";
-		 result += "showspaces=false,\n";
-		 result += "tabsize=4,\n";
-		 result += "showstringspaces=false,\n";
-		 result += "identifierstyle=\\ttfamily,\n";
-		 result += " keywordstyle=\\bf\\color[rgb]{0.5,0,0.41},\n";
-		 result += "commentstyle=\\color[rgb]{0.25,0.37,0.75},\n";
-		 result += "stringstyle=\\color[rgb]{0.16,0,1},}\n";
-		 result += "\\begin{document}\n";			
-		 result += "\\renewcommand{\\contentsname}{Sommaire}\n";
-		 result += "\\renewcommand{\\chaptername}{" + parameters.getChapterName() + "}\n";
-		 result += "\\renewcommand{\\thechapter}{\\Roman{chapter}\n}\n";		
-		 return result;
+		 StringBuilder sb = new StringBuilder();		
+		 parameters.mkString(sb); 
+		 
+		 sb.append("\\begin{document}\n");			
+		 sb.append("\\renewcommand{\\contentsname}{Sommaire}\n");
+		 sb.append("\\renewcommand{\\chaptername}{" + parameters.getChapterName() + "}\n");
+		 sb.append("\\renewcommand{\\thechapter}{\\Roman{chapter}}\n");		
+		 return sb.toString();
 	}
 		
 	public String makeTitlePage(String title, String author) {
@@ -65,6 +39,8 @@ public class LateXMaker {
 		result += "\\huge{\\title{" + title + "}}\n";
 		result += "\\large{\\author{" + author + "}}\n";
 		result += beginDocument();
+		
+		
 		result += "\\maketitle\n";
 		result += "\\tableofcontents\n";
 		return result;
@@ -77,15 +53,15 @@ public class LateXMaker {
 	}
 	
 	public String makeParagraph(String text) {
-		return "\\paragraph{\\hspace{" + parameters.getAlinea() + "}\\textnormal{" + text +"}}\n";
+		return "\\paragraph{}\n\\hspace{" + parameters.getAlinea() + "}\\textnormal{" + text + "}\n";
 	}
 	
 	private String makeBalise(String name, String content) {		
 		return "\\" + name + "{" + content +"}\n";	
 	}
 	
-	public String makeCodeListing(String text) {
-		return "\\begin{lstlisting}\n" + text + "\n\\end{lstlisting}";
+	public String makeCodeListing(String language, String text) {
+		return String.format("\\begin{lstlisting}[language=%s]\n%s\n\\end{lstlisting}",language,text.trim());
 	}
 	
 	public String makeChapter(String content) {

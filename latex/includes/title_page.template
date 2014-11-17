@@ -1,0 +1,52 @@
+\newcommand{\reportsubject}{d\'{e}veloppement d'une plateforme offrant la possibilit\'{e} de commander des biscuits
+personnalis\'{e}s}
+\newcommand{\reporttitle}{Rapport de stage}
+\newcommand{\reportauthor}{David Courtinot}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\begin{titlepage}
+
+\begin{center}
+
+\begin{minipage}[t]{0.48\textwidth}
+  \begin{flushleft}
+    \includegraphics [width=30mm]{INPT-N7.png} \\[0.5cm]
+    \begin{spacing}{1.5}
+      \textsc{\LARGE INPT - ENSEEIHT}
+    \end{spacing}
+  \end{flushleft}
+\end{minipage}
+\begin{minipage}[t]{0.48\textwidth}
+  \begin{flushright}
+    \includegraphics [width=30mm]{poult.png} \\[0.5cm]
+    \textsc{\LARGE Groupe Poult}
+  \end{flushright}
+\end{minipage} \\[1.5cm]
+
+\textsc{\Large \reportsubject}\\[0.5cm]
+\HRule \\[0.4cm]
+{\huge \bfseries \reporttitle}\\[0.4cm]
+\HRule \\[1.5cm]
+
+\begin{minipage}[t]{0.3\textwidth}
+  \begin{flushleft} \large
+    \emph{Auteur :}\\
+    \reportauthor
+  \end{flushleft}
+\end{minipage}
+\begin{minipage}[t]{0.6\textwidth}
+  \begin{flushright} \large
+    \emph{Responsables :} \\
+    ---  Tuteur \'{e}cole  --- \\
+    M. Simone \textsc{Gasparini} \\
+    ---  Tuteur entreprise  --- \\
+    M. Emmanuel \textsc{Salomon}
+  \end{flushright}
+\end{minipage}
+
+\vfill
+
+{\large 18 Juin 2014 - 14 Ao\^{u}t 2014}
+
+\end{center}
+
+\end{titlepage}
