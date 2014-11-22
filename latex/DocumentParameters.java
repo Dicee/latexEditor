@@ -70,4 +70,8 @@ public class DocumentParameters {
 		}		
 		return sb;
 	}
+
+    public Set<String> getPackages() {
+        return packages;
+    }
 }
