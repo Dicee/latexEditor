@@ -2,10 +2,10 @@ package latex.elements;
 
 import latex.LateXMaker;
 
-public class Inclusion extends LateXElement {
+public class Inclusion extends AbstractLateXElement {
 
 	public Inclusion(String content, LateXMaker lm) {
-		super(content, lm,"Inclusion d'image",5);
+		super(content, lm,"image",5);
 	}
 
 	public String latexify() {
@@ -19,7 +19,7 @@ public class Inclusion extends LateXElement {
 		}
 	}
 	
-	public LateXElement clone() {		
+	public AbstractLateXElement clone() {		
 		return new Inclusion(getText(),lm);
 	}
 }

@@ -3,10 +3,10 @@ package guifx;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javafx.event.EventHandler;
+
+import javafx.beans.property.StringProperty;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.shape.Rectangle;
 
 /**
@@ -19,9 +19,9 @@ public class IconSelectionView extends ImageView {
     private final double  width, height;
     private String[] commands;
     private ActionListener listener;
-    private String name;
+    private StringProperty name;
     
-    public IconSelectionView(Image img, int rows, int cols, String[] commandsArr, String name) {
+    public IconSelectionView(Image img, int rows, int cols, String[] commandsArr, StringProperty name) {
         super(img);
         Rectangle rect = new Rectangle(width = img.getWidth(),height = img.getHeight());
         setClip(rect);
@@ -29,9 +29,7 @@ public class IconSelectionView extends ImageView {
         this.cols     = cols;
         this.commands = commandsArr;
         this.name     = name;
-        setOnMouseClicked((MouseEvent ev) -> {
-                 fireListener(commands[pixToVect(new Point((int) ev.getX(),(int) ev.getY()))]);
-         });
+        setOnMouseClicked(ev -> fireListener(commands[pixToVect(new Point((int) ev.getX(),(int) ev.getY()))]));
     }
     
     public void setActionListener(ActionListener al) {
@@ -59,7 +57,7 @@ public class IconSelectionView extends ImageView {
         return new Point((int) (p.getY()) / blockHeight, (int) p.getX() / blockWidth);
     }
     
-    public String getName() {
+    public StringProperty nameProperty() {
         return name;
     }
 }

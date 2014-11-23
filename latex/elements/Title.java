@@ -2,10 +2,10 @@ package latex.elements;
 
 import latex.LateXMaker;
 
-public class Title extends LateXElement {
+public class Title extends AbstractLateXElement {
 
 	public Title(String content, LateXMaker lm) {
-		super(content, lm,"Titre",0);
+		super(content, lm,"title",0);
 	}
 
 	public String latexify() {
@@ -19,7 +19,7 @@ public class Title extends LateXElement {
 		}
 	}
 	
-	public LateXElement clone() {		
+	public AbstractLateXElement clone() {		
 		return new Title(getText(),lm);
 	}
 }

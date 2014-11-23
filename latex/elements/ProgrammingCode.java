@@ -2,10 +2,10 @@ package latex.elements;
 
 import latex.LateXMaker;
 
-public class ProgrammingCode extends LateXElement {
+public class ProgrammingCode extends AbstractLateXElement {
 	
 	public ProgrammingCode(String content, LateXMaker lm) {
-		super(content,lm,"Code",5);
+		super(content,lm,"code",5);
 	}
 
 	public String latexify() {
@@ -13,7 +13,7 @@ public class ProgrammingCode extends LateXElement {
 		return lm.makeCodeListing(content.substring(0,i),content.substring(i));
 	}
 
-	public LateXElement clone() {
+	public AbstractLateXElement clone() {
 		return new ProgrammingCode(getText(),lm);
 	}
 }

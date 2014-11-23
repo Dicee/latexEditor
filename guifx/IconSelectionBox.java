@@ -22,6 +22,8 @@ public class IconSelectionBox extends VBox {
     }
     
     public void addSelectionView(IconSelectionView view) { 
-       getChildren().addAll(new Label(view.getName()),view);
+    	Label label = new Label();
+    	label.textProperty().bind(view.nameProperty());
+    	getChildren().addAll(label,view);
     }
 }

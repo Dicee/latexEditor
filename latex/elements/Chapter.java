@@ -2,17 +2,17 @@ package latex.elements;
 
 import latex.LateXMaker;
 
-public class Chapter extends LateXElement {
+public class Chapter extends AbstractLateXElement {
 
 	public Chapter(String content, LateXMaker lm) {
-		super(content, lm,"Chapitre",1);
+		super(content,lm,"chapter",1);
 	}
 
 	public String latexify() {
 		return lm.makeChapter(content);
 	}
 
-	public LateXElement clone() {		
+	public AbstractLateXElement clone() {		
 		return new Chapter(getText(),lm);
 	}
 }

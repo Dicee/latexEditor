@@ -2,17 +2,17 @@ package latex.elements;
 
 import latex.LateXMaker;
 
-public class Subsection extends LateXElement {
+public class Subsection extends AbstractLateXElement {
 
 	public Subsection(String content, LateXMaker lm) {
-		super(content, lm,"Sous-section",3);
+		super(content, lm,"subsection",3);
 	}
 
 	public String latexify() {
 		return lm.makeSubsection(content);
 	}
 	
-	public LateXElement clone() {		
+	public AbstractLateXElement clone() {		
 		return new Subsection(getText(),lm);
 	}
 }

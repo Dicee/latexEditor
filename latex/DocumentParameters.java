@@ -1,15 +1,22 @@
 package latex;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import scala.collection.mutable.StringBuilder;
+import scala.io.Codec;
+import scala.io.Source;
 
 public class DocumentParameters {
-	private String documentClass, alinea, chapterName;
-	private Set<String> includes = new HashSet<>();
-	private Set<String> packages = new HashSet<>();
+	private String					documentClass, alinea, chapterName;
+	private Set<String>				includes			= new HashSet<>();
+	private Set<Package>			packages			= new HashSet<>();
+	private ObservableList<Package>	packagesView		= FXCollections.observableArrayList();
+	private ObservableList<String>	includesView		= FXCollections.observableArrayList();
 	
 	private static final String[] DEFAULT_PACKAGES = { 
 		"color","graphicx","geometry","listings","textcomp","amssymb","amsmath","setspace","eurosym","gensymb" 
@@ -20,14 +27,102 @@ public class DocumentParameters {
 		this.documentClass = docClass;
 		this.alinea        = alinea;
 		this.chapterName   = chapterName;
-		addPackage("T1","fontenc");
-		addPackage("francais","babel");
+		addPackage("fontenc","T1");
+		addPackage("babel","francais");
 		include(DEFAULT_INCLUDES);
 		addPackages(DEFAULT_PACKAGES);
 	}
 	
 	public DocumentParameters() {
 		this("report","8mm","Chapitre");
+	}
+	
+	public void include(String name) {
+		if (includes.add(name)) 
+			includesView.add(name);
+	}
+	
+	public void include(String... names) {
+		for (String name : names)
+			include(name);
+	}
+	
+	public void removeInclude(String name) {
+		includes.remove(name);
+		includesView.remove(name);
+	}
+		
+	public void addPackage(String name, String option) {
+		if (!name.isEmpty()) 
+			packages.add(new Package(name,option));
+	}
+	
+	public void addPackage(String name) {
+		if (!name.isEmpty()) {
+			Package p = new Package("");
+			p.setText(name);
+
+			if (packages.contains(p)) {
+				packages.remove(p);
+				packagesView.remove(p);
+			}
+
+			packages.add(p);
+			packagesView.add(p);
+			FXCollections.sort(packagesView);
+		}
+	}
+	
+	public void addPackages(String... names) {
+		for (String name : names)
+			addPackage(name);
+	}
+	
+	public void removePackage(String name) {
+		packages    .remove(new Package(name));
+		packagesView.remove(new Package(name));
+	}
+	
+	public void clear() {
+		packages    .clear();
+		packagesView.clear();
+		includes    .clear();
+		includesView.clear();
+	}
+	
+	public StringBuilder latexify(StringBuilder sb) {
+		return mkString("","","",
+			Package::latexify,
+			name -> Source.fromURL(DocumentParameters.class.getResource("includes/" + name),Codec.UTF8()).addString(sb),
+			sb);
+	}
+	
+	public StringBuilder textify(StringBuilder sb) {
+		return mkString(" packages ##\n","##\n commands ##\n","##\n",
+			Package::toString,
+			name -> sb.append(name),
+			sb);
+	}
+	
+	private StringBuilder mkString(String before, String sep, String after, Function<Package,String> packageConverter, 
+			Consumer<String> commandConverter, StringBuilder sb) {
+		FXCollections.sort(packagesView);
+		
+		sb.append(before);
+		packages.stream().forEach(p -> sb.append(packageConverter.apply(p) + "\n"));
+		sb.append(sep);
+		
+		String name = null;
+		try {
+			for (String path : includes) {
+				name = path;
+				commandConverter.accept(name);
+			}
+		} catch (Throwable t) {
+			throw new Error(String.format("Package %s does not exist",name));
+		}		
+		sb.append(after);
+		return sb;
 	}
 
 	public String getDocumentClass() {
@@ -42,36 +137,25 @@ public class DocumentParameters {
 		return chapterName;
 	}
 	
-	public void include(String... names) {
-		for (String name : names)
-			includes.add(name);
-	}
-		
-	public void addPackage(String option, String name) {
-		packages.add(String.format("\\usepackage[%s]{%s}\n",option,name));
-	}
-	
-	public void addPackages(String... names) {
-		for (String name : names)
-			packages.add(String.format("\\usepackage{%s}\n",name));
-	}
-	
-	public StringBuilder mkString(StringBuilder sb) {
-		String name = null;
-		packages.stream().forEach(p -> sb.append(p));
-		try {
-			for (String path : includes) {
-				name = path;
-				sb.append(Files.readAllLines(Paths.get(DocumentParameters.class.getResource("includes/" + path).toURI())).stream()
-					.collect(Collectors.joining("\n")));
-			}
-		} catch (Throwable t) {
-			throw new Error(String.format("Package %s does not exist",name));
-		}		
-		return sb;
-	}
-
-    public Set<String> getPackages() {
-        return packages;
+	/**
+	 * Returns a view of the selected packages. This view has a an uni-directional 
+	 * binding with the actual collection of packages. Modifications on the view 
+	 * will have no impact on the backing collection, use addPackage and
+	 * addPackages methods in order to add new packages.
+	 * @return a view of the selected packages
+	 */
+    public ObservableList<Package> getPackagesView() {
+       return packagesView;
+    }
+    
+    /**
+	 * Returns a view of the selected customized commands. This view has a an
+	 * uni-directional binding with the actual collection of packages. 
+	 * Modifications on the view will have no impact on the backing collection, 
+	 * use addPackage and addPackages methods in order to add new packages.
+	 * @return a view of the selected packages
+	 */
+    public ObservableList<String> getIncludesView() {
+       return includesView;
     }
 }

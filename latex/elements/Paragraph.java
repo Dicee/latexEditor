@@ -2,17 +2,17 @@ package latex.elements;
 
 import latex.LateXMaker;
 
-public class Paragraph extends LateXElement {
+public class Paragraph extends AbstractLateXElement {
 
 	public Paragraph(String content, LateXMaker lm) {
-		super(content, lm,"Paragraphe",5);
+		super(content, lm,"paragraph",5);
 	}
 
 	public String latexify() {
 		return lm.makeParagraph(content);
 	}
 	
-	public LateXElement clone() {		
+	public AbstractLateXElement clone() {		
 		return new Paragraph(getText(),lm);
 	}
 }

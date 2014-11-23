@@ -8,6 +8,7 @@ import java.util.List;
 
 import latex.elements.LateXElement;
 import utils.FilterWriter;
+import scala.collection.mutable.StringBuilder;
 
 public class LateXMaker {
 	private int chapterCount = 0, figureCount = 1;	
@@ -24,7 +25,7 @@ public class LateXMaker {
 	
 	 private String beginDocument() {
 		 StringBuilder sb = new StringBuilder();		
-		 parameters.mkString(sb); 
+		 parameters.latexify(sb); 
 		 
 		 sb.append("\\begin{document}\n");			
 		 sb.append("\\renewcommand{\\contentsname}{Sommaire}\n");
@@ -39,7 +40,6 @@ public class LateXMaker {
 		result += "\\huge{\\title{" + title + "}}\n";
 		result += "\\large{\\author{" + author + "}}\n";
 		result += beginDocument();
-		
 		
 		result += "\\maketitle\n";
 		result += "\\tableofcontents\n";
@@ -99,12 +99,18 @@ public class LateXMaker {
 		return "\\end{document}";
 	}
 
-	public void save(File f, List<LateXElement> latexElements) throws IOException {
+	public void makeDocument(File f, List<LateXElement> latexElements) throws IOException {
 		chapterCount = 0;
 		figureCount  = 1;
+		System.out.println("coucou");
+		
 		FilterWriter fw = null;
 		try {
 			fw = new FilterWriter(new BufferedWriter(new FileWriter(f)),new LateXFilter());
+			fw.write(parameters.latexify(new StringBuilder()).toString());
+			
+			System.out.println(parameters.textify(new StringBuilder()).toString());
+			
 			for (LateXElement elt : latexElements) 
 				fw.writeln(elt.latexify());			
 			fw.writeln(finishDocument());
@@ -127,5 +133,9 @@ public class LateXMaker {
 
 	public String makeSubSubSection(String content) {
 		return makeBalise("subsubsection",content);
+	}
+	
+	public DocumentParameters getParameters() {
+		return parameters;
 	}
 }
