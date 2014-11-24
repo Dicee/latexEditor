@@ -3,6 +3,7 @@ package guifx;
 import static guifx.utils.Settings.strings;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
+import guifx.utils.CodeEditor;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
 
@@ -19,6 +20,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javafx.application.Application;
 import javafx.beans.value.ObservableValue;
@@ -27,8 +30,10 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
@@ -38,8 +43,8 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TitledPane;
 import javafx.scene.control.ToolBar;
-import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
@@ -48,10 +53,14 @@ import javafx.scene.input.KeyCharacterCombination;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 import javafx.util.Pair;
 
 import javax.swing.JOptionPane;
@@ -61,38 +70,49 @@ import latex.LateXMaker;
 import latex.elements.LateXElement;
 import latex.elements.Title;
 import scala.collection.mutable.StringBuilder;
+import scala.io.Codec;
+import scala.io.Source;
 import utils.FilterWriter;
+import utils.StreamPrinter;
 import utils.TokenReader;
 
 public class LatexEditor extends Application {
+	private static final HashMap<Integer,String[]>	nodesTypesMap;
+	private static final HashMap<String,String>		icons;
+	
 	private static final int						INSERT_HEAD		= 0;
 	private static final int						INSERT_TAIL		= 1;
+
+	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
 
 	private final Node								rootIcon		= new ImageView(new Image(getClass().getResourceAsStream("/data/texIcon.png")));
 	private File									currentDir		= System.getenv("LATEX_HOME") == null ? null : new File(System.getenv("LATEX_HOME"));
 	private File									currentFile		= null;
 
-	private List<LateXElement>						lateXElements	= new ArrayList<>();
 
 	private boolean									saved			= true;
 	private DocumentState							savedState		= new DocumentState(new ArrayList<>());
 
+	private List<LateXElement>						lateXElements	= new ArrayList<>();
+	private final LateXMaker						lm				= new LateXMaker();
+	
 	private Stage									primaryStage;
 	private TreeView<NamedObject<LateXElement>>		tree;
 	private TreeItem<NamedObject<LateXElement>>		treeRoot;
-	private final LateXMaker						lm				= new LateXMaker();
-	private TextArea								textArea;
-	private HBox									editZone;
+	private TreeItem<NamedObject<LateXElement>>		currentNode		= null;
+	private TreeItem<NamedObject<LateXElement>>		clipBoard  		= null;
+	
+	
 	private ContextMenu								addMenu			= new ContextMenu();
 	private MenuBar									menuBar;
+	
+	private TextArea								userTextArea;
+	private TextArea								outputTextArea;
+	private CodeEditor								outputCode;
 	private MenuItem								generate;
 	private Label									info;
 
-	private static final HashMap<Integer,String[]>	nodesTypesMap;
-	private static final HashMap<String,String>		icons;
 
-	private TreeItem<NamedObject<LateXElement>>		currentNode		= null;
-	private TreeItem<NamedObject<LateXElement>>		clipBoard  		= null;
 
     @Override
     public void start(Stage primaryStage) {
@@ -100,16 +120,24 @@ public class LatexEditor extends Application {
     	
         VBox root = new VBox(10);
         setTree();
-        setEditZone();
+        HBox editZone = setEditZone();
         setMenuBar();
         this.primaryStage = primaryStage;
         
         VBox header = setHeader();
         root.getChildren().addAll(header,editZone);
 		
-        Scene scene = new Scene(root, 1100, 600);
+        Scene scene   = new Scene(root,0,0);
         primaryStage.setTitle(strings.getProperty("frameTitle"));
         primaryStage.setScene(scene);
+        
+        Screen      screen = Screen.getPrimary();
+        Rectangle2D bounds = screen.getVisualBounds();
+
+        primaryStage.setX(bounds.getMinX());
+        primaryStage.setY(bounds.getMinY());
+        primaryStage.setWidth(bounds.getWidth());
+        primaryStage.setHeight(bounds.getHeight());
         primaryStage.show();
     }
 
@@ -163,8 +191,8 @@ public class LatexEditor extends Application {
     }
 
     private void setTree() {
-        treeRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title("", lm)),rootIcon);
-        tree = new TreeView<>(treeRoot);
+        treeRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title("",lm)),rootIcon);
+        tree     = new TreeView<>(treeRoot);
         tree.setMinSize(200,50);
         treeRoot.setExpanded(true); 
         currentNode = treeRoot; 
@@ -184,11 +212,11 @@ public class LatexEditor extends Application {
                 LateXElement elt = currentNode.getValue().bean;
                 
                 buildAddMenus(elt);
-				//buildClipboardMenus(elt);
+//				buildClipboardMenus(elt);
                 buildDeleteMenu(elt);				
                 
                 // display the popup
-                addMenu.show(editZone,pt.getX() + 10, pt.getY() + 10);
+                addMenu.show(tree,pt.getX() + 10, pt.getY() + 10);
             }           
         });
         
@@ -198,44 +226,43 @@ public class LatexEditor extends Application {
         		TreeItem<NamedObject<LateXElement>> formerItem, 
         		TreeItem<NamedObject<LateXElement>> newItem) -> {
                     if (formerItem != null && currentNode != null) {
-                        String text = textArea.getText();
+                        String text = userTextArea.getText();
                         if (!currentNode.getValue().bean.getText().equals(text))
                             setSaved(false);
-                        formerItem.getValue().bean.setText(textArea.getText());                      
+                        formerItem.getValue().bean.setText(userTextArea.getText());                      
                     }
                     if (newItem != null && newItem.getValue() != null) {
-                        textArea.setText(newItem.getValue().bean.getText());
+                        userTextArea.setText(newItem.getValue().bean.getText());
                         info.textProperty().bind(strings.getObservableProperty(newItem.getValue().bean.getType() + "Tip"));
                         currentNode = newItem;
                     }
         });
         
-		tree.setCellFactory(new Callback<TreeView<NamedObject<LateXElement>>, TreeCell<NamedObject<LateXElement>>>() {
-			public TreeCell<NamedObject<LateXElement>> call(TreeView<NamedObject<LateXElement>> param) {
-				final TreeCell<NamedObject<LateXElement>> cell = new TreeCell<NamedObject<LateXElement>>() {
-					@Override
-					public void updateItem(NamedObject<LateXElement> item, boolean empty) {
-						super.updateItem(item,empty);
-						if (!empty && item != null)
-							textProperty().bind(item.nameProperty());
-						else {
-							textProperty().unbind();
-							setText("");
-						}
-						
-						if (item != null) {
-							String url;
-							if ((url = icons.get(item.bean.getType())) != null) {
-								ImageView icon = new ImageView(new Image(getClass().getResourceAsStream(url))); 
-								if (icon != null)
-									setGraphic(icon);
-							}
-						}
-					}
-				};
-				return cell;
-			}
-		});
+//		tree.setCellFactory(new Callback<TreeView<NamedObject<LateXElement>>, TreeCell<NamedObject<LateXElement>>>() {
+//			public TreeCell<NamedObject<LateXElement>> call(TreeView<NamedObject<LateXElement>> param) {
+//				final TreeCell<NamedObject<LateXElement>> cell = new TreeCell<NamedObject<LateXElement>>() {
+//					@Override
+//					public void updateItem(NamedObject<LateXElement> item, boolean empty) {
+//						super.updateItem(item,empty);
+//						if (!empty && item != null) {
+//							textProperty().bind(item.nameProperty());
+//							String url;
+//							if ((url = icons.get(item.bean.getType())) != null) {
+//								ImageView icon = new ImageView(new Image(getClass().getResourceAsStream(url))); 
+//								if (icon != null) {
+//									setGraphic(icon);
+//									System.out.println(getUserData());
+//								}
+//							}
+//						} else {
+//							textProperty().unbind();
+//							setText("");
+//						}
+//					}
+//				};
+//				return cell;
+//			}
+//		});
     }
 
 //	private void buildClipboardMenus(LateXElement elt) {
@@ -363,18 +390,18 @@ public class LatexEditor extends Application {
         setSaved(false);
     }
     
-    private void setEditZone() {
+    private HBox setEditZone() {
         info      = new Label();
-        textArea  = new TextArea();
-		textArea.setPrefSize(600, 500);		
-        VBox vbox = new VBox(); 
+        userTextArea  = new TextArea();
+        userTextArea.setPrefSize(600,550);
         info.textProperty().bind(strings.getObservableProperty("editZoneTip"));
+        info.setFont(subtitlesFont);
         
-        vbox.setPadding(new Insets(5));
-        vbox.setSpacing(5);
-		vbox.getChildren().addAll(info,textArea);
+        VBox editor = new VBox(info,userTextArea); 
+        editor.setPadding(new Insets(5));
+        editor.setSpacing(5);
         
-        String[] operators = { "\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
+        String[] ops = { "\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
 			"\\forall","\\partial","\\exists","\\nexists","\\varnothing",
 		 	"\\bigcap","\\bigcup","\\bigint","\\prod","\\sum",
 		 	"\\nabla","\\in","\\notin","\\ni","",
@@ -388,29 +415,62 @@ public class LatexEditor extends Application {
         };
         
         Image img = new Image(LatexEditor.class.getResourceAsStream("/data/Operateurs.png"));
-        IconSelectionView operateurs = new IconSelectionView(img,6,5,operators,strings.getObservableProperty("operators"));
-        operateurs.setActionListener((java.awt.event.ActionEvent e) -> {
-            textArea.cut();
-            textArea.insertText(textArea.getCaretPosition(),e.getActionCommand());
+        IconSelectionView operators = new IconSelectionView(img,6,5,ops,strings.getObservableProperty("operators"));
+        operators.setActionListener((java.awt.event.ActionEvent e) -> {
+            userTextArea.cut();
+            userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
         });
         
         img = new Image(LatexEditor.class.getResourceAsStream("/data/AlphabetGrec.png"));
-        IconSelectionView alphabetGrec = new IconSelectionView(img,5,5,ctes,strings.getObservableProperty("greekAlphabet"));
-        alphabetGrec.setActionListener((java.awt.event.ActionEvent e) -> {
-            textArea.cut();
-            textArea.insertText(textArea.getCaretPosition(),e.getActionCommand());
+        IconSelectionView greekAlphabet = new IconSelectionView(img,5,5,ctes,strings.getObservableProperty("greekAlphabet"));
+        greekAlphabet.setActionListener((java.awt.event.ActionEvent e) -> {
+            userTextArea.cut();
+            userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
         });
         
         IconSelectionBox box = new IconSelectionBox();
-        box.addSelectionView(operateurs);
-        box.addSelectionView(alphabetGrec);
-                
-        editZone = new HBox(10);       
-        editZone.getChildren().addAll(box,tree,vbox);
+        box.addSelectionView(operators);
+        box.addSelectionView(greekAlphabet);
+        
+        outputCode            = new CodeEditor("");
+        TitledPane codeEditor = new TitledPane("",outputCode);
+        codeEditor.textProperty().bind(strings.getObservableProperty("outputCodeTitle"));
+        outputCode.setMinHeight(500);
+        
+        outputTextArea        = new TextArea();
+        TitledPane outputMsg  = new TitledPane("",outputTextArea);
+        outputMsg.textProperty().bind(strings.getObservableProperty("outputMsgTitle"));
+        outputTextArea.setMinHeight(500);
+        
+        Accordion accordion   = new Accordion();
+        accordion.getPanes().addAll(codeEditor,outputMsg);
+        accordion.setExpandedPane(codeEditor);
+        
+        HBox editZone = new HBox(10,box,tree,editor,setOutputZone(accordion));       
         editZone.setLayoutX(20);
-        editZone.setPadding(new Insets(15));      
+        editZone.setPadding(new Insets(15));
+        
+        // handle resize events
+        HBox.setHgrow(editor,Priority.ALWAYS);
+        HBox.setHgrow(accordion,Priority.SOMETIMES);
+        HBox.setHgrow(tree,Priority.NEVER);
+        tree.setMinWidth(210);
+        userTextArea.setMinWidth(450);
+        accordion.setMinWidth(200);
+        
+        return editZone;
     }
 
+    private VBox setOutputZone(Node node) {
+    	Label outputLabel = new Label();
+        VBox outputZone   = new VBox(outputLabel,node);
+        outputLabel.textProperty().bind(strings.getObservableProperty("outputLabel"));
+        outputLabel.setFont(subtitlesFont);
+        outputZone.setPadding(new Insets(5));
+        outputZone.setSpacing(5);
+        return outputZone;
+    }
+    
     private void setMenuBar() {
     	// set main menu bar
         menuBar          = new MenuBar();
@@ -446,27 +506,22 @@ public class LatexEditor extends Application {
         
         // set submenu Options
         MenuItem packages    = new MenuItem();
-        Menu     chooseStyle = new Menu();
-        MenuItem modena      = new MenuItem("Modena");        
-        MenuItem caspian     = new MenuItem("Caspian");
         
         // bind the text properties
-        List<String>   properties = Arrays.asList("file","edit","options","newDocument","save","saveAs","load","generate","quit","packages","skin");
-        List<MenuItem> menus      = Arrays.asList(menuFile,menuEdit,menuOptions,newDoc,save,saveAs,load,generate,quit,packages,chooseStyle);
+        List<String>   properties = Arrays.asList("file","edit","options","newDocument","save","saveAs","load","generate","quit","packages");
+        List<MenuItem> menus      = Arrays.asList(menuFile,menuEdit,menuOptions,newDoc,save,saveAs,load,generate,quit,packages);
         for (int i=0 ; i<menus.size() ; i++)
         	menus.get(i).textProperty().bind(strings.getObservableProperty(properties.get(i)));
         
-        modena  .setOnAction(ev -> setUserAgentStylesheet(STYLESHEET_MODENA));
-        caspian .setOnAction(ev -> setUserAgentStylesheet(STYLESHEET_CASPIAN));
         packages.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
         
-        chooseStyle.getItems().addAll(modena,caspian);
-        menuOptions.getItems().addAll(packages,chooseStyle);
+		ImageView checkedIcon = new ImageView(new Image(getClass().getResourceAsStream(Settings.properties.getProperty("checkedIcon"))));
+		menuOptions.getItems().addAll(packages,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon));
     }
     
     private void save() {
         try {
-            currentNode.getValue().bean.setText(textArea.getText());
+            currentNode.getValue().bean.setText(userTextArea.getText());
             if (currentFile != null) {
                 File f                             = new File(currentFile.getAbsolutePath());
                 FilterWriter fw                    = new FilterWriter(new BufferedWriter(new FileWriter(f)), new LateXFilter());
@@ -507,6 +562,7 @@ public class LatexEditor extends Application {
             int i       = path.lastIndexOf(".");
             path        = i == -1 ? path + ".tex" : path.substring(0,i) + ".tex"; 
             lm.makeDocument(new File(path),savedState.getCurrentState());
+            outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, e.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }
@@ -589,36 +645,47 @@ public class LatexEditor extends Application {
         LateXElement              root = elts.getValue().get(0);
         NamedObject<LateXElement> no   = new NamedObject<LateXElement>(strings.getObservableProperty(root.getType()),root);
         treeRoot.setValue(no);
-        textArea.setText(currentNode.getValue().bean.getText());
+        userTextArea.setText(currentNode.getValue().bean.getText());
         
         setElements(elts,treeRoot,0,elts.getKey().size());
         tree.getSelectionModel().select(treeRoot);
 		treeRoot.setExpanded(false);
-        textArea.setDisable(false);
+        userTextArea.setDisable(false);
     }
     
     public void toPdf() throws IOException {
         if (currentFile != null) {
             generate();
-            String nom = currentFile.getCanonicalPath();
-            String path, script, separator;
+
+            String         path = currentFile.getCanonicalPath();
+            ProcessBuilder pb   = new ProcessBuilder("pdflatex", "-halt-on-error",
+            	String.format("%s.tex",path.substring(0,path.lastIndexOf("."))));
+            pb.directory(currentDir.getAbsoluteFile());
             
-            if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-                separator = "\\";
-                script    = "toPdf.bat";                
-            } else {
-                separator = "/";
-                script    = "toPdf.sh";
-            }
+            StringBuilder sb = new StringBuilder();
+//            final Object  o  = new Object();
             
-            path = nom.substring(0,nom.lastIndexOf(separator));
-            nom  = nom.substring(0,nom.indexOf("."));
+            Function<String,Consumer<String>> consumerFactory = s ->
+            	str -> {
+//            		synchronized (o) {
+//            			sb.append(String.format("<p style='color:%s'>%s</p>",s,str));
+//					}
+            		sb.append(str);
+            		sb.append("\n");
+            	};
             
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path + separator + script)))) {
-                bw.write("\npdflatex \"" + nom + ".tex\"");
-                bw.flush();
-                bw.close();
-                Runtime.getRuntime().exec(path + separator + script/* + " > " + path + separator + "toPdf.log"*/);
+            try {
+                Process p = pb.start();
+                StreamPrinter inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply("black"));
+                StreamPrinter errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply("red"));
+                new Thread(inputStream).start();
+                new Thread(errorStream).start();
+                p.waitFor();
+                
+                outputTextArea.clear();
+                outputTextArea.setText(sb.toString());
+            } catch (IOException | InterruptedException ex) {
+                ex.printStackTrace();
             }
         }
     }
@@ -687,7 +754,7 @@ public class LatexEditor extends Application {
                     		lm.getParameters().addPackages(content.split("[;\\s+]|;\\s+"));
                     		break;
                     	case "commands" :
-                    		
+                    		lm.getParameters().include(content.split("[;\\s+]|;\\s+"));
                     		break;
                     	default         :
                     		i                  = declaration.lastIndexOf('>');

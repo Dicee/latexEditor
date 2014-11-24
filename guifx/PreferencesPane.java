@@ -1,6 +1,7 @@
 package guifx;
 
 import java.util.function.Consumer;
+import static guifx.utils.Settings.*;
 
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
@@ -88,12 +89,13 @@ public class PreferencesPane {
             }
 		});
 		
-		// set add package bar
+		// set "add element" bar
 		TextField field     = new TextField();
-		Button    add       = new Button("Ajouter");
+		Button    add       = new Button();
 		HBox      searchBar = new HBox(5,field,add);
 		searchBar.setPadding(new Insets(10,0,0,0));
 		
+		add.textProperty().bind(strings.getObservableProperty("add"));
 		add.setOnAction(ev -> { 
 			if (!field.getText().isEmpty()) {
 				addOp.accept(field.getText());

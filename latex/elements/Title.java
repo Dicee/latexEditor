@@ -10,7 +10,6 @@ public class Title extends AbstractLateXElement {
 
 	public String latexify() {
 		try {
-			System.out.println(content+"  "+lm);
 			String[] split = content.split(";");
 			return lm.makeTitlePage(split[0],split[1]);
 		} catch (ArrayIndexOutOfBoundsException e) {

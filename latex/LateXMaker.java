@@ -27,7 +27,7 @@ public class LateXMaker {
 		 StringBuilder sb = new StringBuilder();		
 		 parameters.latexify(sb); 
 		 
-		 sb.append("\\begin{document}\n");			
+		 sb.append("\n\\begin{document}\n");			
 		 sb.append("\\renewcommand{\\contentsname}{Sommaire}\n");
 		 sb.append("\\renewcommand{\\chaptername}{" + parameters.getChapterName() + "}\n");
 		 sb.append("\\renewcommand{\\thechapter}{\\Roman{chapter}}\n");		
@@ -35,15 +35,15 @@ public class LateXMaker {
 	}
 		
 	public String makeTitlePage(String title, String author) {
-		String result = "";
-		result += "\\documentclass{" + parameters.getDocumentClass() + "}\n";
-		result += "\\huge{\\title{" + title + "}}\n";
-		result += "\\large{\\author{" + author + "}}\n";
-		result += beginDocument();
+		StringBuilder result = new StringBuilder();
+		result.append("\\documentclass{" + parameters.getDocumentClass() + "}\n");
+		result.append("\\huge{\\title{" + title + "}}\n");
+		result.append("\\large{\\author{" + author + "}}\n");
+		result.append(beginDocument());
 		
-		result += "\\maketitle\n";
-		result += "\\tableofcontents\n";
-		return result;
+		result.append("\\maketitle\n");
+		result.append("\\tableofcontents\n");
+		return result.toString();
 	}
 	
 	public String makeTitlePage(String title, String author, String date) {
@@ -102,17 +102,12 @@ public class LateXMaker {
 	public void makeDocument(File f, List<LateXElement> latexElements) throws IOException {
 		chapterCount = 0;
 		figureCount  = 1;
-		System.out.println("coucou");
 		
 		FilterWriter fw = null;
 		try {
 			fw = new FilterWriter(new BufferedWriter(new FileWriter(f)),new LateXFilter());
-			fw.write(parameters.latexify(new StringBuilder()).toString());
-			
-			System.out.println(parameters.textify(new StringBuilder()).toString());
-			
 			for (LateXElement elt : latexElements) 
-				fw.writeln(elt.latexify());			
+				fw.writeln(elt.latexify());	
 			fw.writeln(finishDocument());
 		} finally {
 			if (fw != null) {

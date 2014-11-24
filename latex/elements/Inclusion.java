@@ -11,7 +11,6 @@ public class Inclusion extends AbstractLateXElement {
 	public String latexify() {
 		try {
 			String[] split = content.split(";");
-			System.out.println(content);
 			return lm.includeGraphic(split[0],split[1],split[2]);
 		} catch (ArrayIndexOutOfBoundsException e) {
 			throw new RuntimeException("Format d'inclusion d'image incorrect.\nLe format"
