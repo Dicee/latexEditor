@@ -57,7 +57,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -89,7 +88,6 @@ public class LatexEditor extends Application {
 	private File									currentDir		= System.getenv("LATEX_HOME") == null ? null : new File(System.getenv("LATEX_HOME"));
 	private File									currentFile		= null;
 
-
 	private boolean									saved			= true;
 	private DocumentState							savedState		= new DocumentState(new ArrayList<>());
 
@@ -111,8 +109,6 @@ public class LatexEditor extends Application {
 	private CodeEditor								outputCode;
 	private MenuItem								generate;
 	private Label									info;
-
-
 
     @Override
     public void start(Stage primaryStage) {
@@ -564,7 +560,16 @@ public class LatexEditor extends Application {
             lm.makeDocument(new File(path),savedState.getCurrentState());
             outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, e.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+//            Dialogs.create().owner(primaryStage)
+//            	.title(strings.getProperty("error"))
+//            	.masthead(strings.getProperty("anErrorOccurredMessage"))
+//            	.message(strings.getProperty("unfoundFileErrorMessage"))
+//            	.showError();
+            e.printStackTrace();
+//            Dialogs.create().owner(primaryStage).
+//            	title(strings.getProperty("error")).
+//            	masthead(strings.getProperty("anErrorOccurredMessage")).
+//            	showException(e);
         }
     }
     
@@ -667,17 +672,14 @@ public class LatexEditor extends Application {
             
             Function<String,Consumer<String>> consumerFactory = s ->
             	str -> {
-//            		synchronized (o) {
-//            			sb.append(String.format("<p style='color:%s'>%s</p>",s,str));
-//					}
             		sb.append(str);
             		sb.append("\n");
             	};
             
             try {
                 Process p = pb.start();
-                StreamPrinter inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply("black"));
-                StreamPrinter errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply("red"));
+                StreamPrinter inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply(""));
+                StreamPrinter errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply(""));
                 new Thread(inputStream).start();
                 new Thread(errorStream).start();
                 p.waitFor();
@@ -691,28 +693,37 @@ public class LatexEditor extends Application {
     }
     
     public void preview() throws IOException {
-        if (currentFile != null) {
-            generate();
-            String nom  = currentFile.getCanonicalPath();            
-            String path, script, separator;
-            
-            if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-                separator = "\\";
-                script    = "preview.bat";                
-            } else {
-                separator = "/";
-                script    = "preview.sh";
-            }
-            
-            path = nom.substring(0,nom.lastIndexOf(separator));
-            nom  = nom.substring(0,nom.indexOf("."));
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path + separator + script)))) {
-                bw.write("\nlatex \"" + nom + ".tex\"");
-                bw.write("\nyap \"" + nom + ".dvi\"");
-                bw.flush();
-                bw.close();
-                Runtime.getRuntime().exec(path + separator + script);
-            }
+		if (currentFile != null) {
+			generate();
+
+			String         path = currentFile.getCanonicalPath();
+			ProcessBuilder pb   = new ProcessBuilder("latex","-halt-on-error",String.format("%s.tex",
+					path.substring(0,path.lastIndexOf("."))));
+			pb.directory(currentDir.getAbsoluteFile());
+
+			StringBuilder sb = new StringBuilder();
+			Function<String, Consumer<String>> consumerFactory = s -> str -> {
+				sb.append(str);
+				sb.append("\n");
+			};
+
+			try {
+				Process p = pb.start();
+				StreamPrinter inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply(""));
+				StreamPrinter errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply(""));
+				new Thread(inputStream).start();
+				new Thread(errorStream).start();
+				p.waitFor();
+
+				outputTextArea.clear();
+				outputTextArea.setText(sb.toString());
+				
+				pb = new ProcessBuilder("yap",String.format("%s.dvi",path.substring(0,path.lastIndexOf("."))));
+				pb.start();
+			} catch (IOException | InterruptedException ex) {
+				ex.printStackTrace();
+			}
+        
         }
     }
     
