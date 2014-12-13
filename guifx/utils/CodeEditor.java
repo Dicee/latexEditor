@@ -1,5 +1,7 @@
 package guifx.utils;
 
+import scala.io.Codec;
+import scala.io.Source;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebView;
 
@@ -12,28 +14,21 @@ import javafx.scene.web.WebView;
  */
 public class CodeEditor extends StackPane {
 	/** a webview used to encapsulate the CodeMirror JavaScript. */
-	public final WebView			webview			= new WebView();
+	public final WebView webview = new WebView();
 
 	/**
 	 * a snapshot of the code to be edited kept for easy initilization and
 	 * reversion of editable code.
 	 */
-	private String			editingCode;
+	private String editingCode;
 
 	/**
 	 * a template for editing code - this can be changed to any template derived
 	 * from the supported modes at http://codemirror.net to allow syntax
 	 * highlighted editing of a wide variety of languages.
 	 */
-	private final String	editingTemplate	= "<!doctype html>" + "<html>" + "<head>"
-		+ " <link rel=\"stylesheet\" href=\"http://codemirror.net/lib/codemirror.css\">"
-		+ " <script src=\"http://codemirror.net/lib/codemirror.js\"></script>"
-		+ " <script src=\"http://codemirror.net/mode/clike/clike.js\"></script>" + "</head>"
-		+ "<body>" + "<form><textarea cols=\"150\" rows=\"800\" id=\"code\" name=\"code\">\n" + "${code}"
-		+ "</textarea></form>" + "<script>"
-		+ " var editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {"
-		+ " lineNumbers: true," + " matchBrackets: true," + " mode: \"text/x-stex\"" + " });"
-		+ "</script>" + "</body>" + "</html>";
+	private static final String	editingTemplate	= Source.fromURL(CodeEditor.class.getResource("codemirror-4.8/editor.html"),
+			Codec.UTF8()).mkString();
 
 	/**
 	 * applies the editing template to the editing code to create the
@@ -76,5 +71,6 @@ public class CodeEditor extends StackPane {
 		this.editingCode = editingCode;
 		webview.getEngine().loadContent(applyEditingTemplate());
 		this.getChildren().add(webview);
+		this.setPrefHeight(800);
 	}
 }

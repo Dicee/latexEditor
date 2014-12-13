@@ -1,6 +1,8 @@
 package guifx;
 
+import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
+import static java.util.Arrays.asList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import guifx.utils.CodeEditor;
@@ -68,6 +70,9 @@ import latex.LateXFilter;
 import latex.LateXMaker;
 import latex.elements.LateXElement;
 import latex.elements.Title;
+
+import org.controlsfx.dialog.Dialogs;
+
 import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
@@ -76,8 +81,7 @@ import utils.StreamPrinter;
 import utils.TokenReader;
 
 public class LatexEditor extends Application {
-	private static final HashMap<Integer,String[]>	nodesTypesMap;
-	private static final HashMap<String,String>		icons;
+	private static final HashMap<Integer,List<String>>	nodesTypesMap;
 	
 	private static final int						INSERT_HEAD		= 0;
 	private static final int						INSERT_TAIL		= 1;
@@ -174,12 +178,9 @@ public class LatexEditor extends Application {
     }
     
     private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement l) {
-        String url;
-        String command = l.getType();
-        Node   icon    = null;
-        
-        if ((url = icons.get(command)) != null) 
-           icon = new ImageView(new Image(getClass().getResourceAsStream(url)));      
+    	String command = l.getType();
+        String url     = properties.getProperty(command + "Icon");
+        Node   icon    = new ImageView(new Image(getClass().getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
         
         l = LateXElement.newLateXElement(command,l.getText(),lm);
         NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),l);
@@ -436,7 +437,8 @@ public class LatexEditor extends Application {
         outputTextArea        = new TextArea();
         TitledPane outputMsg  = new TitledPane("",outputTextArea);
         outputMsg.textProperty().bind(strings.getObservableProperty("outputMsgTitle"));
-        outputTextArea.setMinHeight(500);
+        outputTextArea.setMinHeight(800);
+        outputTextArea.setEditable(false);
         
         Accordion accordion   = new Accordion();
         accordion.getPanes().addAll(codeEditor,outputMsg);
@@ -537,8 +539,11 @@ public class LatexEditor extends Application {
                 savedState = new DocumentState(state);
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Erreur lors de la sauvegarde !",
-                    "Impossible de sauvegarder", JOptionPane.ERROR_MESSAGE);
+        	Dialogs.create().owner(primaryStage)
+				.title(strings.getProperty("error"))
+				.masthead(strings.getProperty("anErrorOccurredMessage"))
+				.message(String.format(strings.getProperty("ioSaveError")))
+				.showError();
         }
     }
    
@@ -560,11 +565,11 @@ public class LatexEditor extends Application {
             lm.makeDocument(new File(path),savedState.getCurrentState());
             outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
         } catch (Exception e) {
-//            Dialogs.create().owner(primaryStage)
-//            	.title(strings.getProperty("error"))
-//            	.masthead(strings.getProperty("anErrorOccurredMessage"))
-//            	.message(strings.getProperty("unfoundFileErrorMessage"))
-//            	.showError();
+            Dialogs.create().owner(primaryStage)
+            	.title(strings.getProperty("error"))
+            	.masthead(strings.getProperty("anErrorOccurredMessage"))
+            	.message(strings.getProperty("unfoundFileErrorMessage"))
+            	.showError();
             e.printStackTrace();
 //            Dialogs.create().owner(primaryStage).
 //            	title(strings.getProperty("error")).
@@ -714,7 +719,7 @@ public class LatexEditor extends Application {
 				new Thread(inputStream).start();
 				new Thread(errorStream).start();
 				p.waitFor();
-
+				
 				outputTextArea.clear();
 				outputTextArea.setText(sb.toString());
 				
@@ -728,22 +733,18 @@ public class LatexEditor extends Application {
     }
     
     public void load() {
+    	FileChooser f = new FileChooser();
+    	f.setTitle("Charger un document");
+    	f.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
+    	
+    	if (currentDir != null) 
+    		f.setInitialDirectory(currentDir);
+    	
+    	File file = f.showOpenDialog(primaryStage);
+    	
         try {
-            FileChooser f = new FileChooser();
-            f.setTitle("Charger un document");
-            f.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
-
-            if (currentDir != null) 
-                f.setInitialDirectory(currentDir);
-
-            File file = f.showOpenDialog(primaryStage);
             if (file != null) {
                 currentDir = file.getParentFile();
-                String s = file.getPath();
-                int i = s.indexOf(".");
-                if (i == -1 || !s.substring(i).equals(".javatex")) 
-                    file = new File(s + ".javatex");
-				
                 currentFile = file;
 
                 TokenReader        tr       = new TokenReader(new FileReader(file),"##");
@@ -752,6 +753,7 @@ public class LatexEditor extends Application {
                 List<String>       names    = new ArrayList<>();
                 lm.getParameters().clear();
 
+                String s;
                 while ((s = tr.readToNextToken()) != null) 
                     buffer.add(s.trim());
                 
@@ -768,7 +770,7 @@ public class LatexEditor extends Application {
                     		lm.getParameters().include(content.split("[;\\s+]|;\\s+"));
                     		break;
                     	default         :
-                    		i                  = declaration.lastIndexOf('>');
+                    		int i       = declaration.lastIndexOf('>');
                     		String name = i == -1 ? "" : declaration.substring(0, i + 1);
                     		String type = i == -1 ? declaration : declaration.substring(i + 1).trim();
                     		
@@ -784,12 +786,18 @@ public class LatexEditor extends Application {
 				savedState = new DocumentState(elements);
                 generate.setDisable(false);
             }
-        }catch (FileNotFoundException e) {
-            JOptionPane.showMessageDialog(null, "Fichier introuvable.", "Erreur", JOptionPane.ERROR_MESSAGE);
+        } catch (FileNotFoundException e) {
+            Dialogs.create().owner(primaryStage)
+        		.title(strings.getProperty("error"))
+        		.masthead(strings.getProperty("anErrorOccurredMessage"))
+        		.message(String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()))
+        		.showError();
         }catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Une erreur est survenue lors du chargement du fichier.\nVeuillez "
-                    + "vérifier que sa syntaxe est conforme.",
-                    "Erreur", JOptionPane.ERROR_MESSAGE);
+        	Dialogs.create().owner(primaryStage)
+    			.title(strings.getProperty("error"))
+    			.masthead(strings.getProperty("anErrorOccurredMessage"))
+    			.message(strings.getProperty("ioLoadError"))
+    			.showError();
         }
      }
     
@@ -799,23 +807,11 @@ public class LatexEditor extends Application {
 
     static {
         nodesTypesMap = new HashMap<>();
-        nodesTypesMap.put(0, new String[]{"title"});
-        nodesTypesMap.put(1, new String[]{"chapter"});
-        nodesTypesMap.put(2, new String[]{"section"});
-        nodesTypesMap.put(3, new String[]{"subsection"});
-        nodesTypesMap.put(4, new String[]{"subsubsection"});
-        nodesTypesMap.put(5, new String[]{"paragraph", "list", "image", "code", "latex"});
-    }
-    
-    static {
-        icons = new HashMap<>();
-        icons.put("title","/data/texIcon.png");
-        icons.put("chapter","/data/chapterIcon.png");
-        icons.put("section","/data/sectionIcon.png");
-        icons.put("subsection","/data/subSectionIcon.png");
-        icons.put("subsubsection","/data/subsubSectionIcon.png");
-        for (String name : nodesTypesMap.get(5))
-            icons.put(name,"/data/leafIcon.png");
+        nodesTypesMap.put(0,asList("title"));
+        nodesTypesMap.put(1,asList("chapter"));
+        nodesTypesMap.put(2,asList("section"));
+        nodesTypesMap.put(3,asList("subsection"));
+        nodesTypesMap.put(4,asList("subsubsection"));
+        nodesTypesMap.put(5,asList("paragraph","list","image","code","latex"));
     }
 }
-
