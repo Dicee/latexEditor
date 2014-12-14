@@ -47,7 +47,6 @@ public class Settings {
 			themes = Arrays.asList(new File(Settings.class.getResource("codemirror-4.8/theme").toURI()).listFiles()).stream()
 				.map(f -> f.getName().substring(0,f.getName().lastIndexOf(".")))
 				.collect(Collectors.toList());
-			System.out.println(themes);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

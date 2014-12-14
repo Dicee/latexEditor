@@ -31,12 +31,14 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -55,6 +57,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCharacterCombination;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -79,8 +82,9 @@ import utils.StreamPrinter;
 import utils.TokenReader;
 
 public class LatexEditor extends Application {
-	private static final HashMap<Integer,List<String>>	nodesTypesMap;
-	
+	private static final Map<Integer,List<String>>	NODES_TYPES_MAP;
+	private static final Map<String, String>		LANGUAGES;
+
 	private static final int						INSERT_HEAD		= 0;
 	private static final int						INSERT_TAIL		= 1;
 
@@ -118,8 +122,8 @@ public class LatexEditor extends Application {
     	
         VBox root = new VBox(10);
         setTree();
-        HBox editZone = setEditZone();
-        setMenuBar();
+        Node editZone = setEditZone();
+        setMenuBar(); 
         this.primaryStage = primaryStage;
         
         VBox header = setHeader();
@@ -327,7 +331,7 @@ public class LatexEditor extends Application {
         }
 
         // determine the secondary elements of the popup
-        for (Integer depth : nodesTypesMap.keySet()) {
+        for (Integer depth : NODES_TYPES_MAP.keySet()) {
             // first, the children elements
             if (map != null) {
                 map.entrySet().stream().forEach((Map.Entry<Menu, Integer> entry) -> {
@@ -336,7 +340,7 @@ public class LatexEditor extends Application {
                         if (addChild.getItems().size() != 0) 
                             addChild.getItems().add(new SeparatorMenuItem());
                         
-                        for (String type : nodesTypesMap.get(depth)) {
+                        for (String type : NODES_TYPES_MAP.get(depth)) {
                             MenuItem item = new MenuItem();
                             item.textProperty().bind(strings.getObservableProperty(type));
                             addChild.getItems().add(item);
@@ -351,7 +355,7 @@ public class LatexEditor extends Application {
             
             // then, the sibling elements
             if (addSibling != null && depth == elt.getDepth()) {
-                for (String type : nodesTypesMap.get(depth)) {
+                for (String type : NODES_TYPES_MAP.get(depth)) {
                     MenuItem item = new MenuItem();
                     item.textProperty().bind(strings.getObservableProperty(type));
                     addSibling.getItems().add(item);
@@ -382,7 +386,7 @@ public class LatexEditor extends Application {
         setSaved(false);
     }
     
-    private HBox setEditZone() {
+    private Node setEditZone() {
         info          = new Label();
         userTextArea  = new TextArea();
         userTextArea.setPrefSize(600,550);
@@ -424,71 +428,67 @@ public class LatexEditor extends Application {
         box.addSelectionView(operators);
         box.addSelectionView(greekAlphabet);
         
-        outputCode            = new CodeEditor("");
-        TitledPane codeEditor = new TitledPane("",outputCode);
-        codeEditor.textProperty().bind(strings.getObservableProperty("outputCodeTitle"));
-        outputCode.setMinHeight(800);
+        TitledPane treePane = new TitledPane("",tree);
+        treePane.textProperty().bind(strings.getObservableProperty("treeTitle"));
+        tree.setPadding(new Insets(5,5,5,5));
+//        tree.setPadding(new Insets(50,5,5,5));
         
-        outputTextArea        = new TextArea();
-        TitledPane outputMsg  = new TitledPane("",outputTextArea);
-        outputMsg.textProperty().bind(strings.getObservableProperty("outputMsgTitle"));
-        outputTextArea.setMinHeight(500);
+        TitledPane boxPane  = new TitledPane("",box);
+        boxPane.textProperty().bind(strings.getObservableProperty("boxTitle"));
+        box.setPadding(new Insets(5,5,5,5));
+//        box.setPadding(new Insets(5,5,5,20));
+        
+        Accordion accordion = new Accordion(); 
+        accordion.getPanes().addAll(treePane,boxPane);
+        accordion.setExpandedPane(treePane);
+        accordion.setPadding(new  Insets(10));
+        
+        outputCode = new CodeEditor("");
+        outputCode.setMinHeight(20);
+        
+        Label            label     = new Label ();
+		Button           clear     = new Button();
+		Button           paste     = new Button();
+		ComboBox<String> languages = new ComboBox<>();
+		languages.getItems().addAll(LANGUAGES.keySet());
+		languages.setOnAction(ev -> outputCode.setLanguage(LANGUAGES.get(languages.getSelectionModel().getSelectedItem())));
+		
+		label.textProperty().bind(strings.getObservableProperty("selectLanguage"));
+		clear.textProperty().bind(strings.getObservableProperty("clear"));
+		paste.textProperty().bind(strings.getObservableProperty("pasteToEditor"));
+		
+		clear.setOnAction(ev -> outputCode.setCode(""));
+		paste.setOnAction(ev -> userTextArea.appendText(outputCode.getCodeAndSnapshot()));
+		
+		HBox buttons = new HBox(10,label,languages,clear,paste);
+		buttons.setPadding(new Insets(10));
+		outputCode.setBottom(buttons);
+        
+        outputTextArea = new TextArea();
+        outputTextArea.setMinHeight(50);
         outputTextArea.setEditable(false);
         
-        Accordion accordion   = new Accordion();
-        accordion.getPanes().addAll(codeEditor,outputMsg);
-        accordion.setExpandedPane(codeEditor);
-        
         SplitPane splitPane = new SplitPane();
-        splitPane.getItems().addAll(editor,accordion);
+        splitPane.setOrientation(Orientation.VERTICAL);
+        splitPane.getItems().addAll(new HBox(editor,outputCode),outputTextArea);
         
-        HBox editZone = new HBox(10,box,tree,editor,accordion);//,splitPane);       
-        editZone.setLayoutX(20);
-        editZone.setPadding(new Insets(15));
+        BorderPane borderPane = new BorderPane();
+        borderPane.setLeft(accordion);
+        borderPane.setCenter(splitPane);
+        borderPane.setPadding(new Insets(15));
         
         // handle resize events
         HBox.setHgrow(editor,Priority.ALWAYS);
-        //HBox.setHgrow(accordion,Priority.SOMETIMES);
         HBox.setHgrow(tree,Priority.NEVER);
         tree.setMinWidth(210);
         tree.setMinHeight(560);
         tree.setMaxHeight(560);
         editor.setMinWidth(420);
-        splitPane.setMaxHeight(400);
-        editZone.setMaxHeight(400);
-        //accordion.setMinWidth(200);
+        userTextArea.setPrefHeight(700);
         
-        return editZone;
+        return borderPane;
     }
 
-    private VBox setOutputZone(Node node) {
-    	Label outputLabel = new Label();
-//    	Hyperlink hide   = new Hyperlink(String.format("(%s)",strings.getProperty("hide")));
-//    	TextFlow flow    = new TextFlow(outputLabel,hide);
-//      VBox outputZone  = new VBox(flow,node);
-        VBox outputZone  = new VBox(outputLabel,node);
-        
-        outputLabel.textProperty().bind(strings.getObservableProperty("outputLabel"));
-        outputLabel.setFont(subtitlesFont);
-        outputZone.setPadding(new Insets(5));
-        outputZone.setSpacing(5);
-        
-        /*hide.setOnAction(ev -> {
-        	String s        = hide.getText().substring(1,hide.getText().length() - 1);
-        	String hideText = strings.getProperty("hide");
-        	String showText = strings.getProperty("show");
-
-        	hide.setText(String.format("(%s)",s.equals(hideText) ? showText : hideText));
-        	if (s.equals(hideText))
-        		outputZone.setMaxWidth(20);
-        	else {
-        		outputZone.setMinWidth(200);
-        		outputZone.setPrefWidth(200);
-        	}
-        });*/
-        return outputZone;
-    }
-    
     private void setMenuBar() {
     	// set main menu bar
         menuBar          = new MenuBar();
@@ -534,7 +534,8 @@ public class LatexEditor extends Application {
         packages.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
         
 		ImageView checkedIcon = new ImageView(new Image(getClass().getResourceAsStream(Settings.properties.getProperty("checkedIcon"))));
-		menuOptions.getItems().addAll(packages,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon));
+		menuOptions.getItems().addAll(packages,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
+			Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
     }
     
     private void save() {
@@ -583,6 +584,8 @@ public class LatexEditor extends Application {
             int i       = path.lastIndexOf(".");
             path        = i == -1 ? path + ".tex" : path.substring(0,i) + ".tex"; 
             lm.makeDocument(new File(path),savedState.getCurrentState());
+            
+            outputCode.setLanguage(LANGUAGES.get("LaTeX"));
             outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
         } catch (Exception e) {
             Dialogs.create().owner(primaryStage)
@@ -748,7 +751,6 @@ public class LatexEditor extends Application {
 			} catch (IOException | InterruptedException ex) {
 				ex.printStackTrace();
 			}
-        
         }
     }
     
@@ -826,12 +828,23 @@ public class LatexEditor extends Application {
     }
 
     static {
-        nodesTypesMap = new HashMap<>();
-        nodesTypesMap.put(0,asList("title"));
-        nodesTypesMap.put(1,asList("chapter"));
-        nodesTypesMap.put(2,asList("section"));
-        nodesTypesMap.put(3,asList("subsection"));
-        nodesTypesMap.put(4,asList("subsubsection"));
-        nodesTypesMap.put(5,asList("paragraph","list","image","code","latex"));
+        NODES_TYPES_MAP = new HashMap<>();
+        NODES_TYPES_MAP.put(0,asList("title"));
+        NODES_TYPES_MAP.put(1,asList("chapter"));
+        NODES_TYPES_MAP.put(2,asList("section"));
+        NODES_TYPES_MAP.put(3,asList("subsection"));
+        NODES_TYPES_MAP.put(4,asList("subsubsection"));
+        NODES_TYPES_MAP.put(5,asList("paragraph","list","image","code","latex"));
+    }
+    
+    static {
+        LANGUAGES = new HashMap<>();
+        LANGUAGES.put("Java"      ,"text/x-java"    );
+        LANGUAGES.put("C++"       ,"text/x-c++src"  );
+        LANGUAGES.put("C"         ,"text/x-csrc"    );
+        LANGUAGES.put("Scala"     ,"text/x-scala"   );
+        LANGUAGES.put("LaTeX"     ,"text/x-stex"    );
+        LANGUAGES.put("Javascript","text/javascript");
+        LANGUAGES.put("Python"    ,"text/x-python");
     }
 }

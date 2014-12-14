@@ -8,11 +8,12 @@
 </head>
 <body onload="doLoad()">
 	<form>
-		<textarea cols="100" rows="700" id="code" name="code" readonly disabled style="height:100%">${code}</textarea>
+		<textarea cols="100" rows="700" id="code" name="code" readonly disabled>${code}</textarea>
 	</form>
 	<script>
+		var editor;
 		function doLoad() {
-			var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+			editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 				lineNumbers: true,
 				matchBrackets: true,
 				mode: "${mime}",

@@ -26,7 +26,7 @@ public class CodeEditor extends BorderPane {
 	private String			mime	= "text/x-java";
 
 	/**
-	 * a snapshot of the code to be edited kept for easy initilization and
+	 * a snapshot of the code to be edited kept for easy initialization and
 	 * reversion of editable code.
 	 */
 	private String editingCode;
@@ -57,6 +57,7 @@ public class CodeEditor extends BorderPane {
 	
 	public void setLanguage(String mime) {
 		this.mime = mime;
+		getCodeAndSnapshot();
 		refresh();
 	}
 	
@@ -95,14 +96,14 @@ public class CodeEditor extends BorderPane {
 		setCenter(webview);
 	}
 	
-	 static {
-	        MIMES = new HashMap<>();
-	        MIMES.put("text/x-java"    ,"clike/clike.js"          );
-	        MIMES.put("text/x-c++src"  ,"clike/clike.js"          );
-	        MIMES.put("text/x-csrc"    ,"clike/clike.js"          );
-	        MIMES.put("text/x-scala"   ,"clike/clike.js"          );
-	        MIMES.put("text/x-stex"    ,"stex/stex.js"            );
-	        MIMES.put("text/javascript","javascript/javascript.js");
-	        MIMES.put("text/x-python"  ,"python/python.js"        );
-	    }
+	static {
+		MIMES = new HashMap<>();
+		MIMES.put("text/x-java"    ,"clike/clike.js");
+		MIMES.put("text/x-c++src"  ,"clike/clike.js");
+		MIMES.put("text/x-csrc"    ,"clike/clike.js");
+		MIMES.put("text/x-scala"   ,"clike/clike.js");
+		MIMES.put("text/x-stex"    ,"stex/stex.js");
+		MIMES.put("text/javascript","javascript/javascript.js");
+		MIMES.put("text/x-python"  ,"python/python.js");
+	}
 }
