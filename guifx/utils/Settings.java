@@ -5,12 +5,25 @@ import static javafx.application.Application.STYLESHEET_MODENA;
 import static javafx.application.Application.setUserAgentStylesheet;
 import impl.org.controlsfx.i18n.Localization;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -20,12 +33,25 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.image.ImageView;
 
 public class Settings {
-	public static final Properties				properties	= new Properties();
-	public static final ObservableProperties	strings		= new ObservableProperties();
-	public static final Map<String,MenuItem>	preferences	= new HashMap<>();
-	
-	private static final String					PREF_SKIN			= "skin";
-	private static final String					PREF_LANGUAGE		= "language";
+	public static final Properties				properties		= new Properties();
+	public static final ObservableProperties	strings			= new ObservableProperties();
+	public static final Map<String, MenuItem>	preferences		= new HashMap<>();
+
+	public static final String					PREF_SKIN		= "defaultStyle";
+	public static final String					PREF_LANGUAGE	= "defaultLanguage";
+	public static final String					PREF_THEME		= "defaultTheme";
+
+	private static List<String>					themes;
+	static {
+		try {
+			themes = Arrays.asList(new File(Settings.class.getResource("codemirror-4.8/theme").toURI()).listFiles()).stream()
+				.map(f -> f.getName().substring(0,f.getName().lastIndexOf(".")))
+				.collect(Collectors.toList());
+			System.out.println(themes);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static void init() {
 		// load preferences and program constants
@@ -60,7 +86,7 @@ public class Settings {
 		final MenuItem caspian = new MenuItem("Caspian");
         final MenuItem modena  = new MenuItem("Modena");
 		MenuItem selectedMenu;
-		switch (properties.getProperty("defaultStyle")) {
+		switch (properties.getProperty(PREF_SKIN)) {
 			case "CASPIAN" : selectedMenu = caspian; break;
 			default        : selectedMenu = modena;
 		}
@@ -73,11 +99,11 @@ public class Settings {
 		
 		caspian.setOnAction((ActionEvent ev) -> {			
 			setUserAgentStylesheet(STYLESHEET_CASPIAN);
-			changePreference(caspian,PREF_SKIN,checkedIcon);
+			changePreference(caspian,PREF_SKIN,STYLESHEET_CASPIAN,checkedIcon);
 		});
 		modena.setOnAction((ActionEvent ev) -> {
 			setUserAgentStylesheet(STYLESHEET_MODENA);
-			changePreference(modena,PREF_SKIN,checkedIcon);
+			changePreference(modena,PREF_SKIN,STYLESHEET_MODENA,checkedIcon);
 		});       
         chooseStyle.getItems().addAll(caspian,modena);
 		return chooseStyle;
@@ -87,36 +113,54 @@ public class Settings {
 		Menu chooseLanguage    = new Menu();
 		final MenuItem french  = new MenuItem();
 		final MenuItem english = new MenuItem();	
-        final MenuItem spanish = new MenuItem();
 		MenuItem selectedMenu;
 		
 		chooseLanguage.textProperty().bind(strings.getObservableProperty("lang"));
 		french        .textProperty().bind(strings.getObservableProperty("lang-fr"));
 		english       .textProperty().bind(strings.getObservableProperty("lang-en"));
-        spanish       .textProperty().bind(strings.getObservableProperty("lang-es"));
 		
-		switch (properties.getProperty("defaultLanguage")) {
+		switch (properties.getProperty(PREF_LANGUAGE)) {
 			case "FR" : selectedMenu = french ; break;
-            case "ES" : selectedMenu = spanish;	break;
 			default   :	selectedMenu = english; break;
 		}
 		
 		selectedMenu.setGraphic(checkedIcon);
-		chooseLanguage.getItems().addAll(french,english,spanish);
+		chooseLanguage.getItems().addAll(french,english);
 		preferences.put(PREF_LANGUAGE,selectedMenu);
 		
 		french .setOnAction(languageChoiceAction(french,"FR","fr","FR",checkedIcon));   
 		english.setOnAction(languageChoiceAction(english,"EN","en","UK",checkedIcon));
-        spanish.setOnAction(languageChoiceAction(spanish,"ES","es","ES",checkedIcon));
 		return chooseLanguage;
 	}
+    
+    public static Menu getChooseThemeMenu(final ImageView checkedIcon, Consumer<String> onChange) {
+		Menu chooseTheme    = new Menu();
+		chooseTheme.textProperty().bind(strings.getObservableProperty("theme"));
+		
+		MenuItem selectedMenu = null;
+		for (String themeName : themes) {
+			MenuItem themeMenu  = new MenuItem(themeName);
+			themeMenu.setOnAction(ev -> {
+				changePreference(themeMenu,PREF_THEME,themeName,checkedIcon);
+				onChange.accept(themeName);
+			});   
+			
+			if (properties.getProperty(PREF_THEME).equals(themeName))
+				selectedMenu = themeMenu;
+			chooseTheme.getItems().add(themeMenu);
+		}
+		selectedMenu.setGraphic(checkedIcon);
+		preferences.put(PREF_THEME,selectedMenu);
+		return chooseTheme;
+	}
 	
-    private static void changePreference(MenuItem clicked, String prefName, Node node) {
+    private static void changePreference(MenuItem clicked, String prefName, String value, Node node) {
 		MenuItem checked = preferences.get(prefName);
 		if (checked != clicked) {
 			checked.setGraphic(null);
 			clicked.setGraphic(node);
 			preferences.put(prefName,clicked);
+			updateProperty(prefName,value);
 		}
 	}	
     
@@ -127,7 +171,35 @@ public class Settings {
 				loadLocalizedTexts(properties.getProperty(propertyName));
 				Localization.setLocale(new Locale(lang,country));
 			}
-			changePreference(menu,PREF_LANGUAGE,checkedIcon);
+			changePreference(menu,PREF_LANGUAGE,propertyName,checkedIcon);
 		};
 	}
+	
+	private static void updateProperty(String name, String value) {
+		if (!properties.containsKey(name)) 
+			throw new IllegalArgumentException(String.format("Property %s does not exist !",name));
+		
+		properties.put(name,value);
+		
+		Pattern p = Pattern.compile("\\s*([a-zA-Z0-9]*)\\s*=\\s*(.*)\\s*");
+		try {
+			Path           path = Paths.get(Settings.class.getResource("/properties/config.properties").toURI());
+			Path           temp = Files.createTempFile("config",".properties");
+			Files.copy(path,temp,StandardCopyOption.REPLACE_EXISTING);
+			
+			BufferedReader br   = Files.newBufferedReader(temp);
+			BufferedWriter bw   = Files.newBufferedWriter(path);
+
+			for (String line = br.readLine() ; line != null ; line = br.readLine()) {
+				Matcher m = p.matcher(line);
+				bw.write(m.matches() && m.group(1).equals(name) ? String.format("%s=%s\n",name,value) : line + "\n");
+			}
+			
+			bw.close();
+			br.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
+

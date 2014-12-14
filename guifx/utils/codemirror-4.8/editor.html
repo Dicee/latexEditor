@@ -3,9 +3,8 @@
 <head>
 	<script src="http://codemirror.net/lib/codemirror.js"></script>
 	<link rel="stylesheet" href="http://codemirror.net/lib/codemirror.css">
-	<link rel="stylesheet" href="http://codemirror.net/theme/pastel-on-dark.css">
-	<script src="http://codemirror.net/mode/stex/stex.js"></script>
-	
+	<link rel="stylesheet" href="http://codemirror.net/theme/${theme}.css">
+	<script src="http://codemirror.net/mode/${language}"></script>
 </head>
 <body onload="doLoad()">
 	<form>
@@ -16,8 +15,10 @@
 			var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 				lineNumbers: true,
 				matchBrackets: true,
-				mode: "text/x-stex"
+				mode: "${mime}",
+				theme:"${theme}"
 			});
+			editor.setOption("fullScreen",true);
 		}
 	</script>
 </body>

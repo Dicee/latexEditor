@@ -1,9 +1,15 @@
 package guifx.utils;
 
+import static guifx.utils.Settings.PREF_THEME;
+import static guifx.utils.Settings.properties;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javafx.scene.layout.BorderPane;
+import javafx.scene.web.WebView;
 import scala.io.Codec;
 import scala.io.Source;
-import javafx.scene.layout.StackPane;
-import javafx.scene.web.WebView;
 
 /**
  * A syntax highlighting code editor for JavaFX created by wrapping a CodeMirror
@@ -12,9 +18,12 @@ import javafx.scene.web.WebView;
  * See http://codemirror.net for more information on using the codemirror
  * editor.
  */
-public class CodeEditor extends StackPane {
+public class CodeEditor extends BorderPane {
+	private static final Map<String,String> MIMES;
+	
 	/** a webview used to encapsulate the CodeMirror JavaScript. */
-	public final WebView webview = new WebView();
+	public final WebView	webview	= new WebView();
+	private String			mime	= "text/x-java";
 
 	/**
 	 * a snapshot of the code to be edited kept for easy initilization and
@@ -30,21 +39,34 @@ public class CodeEditor extends StackPane {
 	private static final String	editingTemplate	= Source.fromURL(CodeEditor.class.getResource("codemirror-4.8/editor.html"),
 			Codec.UTF8()).mkString();
 
+	public void refresh() {
+		webview.getEngine().loadContent(applyEditingTemplate());
+	}
+	
 	/**
 	 * applies the editing template to the editing code to create the
 	 * html+javascript source for a code editor.
 	 */
 	private String applyEditingTemplate() {
-		return editingTemplate.replace("${code}",editingCode);
+		return editingTemplate
+			.replace("${code}",editingCode)
+			.replace("${theme}",properties.getProperty(PREF_THEME))
+			.replace("${mime}",mime)
+			.replace("${language}",MIMES.get(mime));
 	}
-
+	
+	public void setLanguage(String mime) {
+		this.mime = mime;
+		refresh();
+	}
+	
 	/**
 	 * sets the current code in the editor and creates an editing snapshot of
 	 * the code which can be reverted to.
 	 */
 	public void setCode(String newCode) {
 		this.editingCode = newCode;
-		webview.getEngine().loadContent(applyEditingTemplate());
+		refresh();
 	}
 
 	/**
@@ -70,7 +92,17 @@ public class CodeEditor extends StackPane {
 	public CodeEditor(String editingCode) {
 		this.editingCode = editingCode;
 		webview.getEngine().loadContent(applyEditingTemplate());
-		this.getChildren().add(webview);
-		this.setPrefHeight(800);
+		setCenter(webview);
 	}
+	
+	 static {
+	        MIMES = new HashMap<>();
+	        MIMES.put("text/x-java"    ,"clike/clike.js"          );
+	        MIMES.put("text/x-c++src"  ,"clike/clike.js"          );
+	        MIMES.put("text/x-csrc"    ,"clike/clike.js"          );
+	        MIMES.put("text/x-scala"   ,"clike/clike.js"          );
+	        MIMES.put("text/x-stex"    ,"stex/stex.js"            );
+	        MIMES.put("text/javascript","javascript/javascript.js");
+	        MIMES.put("text/x-python"  ,"python/python.js"        );
+	    }
 }

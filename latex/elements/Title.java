@@ -11,7 +11,7 @@ public class Title extends AbstractLateXElement {
 	public String latexify() {
 		try {
 			String[] split = content.split(";");
-			return lm.makeTitlePage(split[0],split[1]);
+			return lm.makeTitlePage(split[0].trim(),split[1].trim());
 		} catch (ArrayIndexOutOfBoundsException e) {
 			throw new RuntimeException("Format du titre incorrect.\nLe format"
 					+ " attendu est Titre;Auteur.");
