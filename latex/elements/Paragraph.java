@@ -4,15 +4,15 @@ import latex.LateXMaker;
 
 public class Paragraph extends AbstractLateXElement {
 
-	public Paragraph(String content, LateXMaker lm) {
-		super(content, lm,"paragraph",5);
+	public Paragraph(String content) {
+		super(content,"paragraph",5);
 	}
 
-	public String latexify() {
+	public String latexify(LateXMaker lm) {
 		return lm.makeParagraph(content);
 	}
 	
 	public AbstractLateXElement clone() {		
-		return new Paragraph(getText(),lm);
+		return new Paragraph(content);
 	}
 }

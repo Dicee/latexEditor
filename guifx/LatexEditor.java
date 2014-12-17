@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,7 +29,6 @@ import java.util.function.Function;
 import javafx.application.Application;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -45,6 +45,7 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
@@ -70,6 +71,7 @@ import javafx.util.Pair;
 import latex.LateXFilter;
 import latex.LateXMaker;
 import latex.elements.LateXElement;
+import latex.elements.Template;
 import latex.elements.Title;
 
 import org.controlsfx.dialog.Dialogs;
@@ -83,14 +85,14 @@ import utils.TokenReader;
 
 public class LatexEditor extends Application {
 	private static final Map<Integer,List<String>>	NODES_TYPES_MAP;
-	private static final Map<String, String>		LANGUAGES;
-
+	private static final Map<String,String>			LANGUAGES;
+	private static final Map<String,List<Template>>	TEMPLATES;
+	
 	private static final int						INSERT_HEAD		= 0;
 	private static final int						INSERT_TAIL		= 1;
 
 	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
 
-	private final Node								rootIcon		= new ImageView(new Image(getClass().getResourceAsStream("/data/texIcon.png")));
 	private File									currentDir		= System.getenv("LATEX_HOME") == null ? null : new File(System.getenv("LATEX_HOME"));
 	private File									currentFile		= null;
 
@@ -118,8 +120,6 @@ public class LatexEditor extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-    	Settings.init();
-    	
         VBox root = new VBox(10);
         setTree();
         Node editZone = setEditZone();
@@ -187,7 +187,9 @@ public class LatexEditor extends Application {
     }
 
     private void setTree() {
-        treeRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title("",lm)),rootIcon);
+    	ImageView img = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("titleIcon"))));
+    	
+        treeRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title()),img);
         tree     = new TreeView<>(treeRoot);
         tree.setMinSize(200,50);
         treeRoot.setExpanded(true); 
@@ -229,6 +231,10 @@ public class LatexEditor extends Application {
                     }
                     if (newItem != null && newItem.getValue() != null) {
                         userTextArea.setText(newItem.getValue().bean.getText());
+                        
+                        if (newItem.getValue().bean instanceof Template)
+                        	buildAvailableTemplatesList(newItem.getValue().bean.getType());
+                        	
                         info.textProperty().bind(strings.getObservableProperty(newItem.getValue().bean.getType() + "Tip"));
                         currentNode = newItem;
                     }
@@ -259,6 +265,19 @@ public class LatexEditor extends Application {
 //				return cell;
 //			}
 //		});
+    }
+    
+    private void buildAvailableTemplatesList(String type) {
+    	ComboBox<Template> box = new ComboBox<>();
+    	switch (type) {
+    		case "template" :
+    			boolean init = true;
+    			for (Map.Entry<String,List<Template>> entry : TEMPLATES.entrySet()) {
+    				if (!init) {
+    					init = false;
+    				}
+    			}
+    	}
     }
 
 //	private void buildClipboardMenus(LateXElement elt) {
@@ -305,7 +324,7 @@ public class LatexEditor extends Application {
         if (!(elt instanceof Title)) {
             addMenu.getItems().add(delete = new MenuItem());
             delete.textProperty().bind(strings.getObservableProperty("delete"));
-            delete.setOnAction((ActionEvent ev) -> deleteNode(false));
+            delete.setOnAction(ev -> deleteNode(false));
         }
     }
     
@@ -344,7 +363,7 @@ public class LatexEditor extends Application {
                             MenuItem item = new MenuItem();
                             item.textProperty().bind(strings.getObservableProperty(type));
                             addChild.getItems().add(item);
-                            item.setOnAction((ActionEvent t) -> {
+                            item.setOnAction(ev -> {
                                 addChild(type, entry.getValue());
                                 addMenu.hide();
                             });
@@ -387,6 +406,7 @@ public class LatexEditor extends Application {
     }
     
     private Node setEditZone() {
+    	// set the text editor
         info          = new Label();
         userTextArea  = new TextArea();
         userTextArea.setPrefSize(600,550);
@@ -397,6 +417,7 @@ public class LatexEditor extends Application {
         editor.setPadding(new Insets(5));
         editor.setSpacing(5);
         
+        // set the left area (shortcuts for special characters)
         String[] ops = { "\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
 			"\\forall","\\partial","\\exists","\\nexists","\\varnothing",
 		 	"\\bigcap","\\bigcup","\\bigint","\\prod","\\sum",
@@ -428,21 +449,24 @@ public class LatexEditor extends Application {
         box.addSelectionView(operators);
         box.addSelectionView(greekAlphabet);
         
+        // set the left area (tree arborescence of the document)
         TitledPane treePane = new TitledPane("",tree);
         treePane.textProperty().bind(strings.getObservableProperty("treeTitle"));
-        tree.setPadding(new Insets(5,5,5,5));
-//        tree.setPadding(new Insets(50,5,5,5));
+//        tree.setPadding(new Insets(5,5,5,5));
+        tree.setPadding(new Insets(50,5,5,5));
         
         TitledPane boxPane  = new TitledPane("",box);
         boxPane.textProperty().bind(strings.getObservableProperty("boxTitle"));
-        box.setPadding(new Insets(5,5,5,5));
-//        box.setPadding(new Insets(5,5,5,20));
+//        box.setPadding(new Insets(5,5,5,5));
+        box.setPadding(new Insets(5,5,5,20));
         
+        // set the left area (add th tree and the shortcuts in an accordion)
         Accordion accordion = new Accordion(); 
         accordion.getPanes().addAll(treePane,boxPane);
         accordion.setExpandedPane(treePane);
         accordion.setPadding(new  Insets(10));
         
+        // set the code editor
         outputCode = new CodeEditor("");
         outputCode.setMinHeight(20);
         
@@ -458,7 +482,7 @@ public class LatexEditor extends Application {
 		paste.textProperty().bind(strings.getObservableProperty("pasteToEditor"));
 		
 		clear.setOnAction(ev -> outputCode.setCode(""));
-		paste.setOnAction(ev -> userTextArea.appendText(outputCode.getCodeAndSnapshot()));
+		paste.setOnAction(ev -> userTextArea.insertText(userTextArea.getCaretPosition(),outputCode.getCodeAndSnapshot()));
 		
 		HBox buttons = new HBox(10,label,languages,clear,paste);
 		buttons.setPadding(new Insets(10));
@@ -468,6 +492,7 @@ public class LatexEditor extends Application {
         outputTextArea.setMinHeight(50);
         outputTextArea.setEditable(false);
         
+        // merge all the elements
         SplitPane splitPane = new SplitPane();
         splitPane.setOrientation(Orientation.VERTICAL);
         splitPane.getItems().addAll(new HBox(editor,outputCode),outputTextArea);
@@ -479,10 +504,10 @@ public class LatexEditor extends Application {
         
         // handle resize events
         HBox.setHgrow(editor,Priority.ALWAYS);
-        HBox.setHgrow(tree,Priority.NEVER);
-        tree.setMinWidth(210);
-        tree.setMinHeight(560);
-        tree.setMaxHeight(560);
+        HBox.setHgrow(tree  ,Priority.NEVER);
+        tree  .setMinWidth(210);
+        tree  .setMinHeight(560);
+        tree  .setMaxHeight(560);
         editor.setMinWidth(420);
         userTextArea.setPrefHeight(700);
         
@@ -828,13 +853,13 @@ public class LatexEditor extends Application {
     }
 
     static {
-        NODES_TYPES_MAP = new HashMap<>();
-        NODES_TYPES_MAP.put(0,asList("title"));
-        NODES_TYPES_MAP.put(1,asList("chapter"));
-        NODES_TYPES_MAP.put(2,asList("section"));
-        NODES_TYPES_MAP.put(3,asList("subsection"));
-        NODES_TYPES_MAP.put(4,asList("subsubsection"));
-        NODES_TYPES_MAP.put(5,asList("paragraph","list","image","code","latex"));
+        NODES_TYPES_MAP = new HashMap<>(); 
+        NODES_TYPES_MAP.put(0,asList("title"                                             ));
+        NODES_TYPES_MAP.put(1,asList("chapter"                                           ));
+        NODES_TYPES_MAP.put(2,asList("section"                                           ));
+        NODES_TYPES_MAP.put(3,asList("subsection"                                        ));
+        NODES_TYPES_MAP.put(4,asList("subsubsection"                                     ));
+        NODES_TYPES_MAP.put(5,asList("paragraph","list","image","code","latex","template"));
     }
     
     static {
@@ -845,6 +870,30 @@ public class LatexEditor extends Application {
         LANGUAGES.put("Scala"     ,"text/x-scala"   );
         LANGUAGES.put("LaTeX"     ,"text/x-stex"    );
         LANGUAGES.put("Javascript","text/javascript");
-        LANGUAGES.put("Python"    ,"text/x-python");
+        LANGUAGES.put("Python"    ,"text/x-python"  );
     }
+    
+    // load the templates and all associated localized texts	
+	static {
+		Settings.init();
+		TEMPLATES = new HashMap<>();
+		try {
+			File dir = new File(LateXMaker.class.getResource("includes/templates").toURI());
+			Arrays.stream(dir.listFiles())
+				.filter(File::isDirectory)
+				.forEach(d -> Arrays.stream(d.listFiles())
+					.filter(File::isDirectory)
+					.map(templateDir -> {
+						Settings.loadTemplatesText(templateDir);
+						return new Template(new File(String.format("%s/%s.template",templateDir.getPath(),templateDir.getName())));
+					})
+					.forEach(t -> {
+						List<Template> list = TEMPLATES.containsKey(d.getName()) ? TEMPLATES.get(d.getName()) : new ArrayList<>();
+						list.add(t);
+						TEMPLATES.put(d.getName(),list);
+					}));
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+	}
 }

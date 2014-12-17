@@ -46,10 +46,8 @@ public class Package implements LateXElement, Comparable<Package> {
 	}
 
 	@Override
-	public String latexify() {
-		return option != null ?
-			String.format("\\usepackage[%s]{%s}",option,name) : 
-			String.format("\\usepackage{%s}",name);
+	public String latexify(LateXMaker lm) {
+		return lm.makePackage(option,name);
 	}
 
 	@Override

@@ -4,15 +4,15 @@ import latex.LateXMaker;
 
 public class Chapter extends AbstractLateXElement {
 
-	public Chapter(String content, LateXMaker lm) {
-		super(content,lm,"chapter",1);
+	public Chapter(String content) {
+		super(content,"chapter",1);
 	}
 
-	public String latexify() {
+	public String latexify(LateXMaker lm) {
 		return lm.makeChapter(content);
 	}
 
 	public AbstractLateXElement clone() {		
-		return new Chapter(getText(),lm);
+		return new Chapter(content);
 	}
 }

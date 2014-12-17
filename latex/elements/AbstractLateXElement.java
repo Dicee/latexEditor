@@ -1,16 +1,12 @@
 package latex.elements;
 
-import latex.LateXMaker;
-
 public abstract class AbstractLateXElement implements LateXElement {
 	protected String		content;
-	protected LateXMaker	lm;
 	private String			name;
 	private int				depth;
 	
-	public AbstractLateXElement(String content, LateXMaker lm, String name, int depth) {
+	public AbstractLateXElement(String content, String name, int depth) {
 		this.content = content;
-		this.lm      = lm;
 		this.name    = name;
 		this.depth   = depth;
 	}

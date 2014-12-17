@@ -4,16 +4,16 @@ import latex.LateXMaker;
 
 public class LateXCode extends AbstractLateXElement {
 
-	public LateXCode(String content, LateXMaker lm) {
-		super(content,lm,"latex",5);
+	public LateXCode(String content) {
+		super(content,"latex",5);
 	}
 
-	public String latexify() {
+	public String latexify(LateXMaker lm) {
 		return lm.makeLateXCode(content);
 	}
 
 	public AbstractLateXElement clone() {
-		return new LateXCode(getText(),lm);
+		return new LateXCode(getText());
 	}
 }
 

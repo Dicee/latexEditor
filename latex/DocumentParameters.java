@@ -1,6 +1,5 @@
 package latex;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -96,9 +95,9 @@ public class DocumentParameters {
 		includesView.clear();
 	}
 	
-	public StringBuilder latexify(StringBuilder sb) {
+	public StringBuilder latexify(StringBuilder sb, LateXMaker lm) {
 		return mkString("","","",
-			Package::latexify,
+			p -> p.latexify(lm),
 			name -> Source.fromURL(DocumentParameters.class.getResource("includes/" + name),Codec.UTF8()).addString(sb),
 			sb);
 	}

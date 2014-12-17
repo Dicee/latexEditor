@@ -6,6 +6,8 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.Function;
+
 import javafx.beans.property.StringProperty;
 import javafx.beans.property.StringPropertyBase;
 
@@ -18,6 +20,19 @@ public class ObservableProperties extends Properties {
 		if (!containsKey(key))
 			throw new IllegalArgumentException("No such property : " + key);
 		return properties.get(key);
+	}
+	
+	@Override 
+	public void putAll(Map<? extends Object,? extends Object> that) {
+		putAll(that,Function.identity(),Function.identity());
+	}
+	
+	public void putAll(Map<? extends Object,? extends Object> that, Function<String,String> mapKeys, Function<String,String> mapValues) {
+		for (Map.Entry<? extends Object,? extends Object> entry : that.entrySet()) {
+			if (!(entry.getKey() instanceof String) || !(entry.getValue() instanceof String))
+				throw new IllegalArgumentException("Parameter 'that' must be a Map<String,String>");
+			setProperty(mapKeys.apply((String) entry.getKey()),mapValues.apply((String) entry.getValue()));
+		}
 	}
 	
 	@Override

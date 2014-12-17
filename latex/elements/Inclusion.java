@@ -4,11 +4,11 @@ import latex.LateXMaker;
 
 public class Inclusion extends AbstractLateXElement {
 
-	public Inclusion(String content, LateXMaker lm) {
-		super(content, lm,"image",5);
+	public Inclusion(String content) {
+		super(content,"image",5);
 	}
 
-	public String latexify() {
+	public String latexify(LateXMaker lm) {
 		try {
 			String[] split = content.split(";");
 			return lm.includeGraphic(split[0].trim(),split[1].trim(),split[2].trim());
@@ -19,6 +19,6 @@ public class Inclusion extends AbstractLateXElement {
 	}
 	
 	public AbstractLateXElement clone() {		
-		return new Inclusion(getText(),lm);
+		return new Inclusion(getText());
 	}
 }

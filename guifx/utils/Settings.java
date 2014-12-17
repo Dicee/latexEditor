@@ -8,8 +8,10 @@ import impl.org.controlsfx.i18n.Localization;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,6 +34,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.ImageView;
+import latex.LateXMaker;
 
 public class Settings {
 	public static final Properties				properties		= new Properties();
@@ -54,11 +58,25 @@ public class Settings {
 
 	public static void init() {
 		// load preferences and program constants
-		loadProperties();	
+		loadProperties();
 		// load localised texts and descriptions
-		loadLocalizedTexts(properties.getProperty(properties.getProperty("defaultLanguage")));	
+		loadLocalizedTexts(properties.getProperty(properties.getProperty("defaultLanguage")));
 	}
-
+	
+	public static void loadTemplatesText(File dir) {
+		Properties p = new Properties();
+		try {
+			File f = new File(String.format("%s/lang/strings_%s.properties",dir.getPath(),
+				properties.getProperty("defaultLanguage")));
+			p.load(new FileReader(f));
+			
+			String name = String.format("%s.%sTemplate.",dir.getParentFile().getName(),dir.getName());
+			strings.putAll(p,s -> name + s,Function.identity());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	private static void loadProperties() {
 		try (InputStreamReader isr = new InputStreamReader(
 				Settings.class.getResourceAsStream("/properties/config.properties"))) {
@@ -169,8 +187,22 @@ public class Settings {
 			if (menu != preferences.get(PREF_LANGUAGE)) {
 				loadLocalizedTexts(properties.getProperty(propertyName));
 				Localization.setLocale(new Locale(lang,country));
+				changePreference(menu,PREF_LANGUAGE,propertyName,checkedIcon);
+				
+				File dir;
+				try {
+					dir = new File(LateXMaker.class.getResource("includes/templates").toURI());
+					Arrays.stream(dir.listFiles())
+					.filter(File::isDirectory)
+					.forEach(d -> Arrays.stream(d.listFiles())
+							.filter(File::isDirectory)
+							.forEach(templateDir -> {
+								Settings.loadTemplatesText(templateDir);
+							}));
+				} catch (URISyntaxException e) {
+					e.printStackTrace();
+				}
 			}
-			changePreference(menu,PREF_LANGUAGE,propertyName,checkedIcon);
 		};
 	}
 	

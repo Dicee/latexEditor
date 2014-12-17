@@ -2,13 +2,12 @@ package latex.elements;
 
 import latex.LateXMaker;
 
-public class Title extends AbstractLateXElement {
-
-	public Title(String content, LateXMaker lm) {
-		super(content, lm,"title",0);
+public class Title extends Template {
+	public Title() {
+		super("title",0);
 	}
 
-	public String latexify() {
+	public String latexify(LateXMaker lm) {
 		try {
 			String[] split = content.split(";");
 			return lm.makeTitlePage(split[0].trim(),split[1].trim());
@@ -18,7 +17,16 @@ public class Title extends AbstractLateXElement {
 		}
 	}
 	
-	public AbstractLateXElement clone() {		
-		return new Title(getText(),lm);
+//	@Override
+//	public String getType() {
+//		return "template";
+//	}
+	
+	@Override
+	public AbstractLateXElement clone() {
+		Title clone = new Title();
+		clone.content  = content;
+		clone.parameters.putAll(parameters);
+		return clone;
 	}
 }

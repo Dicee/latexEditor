@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import latex.elements.LateXElement;
 import utils.FilterWriter;
@@ -25,7 +26,7 @@ public class LateXMaker {
 	
 	 private String beginDocument() {
 		 StringBuilder sb = new StringBuilder();		
-		 parameters.latexify(sb); 
+		 parameters.latexify(sb,this); 
 		 
 		 sb.append("\n\\begin{document}\n");			
 		 sb.append("\\renewcommand{\\contentsname}{Sommaire}\n");
@@ -107,7 +108,7 @@ public class LateXMaker {
 		try {
 			fw = new FilterWriter(new BufferedWriter(new FileWriter(f)),new LateXFilter());
 			for (LateXElement elt : latexElements) 
-				fw.writeln(elt.latexify());	
+				fw.writeln(elt.latexify(this));	
 			fw.writeln(finishDocument());
 		} finally {
 			if (fw != null) {
@@ -128,6 +129,19 @@ public class LateXMaker {
 
 	public String makeSubSubSection(String content) {
 		return makeBalise("subsubsection",content);
+	}
+	
+	public String makeTemplate(String content, Map<String,String> params) {
+		String result = content;
+		for (Map.Entry<String,String> param : params.entrySet())
+			result = result.replace(String.format("${%s}",param.getKey()),param.getValue());
+		return result;
+	}
+	
+	public String makePackage(String option, String name) {
+		return option != null ?
+				String.format("\\usepackage[%s]{%s}",option,name) : 
+					String.format("\\usepackage{%s}",name);
 	}
 	
 	public DocumentParameters getParameters() {

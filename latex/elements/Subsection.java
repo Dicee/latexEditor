@@ -4,15 +4,15 @@ import latex.LateXMaker;
 
 public class Subsection extends AbstractLateXElement {
 
-	public Subsection(String content, LateXMaker lm) {
-		super(content, lm,"subsection",3);
+	public Subsection(String content) {
+		super(content,"subsection",3);
 	}
 
-	public String latexify() {
+	public String latexify(LateXMaker lm) {
 		return lm.makeSubsection(content);
 	}
 	
 	public AbstractLateXElement clone() {		
-		return new Subsection(getText(),lm);
+		return new Subsection(content);
 	}
 }

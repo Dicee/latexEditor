@@ -5,16 +5,16 @@ import latex.LateXMaker;
 
 public class SubSubSection extends AbstractLateXElement {
 
-	public SubSubSection(String content, LateXMaker lm) {
-		super(content,lm,"subsubsection",4);
+	public SubSubSection(String content) {
+		super(content,"subsubsection",4);
 	}
 
-	public String latexify() {
+	public String latexify(LateXMaker lm) {
 		return lm.makeSubSubSection(content);
 	}
 
 	public AbstractLateXElement clone() {
-		return new SubSubSection(content,lm);
+		return new SubSubSection(content);
 	}
 
 }
