@@ -268,15 +268,16 @@ public class LatexEditor extends Application {
     }
     
     private void buildAvailableTemplatesList(String type) {
-    	ComboBox<Template> box = new ComboBox<>();
+    	Menu result = new Menu();
     	switch (type) {
     		case "template" :
-    			boolean init = true;
     			for (Map.Entry<String,List<Template>> entry : TEMPLATES.entrySet()) {
-    				if (!init) {
-    					init = false;
-    				}
+                    if (!entry.getKey().equals("title"));
+                    	result.getItems().add(new SeparatorMenuItem());
     			}
+    		case "title" :
+    		default :
+    			throw new IllegalArgumentException(String.format("Unkown type %s",type));
     	}
     }
 
@@ -330,15 +331,15 @@ public class LatexEditor extends Application {
     
     private void buildAddMenus(LateXElement elt) {
         Menu addChildHead, addChildTail, addSibling = null;
-        Map<Menu, Integer> map = null;
+        Map<Menu,Integer> map = null;
         
         // determine the main elements of the popup
         if (elt.getDepth() != LateXElement.DEPTH_MAX) {
             addMenu.getItems().add(addChildHead = new Menu());
             addMenu.getItems().add(addChildTail = new Menu());
             map = new HashMap<>(); 
-            map.put(addChildHead, INSERT_HEAD);
-            map.put(addChildTail, INSERT_TAIL);
+            map.put(addChildHead,INSERT_HEAD);
+            map.put(addChildTail,INSERT_TAIL);
             
             addChildHead.textProperty().bind(strings.getObservableProperty("addChildHead"));
             addChildTail.textProperty().bind(strings.getObservableProperty("addChildTail"));
@@ -353,10 +354,10 @@ public class LatexEditor extends Application {
         for (Integer depth : NODES_TYPES_MAP.keySet()) {
             // first, the children elements
             if (map != null) {
-                map.entrySet().stream().forEach((Map.Entry<Menu, Integer> entry) -> {
+                map.entrySet().stream().forEach(entry -> {
                     Menu addChild = entry.getKey();
                     if (depth > elt.getDepth()) {
-                        if (addChild.getItems().size() != 0) 
+                        if (!addChild.getItems().isEmpty()) 
                             addChild.getItems().add(new SeparatorMenuItem());
                         
                         for (String type : NODES_TYPES_MAP.get(depth)) {
