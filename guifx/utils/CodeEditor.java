@@ -38,7 +38,7 @@ public class CodeEditor extends BorderPane {
 	 */
 	private static final String	editingTemplate	= Source.fromURL(CodeEditor.class.getResource("codemirror-4.8/editor.html"),
 			Codec.UTF8()).mkString();
-
+	
 	public void refresh() {
 		webview.getEngine().loadContent(applyEditingTemplate());
 	}

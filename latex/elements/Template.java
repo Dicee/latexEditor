@@ -13,8 +13,8 @@ import scala.io.Codec;
 import scala.io.Source;
 
 public class Template extends AbstractLateXElement {
-	protected final Map<String,String> parameters = new HashMap<>();
-	protected String templateName;
+	protected final Map<String, String>	parameters		= new HashMap<>();
+	protected String					templateName	= "";
 	
 	public Template() { super("","template",5); }
 	
@@ -57,17 +57,50 @@ public class Template extends AbstractLateXElement {
 		load(file,f -> Source.fromFile(f,Codec.UTF8()).mkString(),name);
 	}
 
+	private void setContents(String content, String templateName) {
+		this.parameters.putAll(parameters);
+		this.content      = content;
+		this.templateName = templateName;
+	}
+	
+	public void copyFrom(String textified, String content, String templateName) {
+		Pattern p = Pattern.compile("((.+)\\s*=\\s*(.+))");
+		Matcher m = p.matcher(textified);
+		while (m.find()) parameters.put(m.group(2),m.group(3));
+		setContents(content,templateName);
+	}
+	
+	public void copyFrom(Template t) {
+		parameters.clear();
+		parameters.putAll(t.parameters);
+		setContents(t.content,t.templateName);
+	}
+	
 	public Map<String,String> getParameters() {
 		return parameters;
 	}
 	
-	public String getTemplateName() {
+	public String getAbsoluteTemplateName() {
 		return templateName;
+	}
+	
+	public String getTemplateName() {
+		return templateName.substring(templateName.lastIndexOf(".") + 1);
 	}
 
 	@Override
 	public String latexify(LateXMaker lm) {
 		return lm.makeTemplate(content,parameters);
+	}
+	
+	@Override
+	public String textify() {
+		StringBuilder sb = new StringBuilder(String.format("%s[%s] ##\n",name,getAbsoluteTemplateName()));
+		parameters.entrySet().stream()
+			.filter(entry ->! entry.getValue().isEmpty())
+			.forEach(entry -> sb.append(String.format("%s=%s\n",entry.getKey(),entry.getValue())));
+		sb.append("\n##\n");
+		return sb.toString().trim();
 	}
 	
 	@Override
@@ -80,6 +113,6 @@ public class Template extends AbstractLateXElement {
 	
 	@Override
 	public String toString() {
-		return templateName;
+		return getAbsoluteTemplateName();
 	}
 }	

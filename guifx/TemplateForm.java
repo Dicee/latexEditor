@@ -5,6 +5,7 @@ import static guifx.utils.Settings.strings;
 import java.util.Iterator;
 import java.util.Map;
 
+import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
@@ -18,20 +19,18 @@ public class TemplateForm extends GridPane {
 		if (it.hasNext()) {
 			Map.Entry<String,String> param;
 			int i;
-			for (i=0, param = it.next() ; it.hasNext() ; i++, param = it.next()) {
+			for (i=0, param = it.hasNext() ? it.next() : null ; param != null ; i++, param = it.hasNext() ? it.next() : null) {
 				Label     label = new Label();
 				TextField field = new TextField(param.getValue());
 				
-				label.textProperty().bind(strings.getObservableProperty(String.format("%s.%s",t.getTemplateName(),param.getKey())));
+				final String key = param.getKey();
+				field.textProperty().addListener((ObservableValue<? extends String> obs, String oldValue, String newValue) -> params.put(key,newValue));
+				label.textProperty().bind(strings.getObservableProperty(String.format("%s.%s",t,key)));
 				label.setFont(LatexEditor.subtitlesFont);
 
-				if (i % 2 == 0) {
-					add(label,0,i/2);
-					add(field,1,i/2);
-				} else {
-					add(label,2,i/2);
-					add(field,3,i/2);
-				}
+				int nCols = 4, mod = i % nCols;
+				add(label,2*mod    ,i/nCols);
+				add(field,2*mod + 1,i/nCols);
 			}
 			setHgap(10);
 			setVgap(5);

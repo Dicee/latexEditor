@@ -2,7 +2,7 @@ package latex.elements;
 
 public abstract class AbstractLateXElement implements LateXElement {
 	protected String		content;
-	private String			name;
+	protected String		name;
 	private int				depth;
 	
 	public AbstractLateXElement(String content, String name, int depth) {

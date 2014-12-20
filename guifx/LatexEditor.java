@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javafx.application.Application;
 import javafx.beans.value.ObservableValue;
@@ -33,7 +36,9 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
+import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
+import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Accordion;
@@ -45,7 +50,6 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
-import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
@@ -86,7 +90,7 @@ import utils.TokenReader;
 public class LatexEditor extends Application {
 	private static final Map<Integer,List<String>>	NODES_TYPES_MAP;
 	private static final Map<String,String>			LANGUAGES;
-	private static final Map<String,List<Template>>	TEMPLATES;
+	public static final Map<String,List<Template>>	TEMPLATES;
 	
 	private static final int						INSERT_HEAD		= 0;
 	private static final int						INSERT_TAIL		= 1;
@@ -110,6 +114,7 @@ public class LatexEditor extends Application {
 	
 	
 	private ContextMenu								addMenu			= new ContextMenu();
+	private ContextMenu								templatesList	= new ContextMenu();
 	private MenuBar									menuBar;
 	
 	private TextArea								userTextArea;
@@ -117,6 +122,10 @@ public class LatexEditor extends Application {
 	private CodeEditor								outputCode;
 	private MenuItem								generate;
 	private Label									info;
+	
+	private Consumer<Node> 							setEditorZone;
+	private Node									textMode;
+	private SplitPane								splitPane;
 
     @Override
     public void start(Stage primaryStage) {
@@ -181,7 +190,6 @@ public class LatexEditor extends Application {
         String url     = properties.getProperty(command + "Icon");
         Node   icon    = new ImageView(new Image(getClass().getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
         
-        l = LateXElement.newLateXElement(command,l.getText(),lm);
         NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),l);
         return icon == null ? new TreeItem<>(no) : new TreeItem<>(no,icon);
     }
@@ -230,11 +238,15 @@ public class LatexEditor extends Application {
                         formerItem.getValue().bean.setText(userTextArea.getText());                      
                     }
                     if (newItem != null && newItem.getValue() != null) {
-                        userTextArea.setText(newItem.getValue().bean.getText());
                         
                         if (newItem.getValue().bean instanceof Template)
-                        	buildAvailableTemplatesList(newItem.getValue().bean.getType());
-                        	
+                        	buildAvailableTemplatesList((Template) newItem.getValue().bean);
+                        else {
+                        	userTextArea.setText(newItem.getValue().bean.getText());
+                        	setEditorZone.accept(textMode);
+                        }
+                        splitPane.setDividerPositions(0.5);
+                        splitPane.autosize();
                         info.textProperty().bind(strings.getObservableProperty(newItem.getValue().bean.getType() + "Tip"));
                         currentNode = newItem;
                     }
@@ -267,20 +279,64 @@ public class LatexEditor extends Application {
 //		});
     }
     
-    private void buildAvailableTemplatesList(String type) {
-    	Menu result = new Menu();
-    	switch (type) {
+    private void buildAvailableTemplatesList(Template t) {
+    	templatesList.getItems().clear();
+    	
+    	// creation of the UI elements 
+    	Button showMenu = new Button();
+    	showMenu.textProperty().bind(strings.getObservableProperty("showAvailableTemplates"));
+    	showMenu.setOnAction(ev -> {
+    		if (!templatesList.isShowing())
+    			templatesList.show(showMenu,Side.RIGHT,0,0);
+    		else 
+    			templatesList.hide();
+    	});
+    	
+    	BorderPane borderPane = new BorderPane();
+    	borderPane.setTop(showMenu);
+    	borderPane.setPadding(new Insets(15));
+    	borderPane.setPrefHeight(300);
+    	BorderPane.setAlignment(showMenu,Pos.CENTER);
+    	BorderPane.setMargin(showMenu,new Insets(10,10,30,10));
+    	
+    	// creation of the popup menu
+    	Function<String,Consumer<List<Template>>> createMenu = title -> {
+    		Menu menu = new Menu(title);
+    		return templates -> {
+    			templates.stream().forEach(template -> {
+    				MenuItem item = new MenuItem(template.getTemplateName());
+    				item.setOnAction(ev -> { 
+    					t.copyFrom(template);
+    					TemplateForm form = new TemplateForm(t);
+    					borderPane.setCenter(form); 
+    					BorderPane.setAlignment(form,Pos.CENTER);
+    				});
+    				menu.getItems().add(item);
+        		});
+    			templatesList.getItems().add(menu);
+        	};
+    	};
+    	
+    	switch (t.getType()) {
     		case "template" :
-    			for (Map.Entry<String,List<Template>> entry : TEMPLATES.entrySet()) {
-                    if (!entry.getKey().equals("title"));
-                    	result.getItems().add(new SeparatorMenuItem());
-    			}
+    			for (Map.Entry<String,List<Template>> entry : TEMPLATES.entrySet())
+                    if (!entry.getKey().equals("title")) 
+                    	createMenu.apply(entry.getKey()).accept(entry.getValue());
+    			break;
     		case "title" :
+    			createMenu.apply("titlePage").accept(TEMPLATES.get("titlePage"));
+    			break;
     		default :
-    			throw new IllegalArgumentException(String.format("Unkown type %s",type));
+    			throw new IllegalArgumentException(String.format("Unkown type %s",t.getType()));
     	}
+    	
+    	TemplateForm form = new TemplateForm(t);
+		borderPane.setCenter(form); 
+		BorderPane.setAlignment(form,Pos.CENTER);
+		
+		setEditorZone.accept(borderPane);
     }
-
+    
 //	private void buildClipboardMenus(LateXElement elt) {
 //		if (!(elt instanceof Title)) {
 //			MenuItem copy  = new MenuItem("Copier");
@@ -365,7 +421,7 @@ public class LatexEditor extends Application {
                             item.textProperty().bind(strings.getObservableProperty(type));
                             addChild.getItems().add(item);
                             item.setOnAction(ev -> {
-                                addChild(type, entry.getValue());
+                                addChild(type,entry.getValue());
                                 addMenu.hide();
                             });
                         }
@@ -386,7 +442,7 @@ public class LatexEditor extends Application {
     }
     
     private void addSibling(String command) {
-        TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,"",lm));
+        TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
         ObservableList<TreeItem<NamedObject<LateXElement>>> children = currentNode.getParent().getChildren();
         int i = children.indexOf(currentNode); 
         if (i == children.size() - 1)
@@ -397,7 +453,7 @@ public class LatexEditor extends Application {
     }
 
     private void addChild(String command, int option) {
-        TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,"",lm));
+        TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
         if (option == INSERT_TAIL)
             currentNode.getChildren().add(newElt);
         else
@@ -414,9 +470,9 @@ public class LatexEditor extends Application {
         info.textProperty().bind(strings.getObservableProperty("editZoneTip"));
         info.setFont(subtitlesFont);
         
-        VBox editor = new VBox(info,userTextArea); 
-        editor.setPadding(new Insets(5));
-        editor.setSpacing(5);
+        VBox textEditor = new VBox(info,userTextArea); 
+        textEditor.setPadding(new Insets(5));
+        textEditor.setSpacing(5);
         
         // set the left area (shortcuts for special characters)
         String[] ops = { "\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
@@ -494,9 +550,12 @@ public class LatexEditor extends Application {
         outputTextArea.setEditable(false);
         
         // merge all the elements
-        SplitPane splitPane = new SplitPane();
+        textMode  = new HBox(textEditor,outputCode);
+        splitPane = new SplitPane();
         splitPane.setOrientation(Orientation.VERTICAL);
-        splitPane.getItems().addAll(new HBox(editor,outputCode),outputTextArea);
+        splitPane.getItems().addAll(textMode,outputTextArea);
+        
+        this.setEditorZone = nodes -> splitPane.getItems().set(0,nodes);
         
         BorderPane borderPane = new BorderPane();
         borderPane.setLeft(accordion);
@@ -504,13 +563,16 @@ public class LatexEditor extends Application {
         borderPane.setPadding(new Insets(15));
         
         // handle resize events
-        HBox.setHgrow(editor,Priority.ALWAYS);
-        HBox.setHgrow(tree  ,Priority.NEVER);
-        tree  .setMinWidth(210);
-        tree  .setMinHeight(560);
-        tree  .setMaxHeight(560);
-        editor.setMinWidth(420);
-        userTextArea.setPrefHeight(700);
+        HBox.setHgrow(textEditor,Priority.ALWAYS);
+        HBox.setHgrow(tree      ,Priority.NEVER);
+        tree          .setMinWidth  (210);
+        tree          .setMinHeight (500);
+        textEditor    .setMinWidth  (420);
+        userTextArea  .setPrefHeight(420);
+        outputTextArea.setPrefHeight(100);
+        
+        splitPane.setDividerPositions(0.5);
+        splitPane.autosize();
         
         return borderPane;
     }
@@ -818,12 +880,15 @@ public class LatexEditor extends Application {
                     		lm.getParameters().include(content.split("[;\\s+]|;\\s+"));
                     		break;
                     	default         :
-                    		int i       = declaration.lastIndexOf('>');
-                    		String name = i == -1 ? "" : declaration.substring(0, i + 1);
-                    		String type = i == -1 ? declaration : declaration.substring(i + 1).trim();
+                    		Pattern p = Pattern.compile("\\s*(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?\\s*");
+                    		Matcher m = p.matcher(declaration);
                     		
-                    		names.add(name);
-                    		elements.add(LateXElement.newLateXElement(type,content,lm));
+                    		Predicate<String> nullOrEmpty = str -> str == null || str.isEmpty();
+                    		
+                    		if (m.matches()) {
+                    			elements.add(LateXElement.newLateXElement(m.group(2) + (nullOrEmpty.test(m.group(4)) ? "" : m.group(3)),content));
+                    			names.add(m.group(1));
+                    		} 
                     }
                 }
                 
@@ -840,7 +905,7 @@ public class LatexEditor extends Application {
         		.masthead(strings.getProperty("anErrorOccurredMessage"))
         		.message(String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()))
         		.showError();
-        }catch (IOException e) {
+        } catch (IOException e) {
         	Dialogs.create().owner(primaryStage)
     			.title(strings.getProperty("error"))
     			.masthead(strings.getProperty("anErrorOccurredMessage"))

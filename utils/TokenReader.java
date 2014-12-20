@@ -31,6 +31,6 @@ public class TokenReader extends BufferedReader {
 			result.append(ch);
 			delim.addLast(ch);
 		}
-		return result.length() == 0 ? null : result.substring(0,result.length() - len);
+		return result.length() < len ? null : result.substring(0,result.length() - len);
 	}
 }
