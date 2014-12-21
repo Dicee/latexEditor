@@ -34,6 +34,7 @@ LaTeXEditor provides the following features :
 - the split pane resizes incorrectly when passing from the template view and the text editor view (or vice-versa)
 - DVI preview (using latex command) and pdf generation (using pdflatex command) are incompatible for the use of image resources for \includegraphics. One solution is to convert all the images to eps format so that it will work for the DVI preview and follow this example to make the pdf compilation work :
 
+```latex
 \documentclass{article}
 \usepackage{graphicx}
 \usepackage{epstopdf}
@@ -41,5 +42,6 @@ LaTeXEditor provides the following features :
 \begin{document}
 \includegraphics[width=\textwidth]{jsf} % loads sine-eps-converted-to.pdf
 \end{document}
+```
 
 As far as I'm concerned, I just don't use the DVI preview anymore and open the generated pdf under Google Chrome and refresh it each time needed. It could become a long term solution, requiring the user to define some alias to a pdf reader and call it through a ProcessBuilder.
