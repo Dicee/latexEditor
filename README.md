@@ -21,7 +21,8 @@ LaTeXEditor provides the following features :
 
 ### Compilation
 
-To compile, Scala is required as long as JDK 8
+- Scala 2.1 or later
+- JDK 8 or later
 
 ### Use
 
