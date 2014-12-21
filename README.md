@@ -32,7 +32,7 @@ LaTeXEditor provides the following features :
 ## Known issues
 
 - the split pane resizes incorrectly when passing from the template view and the text editor view (or vice-versa)
-- DVI preview (using latex command) and pdf generation (using pdflatex command) are incompatible for the use of image resources for \includegraphics. One solution is to convert all the images to eps format so that it will work for the DVI preview and follow this example to make the pdf compilation work :
+- DVI preview (using latex command) and pdf generation (using pdflatex command) are incompatible for the use of image resources with `\includegraphics`. One solution is to convert all the images to eps format so that it will work for the DVI preview and follow this example to make the pdf compilation work :
 
 ```latex
 \documentclass{article}
