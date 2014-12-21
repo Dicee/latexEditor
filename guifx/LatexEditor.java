@@ -129,8 +129,9 @@ public class LatexEditor extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        VBox root = new VBox(10);
-        setTree();
+    	setTree();
+    	
+        VBox root     = new VBox(10);
         Node editZone = setEditZone();
         setMenuBar(); 
         this.primaryStage = primaryStage;
@@ -197,8 +198,9 @@ public class LatexEditor extends Application {
     private void setTree() {
     	ImageView img = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("titleIcon"))));
     	
-        treeRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title()),img);
-        tree     = new TreeView<>(treeRoot);
+    	treeRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title()),img);
+    	tree     = new TreeView<>(treeRoot);
+    	
         tree.setMinSize(200,50);
         treeRoot.setExpanded(true); 
         currentNode = treeRoot; 
@@ -235,10 +237,11 @@ public class LatexEditor extends Application {
                         String text = userTextArea.getText();
                         if (!currentNode.getValue().bean.getText().equals(text))
                             setSaved(false);
-                        formerItem.getValue().bean.setText(userTextArea.getText());                      
+                        if (!(formerItem.getValue().bean instanceof Template))
+                        	formerItem.getValue().bean.setText(userTextArea.getText());                      
                     }
+                    
                     if (newItem != null && newItem.getValue() != null) {
-                        
                         if (newItem.getValue().bean instanceof Template)
                         	buildAvailableTemplatesList((Template) newItem.getValue().bean);
                         else {
@@ -281,7 +284,7 @@ public class LatexEditor extends Application {
     
     private void buildAvailableTemplatesList(Template t) {
     	templatesList.getItems().clear();
-    	
+    	System.out.println("hey " + t.getParameters());
     	// creation of the UI elements 
     	Button showMenu = new Button();
     	showMenu.textProperty().bind(strings.getObservableProperty("showAvailableTemplates"));
@@ -628,7 +631,8 @@ public class LatexEditor extends Application {
     
     private void save() {
         try {
-            currentNode.getValue().bean.setText(userTextArea.getText());
+        	if (!(currentNode.getValue().bean instanceof Template))
+        		currentNode.getValue().bean.setText(userTextArea.getText());
             if (currentFile != null) {
                 File f                           = new File(currentFile.getAbsolutePath());
                 FilterWriter fw                  = new FilterWriter(new BufferedWriter(new FileWriter(f)), new LateXFilter());
@@ -706,8 +710,15 @@ public class LatexEditor extends Application {
                 file = new File(s + ".javatex");
             
             currentFile = file;
+            
+            lateXElements = new ArrayList<>();
+            lateXElements.add(new Title());
+            
+            List<String> names = new ArrayList<>();
+            names.add(" ");
+            setElements(new NamedList<>(names,lateXElements));
             save();
-			
+            
             primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
             generate.setDisable(false); 
         }       
@@ -760,8 +771,8 @@ public class LatexEditor extends Application {
     }
     
     public void setElements(NamedList<LateXElement> elts) {
+    	tree.getSelectionModel().clearSelection();
         treeRoot.getChildren().clear();
-        tree.getSelectionModel().select(treeRoot);
         
         LateXElement              root = elts.getValue().get(0);
         NamedObject<LateXElement> no   = new NamedObject<LateXElement>(strings.getObservableProperty(root.getType()),root);
@@ -772,6 +783,8 @@ public class LatexEditor extends Application {
         tree.getSelectionModel().select(treeRoot);
 		treeRoot.setExpanded(false);
         userTextArea.setDisable(false);
+        
+        tree.getSelectionModel().select(treeRoot);
     }
     
     public void toPdf() throws IOException {
@@ -851,7 +864,6 @@ public class LatexEditor extends Application {
     		f.setInitialDirectory(currentDir);
     	
     	File file = f.showOpenDialog(primaryStage);
-    	
         try {
             if (file != null) {
                 currentDir = file.getParentFile();

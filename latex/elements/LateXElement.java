@@ -40,7 +40,6 @@ public interface LateXElement extends Textifiable {
             			.filter(template -> template.getAbsoluteTemplateName().equals(m.group(2)))
             			.findFirst()
             			.get());
-            		System.out.println(t.getClass() + " " + m.group(1));
             	}
             	
             	t.copyFrom(content,from.getText(),from.getAbsoluteTemplateName());

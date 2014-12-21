@@ -90,7 +90,7 @@ public class Template extends AbstractLateXElement {
 
 	@Override
 	public String latexify(LateXMaker lm) {
-		return lm.makeTemplate(content,parameters);
+		return lm.makeTemplate(this);
 	}
 	
 	@Override
@@ -99,8 +99,8 @@ public class Template extends AbstractLateXElement {
 		parameters.entrySet().stream()
 			.filter(entry ->! entry.getValue().isEmpty())
 			.forEach(entry -> sb.append(String.format("%s=%s\n",entry.getKey(),entry.getValue())));
-		sb.append("\n##\n");
-		return sb.toString().trim();
+		sb.append("##");
+		return sb.toString();
 	}
 	
 	@Override
@@ -111,8 +111,25 @@ public class Template extends AbstractLateXElement {
 		return clone;
 	}
 	
+	public boolean assertProperty(String property) {
+		Pattern p = Pattern.compile("(.+)\\s*!=\\s*null");
+		Matcher m = p.matcher(property.trim());
+
+		if (m.matches()) {
+			String s = parameters.get(m.group(1));
+			return s != null && !s.isEmpty();
+		} else            
+			return false;
+	}
+	
 	@Override
 	public String toString() {
 		return getAbsoluteTemplateName();
+	}
+	
+	@Override
+	public void setText(String s) {
+		super.setText(s);
+		System.out.println("hého !!!!");
 	}
 }	

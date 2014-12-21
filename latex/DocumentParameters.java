@@ -103,7 +103,7 @@ public class DocumentParameters {
 	}
 	
 	public StringBuilder textify(StringBuilder sb) {
-		return mkString(" packages ##\n","##\n commands ##\n","##\n",
+		return mkString(" packages ##\n","##\n commands ##\n","##",
 			Package::toString,
 			name -> sb.append(name + "\n"),
 			sb);

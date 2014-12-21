@@ -8,7 +8,7 @@
 
 \begin{minipage}[t]{0.48\textwidth}
   \begin{flushleft}
-    \includegraphics [width=30mm]{${image_left}} \\[0.5cm]
+    {?image_left!=null? \includegraphics [width=30mm]{${image_left}} \\[0.5cm] ?}
     \begin{spacing}{1.5}
       \textsc{\LARGE ${legend_left}}
     \end{spacing}
@@ -16,7 +16,7 @@
 \end{minipage}
 \begin{minipage}[t]{0.48\textwidth}
   \begin{flushright}
-    \includegraphics [width=30mm]{${image_right}} \\[0.5cm]
+    {?image_right!=null? \includegraphics [width=30mm]{${image_right}} \\[0.5cm] ?}
     \textsc{\LARGE ${legend_right}}
   \end{flushright}
 \end{minipage} \\[1.5cm]
