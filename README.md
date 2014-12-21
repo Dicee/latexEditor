@@ -31,7 +31,7 @@ LaTeXEditor provides the following features :
 
 ## Known issues
 
-- the split pane resizes incorrectly when passing from the template view and the text editor view (or vice-versa)
+- the split pane resizes incorrectly when passing from the template view to the text editor view (or vice-versa)
 - DVI preview (using latex command) and pdf generation (using pdflatex command) are incompatible for the use of image resources with `\includegraphics`. One solution is to convert all the images to eps format so that it will work for the DVI preview and follow this example to make the pdf compilation work :
 
 ```latex
@@ -40,7 +40,7 @@ LaTeXEditor provides the following features :
 \usepackage{epstopdf}
 \epstopdfsetup{update} % only regenerate pdf files when eps file is newer
 \begin{document}
-\includegraphics[width=\textwidth]{jsf} % loads sine-eps-converted-to.pdf
+\includegraphics[width=\textwidth]{sine} % loads sine-eps-converted-to.pdf
 \end{document}
 ```
 
