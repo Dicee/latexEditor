@@ -1,5 +1,4 @@
 # LaTexEditor
-===========
 
 LaTeXEditor is a graphic text editor (JavaFX UI), which enables to compose LateX reports.
 
@@ -22,11 +21,12 @@ LaTeXEditor provides the following features :
 
 ### Compilation
 
-To compile, Scala is required as long as JDK 8.
+To compile, Scala is required as long as JDK 8
 
 ### Use
 
-A jre with a version greater than 1.8 should do.
+- A jre with a version greater than 1.8 should do.
+- MikTeX installed on the machine and present in the environment variable PATH
 
 
 
