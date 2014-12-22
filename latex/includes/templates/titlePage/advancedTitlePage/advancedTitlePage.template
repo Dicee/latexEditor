@@ -2,8 +2,8 @@
 \newcommand{\reporttitle}{${title}}
 \newcommand{\reportauthor}{${author}}
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
-\begin{titlepage}
 
+\begin{titlepage}
 \begin{center}
 
 \begin{minipage}[t]{0.48\textwidth}
@@ -43,3 +43,5 @@
 {\large ${date}}
 \end{center}
 \end{titlepage}
+
+\tableofcontents

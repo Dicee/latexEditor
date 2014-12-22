@@ -1,6 +1,8 @@
 package latex;
 
 import java.io.BufferedWriter;
+import static latex.LateXFilter.filter;
+import static java.lang.String.format;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,7 +14,6 @@ import java.util.regex.Pattern;
 import latex.elements.LateXElement;
 import latex.elements.Template;
 import scala.collection.mutable.StringBuilder;
-import utils.FilterWriter;
 
 public class LateXMaker {
 	private int						chapterCount	= 0, figureCount = 1;
@@ -40,15 +41,15 @@ public class LateXMaker {
 	}
 	
 	public String makeParagraph(String text) {
-		return "\\paragraph{}\n\\hspace{" + parameters.getAlinea() + "}\\textnormal{" + text + "}\n";
+		return format("\\paragraph{}\n\\hspace{%s}\\textnormal{%s}\n",parameters.getAlinea(),filter(text));
 	}
 	
 	private String makeBalise(String name, String content) {		
-		return "\\" + name + "{" + content +"}\n";	
+		return format("\\%s{%s}\n",name,filter(content));	
 	}
 	
 	public String makeCodeListing(String language, String text) {
-		return String.format("\\begin{lstlisting}[language=%s]\n%s\n\\end{lstlisting}",language,text.trim());
+		return format("\\begin{lstlisting}[language=%s]\n%s\n\\end{lstlisting}",language,language.equals("latex") ? text.trim() : format(text.trim()));
 	}
 	
 	public String makeChapter(String content) {
@@ -66,20 +67,20 @@ public class LateXMaker {
 	}
 	
 	public String makeList(String[] list) {
-		String result = "~\\\\\n\\begin{itemize}\n";
+		StringBuilder result = new StringBuilder("~\\\\\n\\begin{itemize}\n");
 			for (String elt : list) 
-				result += "\\item " + elt.trim() + "\\vspace{1mm}\n";
+				result.append(format("\\item %s\\vspace{1mm}\n",filter(elt.trim())));
 		return result + "\\end{itemize}\n";
 	}
 		
 	public String includeGraphic(String path, String caption, float scale) {
-		String result = "";
-		result += "\\begin{center}\n";
-		result += "\\includegraphics[scale=" + scale + "]{" + path + "}\n";
-		result += "~\\\\~\\\\Figure " + romanNumbers[chapterCount-1] + "." + figureCount + " - " + caption + "\n";
-		result += "\\end{center}\n";
+		StringBuilder result = new StringBuilder("");
+		result.append("\\begin{center}\n");
+		result.append(format("\\includegraphics[scale=%f]{%s}\n",scale,path));
+		result.append(format("~\\\\~\\\\Figure %d.%d - %s\n",romanNumbers[chapterCount-1],figureCount,filter(caption)));
+		result.append("\\end{center}\n");
 		figureCount++;
-		return result;
+		return result.toString();
 	}
 	
 	public String finishDocument() {
@@ -90,13 +91,13 @@ public class LateXMaker {
 		chapterCount = 0;
 		figureCount  = 1;
 		
-		FilterWriter fw = null;
+		BufferedWriter fw = null;
 		try {
-			fw = new FilterWriter(new BufferedWriter(new FileWriter(f)),new LateXFilter());
-			fw.writeln(beginDocument());
+			fw = new BufferedWriter(new FileWriter(f));
+			fw.write(beginDocument() + "\n");
 			for (LateXElement elt : latexElements) 
-				fw.writeln(elt.latexify(this));	
-			fw.writeln(finishDocument());
+				fw.write(elt.latexify(this) + "\n");	
+			fw.write(finishDocument() + "\n");
 		} finally {
 			if (fw != null) {
 				fw.flush();
@@ -118,23 +119,22 @@ public class LateXMaker {
 	}
 	
 	public String makeTemplate(Template t) {
-		String result = t.getText();
-
-		Pattern p = Pattern.compile("\\{\\?\\s*(.+)\\s*\\?\\s*(.*)\\s*\\?\\s*\\}");
-		Matcher m = p.matcher(result);
+		String  result = t.getText();
+		Pattern p      = Pattern.compile("(?s)\\{\\?\\s*(.+?)\\s*\\?\\s*(.*?)\\s*\\?\\s*\\}");
+		Matcher m      = p.matcher(result);
 		
 		while (m.find()) 
-			result = result.replace(m.group(0),t.assertProperty(m.group(1)) ? m.group(2) : "");
+			result = result.replace(m.group(0),t.assertProperty(m.group(1)) ? m.group(2).trim() : "");
 		
 		for (Map.Entry<String,String> param : t.getParameters().entrySet())
-			result = result.replace(String.format("${%s}",param.getKey()),param.getValue());
+			result = result.replace(String.format("${%s}",param.getKey()),filter(param.getValue().trim()));
 		return result;
 	}
 	
 	public String makePackage(String option, String name) {
 		return option != null ?
-				String.format("\\usepackage[%s]{%s}",option,name) : 
-					String.format("\\usepackage{%s}",name);
+			String.format("\\usepackage[%s]{%s}",option,name) : 
+			String.format("\\usepackage{%s}",name);
 	}
 	
 	public DocumentParameters getParameters() {

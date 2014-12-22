@@ -1,39 +1,56 @@
 package guifx;
 
 import static guifx.utils.Settings.strings;
+import guifx.utils.NamedObject;
 
-import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import javafx.beans.value.ObservableValue;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.BorderPane;
+import javafx.util.Callback;
 import latex.elements.Template;
 
-public class TemplateForm extends GridPane {
+public class TemplateForm extends BorderPane {
 	public TemplateForm(Template t) {
-		final Map<String,String>           params = t.getParameters();
-		Iterator<Map.Entry<String,String>> it     = params.entrySet().iterator();
-
-		if (it.hasNext()) {
-			Map.Entry<String,String> param;
-			int i;
-			for (i=0, param = it.hasNext() ? it.next() : null ; param != null ; i++, param = it.hasNext() ? it.next() : null) {
-				Label     label = new Label();
-				TextField field = new TextField(param.getValue());
-				
-				final String key = param.getKey();
-				field.textProperty().addListener((ObservableValue<? extends String> obs, String oldValue, String newValue) -> params.put(key,newValue));
-				label.textProperty().bind(strings.getObservableProperty(String.format("%s.%s",t,key)));
-				label.setFont(LatexEditor.subtitlesFont);
-
-				int nCols = 4, mod = i % nCols;
-				add(label,2*mod    ,i/nCols);
-				add(field,2*mod + 1,i/nCols);
+		final Map<String,String> params = t.getParameters();
+		
+		ListView<NamedObject<String>> listView = new ListView<>();
+		TextArea         textArea = new TextArea();
+		setLeft (listView);
+		setCenter(textArea);
+		
+		listView.getItems().addAll(params.keySet().stream()
+			.map(s -> new NamedObject<>(strings.getObservableProperty(String.format("%s.%s",t,s)),s))
+			.collect(Collectors.toList()));
+		listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+		listView.getSelectionModel().selectedItemProperty().addListener((observable,oldValue,newValue) -> textArea.setText(params.get(newValue.bean)));
+		listView.getSelectionModel().select(0);
+		
+		listView.setCellFactory(new Callback<ListView<NamedObject<String>>, ListCell<NamedObject<String>>>() {
+			public ListCell<NamedObject<String>> call(ListView<NamedObject<String>> param) {
+				final ListCell<NamedObject<String>> cell = new ListCell<NamedObject<String>>() {
+					@Override
+					public void updateItem(NamedObject<String> item, boolean empty) {
+						super.updateItem(item,empty);
+						if (!empty && item != null)
+							textProperty().bind(item.nameProperty());
+						else {
+							textProperty().unbind();
+							setText("");
+						}
+					}
+				};
+				return cell;
 			}
-			setHgap(10);
-			setVgap(5);
-		}
+		});
+		
+		textArea.textProperty().addListener((observable,oldValue,newValue) -> {
+			String selected = listView.getSelectionModel().getSelectedItem().bean;
+			params.put(selected,newValue);
+		});
 	}
 }

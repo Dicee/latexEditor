@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,7 +14,8 @@ import scala.io.Codec;
 import scala.io.Source;
 
 public class Template extends AbstractLateXElement {
-	protected final Map<String, String>	parameters		= new HashMap<>();
+	protected Map<String, String>		parameters		= new HashMap<>();
+	protected final Map<String, String>	cache			= new HashMap<>();
 	protected String					templateName	= "";
 	
 	public Template() { super("","template",5); }
@@ -33,24 +35,21 @@ public class Template extends AbstractLateXElement {
 	}
 	
 	private <T> void load(T source, Function<T,String> toText, String name) {
-		this.templateName = name;
-		parameters.clear();
-		
-		content   = toText.apply(source);
-		Pattern p = Pattern.compile("\\$\\{([^\\}]+)\\}");
-		Matcher m = p.matcher(content);
-		
+		templateName = name;
+		content      = toText.apply(source);
+		Pattern p    = Pattern.compile("\\$\\{([^\\}]+)\\}");
+		Matcher m    = p.matcher(content);
 		while (m.find()) parameters.put(m.group(1),"");
 	}
 	
-	public void load(URL url) {
+	private void load(URL url) {
 		String path = url.getPath();
 		int    i    = path.lastIndexOf("templates");
 		String name = path.substring(i + "templates".length() + 1,path.lastIndexOf(".")) + "Template";
 		load(url,u -> Source.fromURL(u,Codec.UTF8()).mkString(),name);
 	}
 
-	public void load(File file) {
+	private void load(File file) {
 		String templateFamily = file.getParentFile().getParentFile().getName();
 		int    index          = file.getName().lastIndexOf(".");
 		String name           = String.format("%s.%sTemplate",templateFamily,file.getName().substring(0,index));
@@ -58,7 +57,6 @@ public class Template extends AbstractLateXElement {
 	}
 
 	private void setContents(String content, String templateName) {
-		this.parameters.putAll(parameters);
 		this.content      = content;
 		this.templateName = templateName;
 	}
@@ -71,8 +69,21 @@ public class Template extends AbstractLateXElement {
 	}
 	
 	public void copyFrom(Template t) {
-		parameters.clear();
-		parameters.putAll(t.parameters);
+		Map<String,String> map = new HashMap<>(t.parameters.size());
+		cache.putAll(parameters);
+		
+		BinaryOperator<String> nonEmptyAndNullOrFirst = (s1,s2) -> {
+			if (s1 == null)   return s2;
+			if (s2 == null)   return s1;
+			if (s1.isEmpty()) return s2;
+			if (s2.isEmpty()) return s1;
+			return s1;
+		};
+		
+		// constructing the new map, we keep the existing values if they are left empty or null and associated
+		// to the same key in the new template
+		t.parameters.entrySet().forEach(entry -> map.put(entry.getKey(),nonEmptyAndNullOrFirst.apply(entry.getValue(),cache.get(entry.getKey()))));
+		parameters = map;
 		setContents(t.content,t.templateName);
 	}
 	
@@ -125,11 +136,5 @@ public class Template extends AbstractLateXElement {
 	@Override
 	public String toString() {
 		return getAbsoluteTemplateName();
-	}
-	
-	@Override
-	public void setText(String s) {
-		super.setText(s);
-		System.out.println("hého !!!!");
 	}
 }	

@@ -72,7 +72,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Pair;
-import latex.LateXFilter;
 import latex.LateXMaker;
 import latex.elements.LateXElement;
 import latex.elements.Template;
@@ -83,7 +82,6 @@ import org.controlsfx.dialog.Dialogs;
 import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
-import utils.FilterWriter;
 import utils.StreamPrinter;
 import utils.TokenReader;
 
@@ -635,7 +633,7 @@ public class LatexEditor extends Application {
         		currentNode.getValue().bean.setText(userTextArea.getText());
             if (currentFile != null) {
                 File f                           = new File(currentFile.getAbsolutePath());
-                FilterWriter fw                  = new FilterWriter(new BufferedWriter(new FileWriter(f)), new LateXFilter());
+                BufferedWriter fw                = new BufferedWriter(new FileWriter(f));
                 NamedList<LateXElement> elements = getElements();
                 Iterator<String> names           = elements.getKey().iterator();
                 lateXElements                    = new ArrayList<>(elements.getValue());

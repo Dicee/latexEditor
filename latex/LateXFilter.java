@@ -3,13 +3,11 @@ package latex;
 import java.util.HashMap;
 import java.util.Map;
 
-import utils.TextFilter;
+public class LateXFilter {
 
-public class LateXFilter implements TextFilter {
-
-	private Map<String,String> tokens;
+	private static final Map<String,String> tokens;
 	
-	public LateXFilter() {
+	static {
 		tokens = new HashMap<String,String>();
 		tokens.put("é","\\'{e}");
 		tokens.put("ù","\\`{u}");
@@ -23,11 +21,9 @@ public class LateXFilter implements TextFilter {
 		tokens.put("ç","\\c{c}");
 		tokens.put("œ","\\oe{}");		
 		tokens.put("ï","\\\"{i}");				
-		//tokens.put("(?i)([^\\\\]|\\A)%","$1\\\\%");			
 	}
 	
-	@Override
-	public String filter(String s) {
+	public static String filter(String s) {
 		for (String key : tokens.keySet()) 
 			s = s.replace(key,tokens.get(key));
 		//The LateX commentaries are a bit particular case
