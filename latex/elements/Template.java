@@ -107,7 +107,8 @@ public class Template extends AbstractLateXElement {
 	@Override
 	public String textify() {
 		StringBuilder sb = new StringBuilder(String.format("%s[%s] ##\n",name,getAbsoluteTemplateName()));
-		parameters.entrySet().stream()
+		cache.putAll(parameters);
+		cache.entrySet().stream()
 			.filter(entry ->! entry.getValue().isEmpty())
 			.forEach(entry -> sb.append(String.format("%s=%s\n",entry.getKey(),entry.getValue())));
 		sb.append("##");

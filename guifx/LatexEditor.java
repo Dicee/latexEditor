@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import javafx.application.Application;
 import javafx.beans.value.ObservableValue;
@@ -161,10 +162,10 @@ public class LatexEditor extends Application {
         Button preview = new Button("",previewIcon);
         Button pdf     = new Button("",pdfIcon);  
         tex    .textProperty().bind(strings.getObservableProperty("generateLatex"));
-        preview.textProperty().bind(strings.getObservableProperty("preview"));
         pdf    .textProperty().bind(strings.getObservableProperty("generatePdf"));
+        preview.textProperty().bind(strings.getObservableProperty("preview"));
         
-        tex.setOnAction(event -> generate());
+        tex.setOnAction(ev -> generate());
         preview.setOnAction(ev -> {
             try {
                 preview();
@@ -204,9 +205,9 @@ public class LatexEditor extends Application {
         currentNode = treeRoot; 
         tree.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
-            public void handle(MouseEvent t) {
-                if (t.getButton().equals(MouseButton.SECONDARY)) 
-                    openContextMenu(new Point2D(t.getScreenX(), t.getScreenY()));
+            public void handle(MouseEvent mev) {
+                if (mev.getButton().equals(MouseButton.SECONDARY)) 
+                    openContextMenu(new Point2D(mev.getScreenX(), mev.getScreenY()));
                 else 
                 	addMenu.hide();
             }
@@ -540,7 +541,7 @@ public class LatexEditor extends Application {
 		paste.textProperty().bind(strings.getObservableProperty("pasteToEditor"));
 		
 		clear.setOnAction(ev -> outputCode.setCode(""));
-		paste.setOnAction(ev -> userTextArea.insertText(userTextArea.getCaretPosition(),outputCode.getCodeAndSnapshot()));
+		paste.setOnAction(ev -> { userTextArea.cut(); userTextArea.insertText(userTextArea.getCaretPosition(),outputCode.getCodeAndSnapshot()); });
 		
 		HBox buttons = new HBox(10,label,languages,clear,paste);
 		buttons.setPadding(new Insets(10));
@@ -594,11 +595,16 @@ public class LatexEditor extends Application {
         generate         = new MenuItem();
         menuFile.getItems().addAll(newDoc,load,save,saveAs,generate,quit);
         
+        // set submenu Options
+        MenuItem settings = new MenuItem();
+        settings.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
+        
         newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
         save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
         saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
         load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
         generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
+        settings.setAccelerator(new KeyCharacterCombination("O",CONTROL_DOWN         ));
         quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
         generate.setDisable(true);
         
@@ -611,19 +617,13 @@ public class LatexEditor extends Application {
         
         menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions);
         
-        // set submenu Options
-        MenuItem packages    = new MenuItem();
-        
         // bind the text properties
-        List<String>   properties = Arrays.asList("file","edit","options","newDocument","save","saveAs","load","generate","quit","packages");
-        List<MenuItem> menus      = Arrays.asList(menuFile,menuEdit,menuOptions,newDoc,save,saveAs,load,generate,quit,packages);
-        for (int i=0 ; i<menus.size() ; i++)
-        	menus.get(i).textProperty().bind(strings.getObservableProperty(properties.get(i)));
-        
-        packages.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
+        List<String>   properties = Arrays.asList("file","edit","options","newDocument","save","saveAs","load","generate","quit","settings");
+        List<MenuItem> menus      = Arrays.asList(menuFile,menuEdit,menuOptions,newDoc,save,saveAs,load,generate,quit,settings);
+        IntStream.range(0,menus.size()).forEach(i -> menus.get(i).textProperty().bind(strings.getObservableProperty(properties.get(i))));
         
 		ImageView checkedIcon = new ImageView(new Image(getClass().getResourceAsStream(Settings.properties.getProperty("checkedIcon"))));
-		menuOptions.getItems().addAll(packages,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
+		menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
 			Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
     }
     
@@ -631,6 +631,7 @@ public class LatexEditor extends Application {
         try {
         	if (!(currentNode.getValue().bean instanceof Template))
         		currentNode.getValue().bean.setText(userTextArea.getText());
+        	
             if (currentFile != null) {
                 File f                           = new File(currentFile.getAbsolutePath());
                 BufferedWriter fw                = new BufferedWriter(new FileWriter(f));
@@ -883,12 +884,9 @@ public class LatexEditor extends Application {
                     String content     = it.next();
                     
                     switch (declaration) {
-                    	case "packages" :
-                    		lm.getParameters().addPackages(content.split("[;\\s+]|;\\s+"));
-                    		break;
-                    	case "commands" :
-                    		lm.getParameters().include(content.split("[;\\s+]|;\\s+"));
-                    		break;
+                    	case "packages"         : lm.getParameters().addPackages (content.split("[;\\s+]|;\\s+")); break;
+                    	case "commands"         : lm.getParameters().include     (content.split("[;\\s+]|;\\s+")); break;
+                    	case "documentSettings" : lm.getParameters().loadSettings(content);                        break;
                     	default         :
                     		Pattern p = Pattern.compile("\\s*(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?\\s*");
                     		Matcher m = p.matcher(declaration);
@@ -904,7 +902,7 @@ public class LatexEditor extends Application {
                 
                 tr.close();
                 setElements(new NamedList<>(names, elements));
-                primaryStage.setTitle(currentFile.getName() + " - LateXEditor 3.0");
+                primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
                 setSaved(true);
 				savedState = new DocumentState(elements);
                 generate.setDisable(false);
@@ -924,10 +922,6 @@ public class LatexEditor extends Application {
         }
      }
     
-    public static void main(String[] args) {
-        launch(args);
-    }
-
     static {
         NODES_TYPES_MAP = new HashMap<>(); 
         NODES_TYPES_MAP.put(0,asList("title"                                             ));

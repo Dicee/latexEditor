@@ -4,20 +4,19 @@
 
 \definecolor{titlepagecolor}{cmyk}{1,.60,0,.40}
 
-\DeclareFixedFont{\titlefont}{T1}{ppl}{b}{it}{0.5in}
+\DeclareFixedFont{\titlefont}{T1}{ppl}{b}{it}{${title_size}in}
 
 \makeatletter                       
 \def\printauthor{%                  
     {\large \@author}}              
 \makeatother
 \author{%
-    ${first_author_name} \\
-	${first_author_info}
-{?second_author_name!=null?
-	\vspace{20pt} \\
-    ${second_author_name} \\
-    ${second_author_info}?}
-}
+    ${first_author_name} {?first_author_info!=null? \\
+	${first_author_info}?}
+	{?second_author_name!=null?	\vspace{20pt} \\ 
+	${second_author_name}?}
+	{?second_author_info!=null? \\ 
+	${second_author_info}?}}
 
 % The following code is borrowed from: http://tex.stackexchange.com/a/86310/10898
 

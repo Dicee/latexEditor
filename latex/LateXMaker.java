@@ -35,7 +35,7 @@ public class LateXMaker {
 		 parameters.latexify(sb,this); 
 		 sb.append("\n\\begin{document}\n");			
 		 sb.append("\\renewcommand{\\contentsname}{Sommaire}\n");
-		 sb.append("\\renewcommand{\\chaptername}{" + parameters.getChapterName() + "}\n");
+		 sb.append("\\renewcommand{\\chaptername}{" + filter(parameters.getChapterName()) + "}\n");
 		 sb.append("\\renewcommand{\\thechapter}{\\Roman{chapter}}\n");		
 		 return sb.toString();
 	}
@@ -76,8 +76,8 @@ public class LateXMaker {
 	public String includeGraphic(String path, String caption, float scale) {
 		StringBuilder result = new StringBuilder("");
 		result.append("\\begin{center}\n");
-		result.append(format("\\includegraphics[scale=%f]{%s}\n",scale,path));
-		result.append(format("~\\\\~\\\\Figure %d.%d - %s\n",romanNumbers[chapterCount-1],figureCount,filter(caption)));
+		result.append(format("\\includegraphics[scale=%s]{%s}\n",String.valueOf(scale).replace(",","."),path));
+		result.append(format("~\\\\~\\\\Figure %s.%d - %s\n",romanNumbers[chapterCount-1],figureCount,filter(caption)));
 		result.append("\\end{center}\n");
 		figureCount++;
 		return result.toString();

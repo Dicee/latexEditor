@@ -1,15 +1,22 @@
 package latex;
 
+import static java.lang.String.format;
+
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
+import utils.Setter;
 
 public class DocumentParameters {
 	private String					documentClass, alinea, chapterName;
@@ -19,7 +26,7 @@ public class DocumentParameters {
 	private ObservableList<String>	includesView		= FXCollections.observableArrayList();
 	
 	private static final String[] DEFAULT_PACKAGES = { 
-		"color","graphicx","geometry","listings","textcomp","amssymb","amsmath","setspace","eurosym","gensymb" 
+		"color","graphicx","geometry","listings","textcomp","amssymb","amsmath","setspace","eurosym","gensymb" ,"tikz","epigraph"
 	};
 	private static final String[] DEFAULT_INCLUDES = { "java.listing","js-html-css.listing" };
 	
@@ -103,10 +110,13 @@ public class DocumentParameters {
 	}
 	
 	public StringBuilder textify(StringBuilder sb) {
-		return mkString(" packages ##\n","##\n commands ##\n","##",
-			Package::toString,
-			name -> sb.append(name + "\n"),
-			sb);
+		mkString(" packages ##\n","##\n commands ##\n","##",Package::toString,name -> sb.append(name + "\n"),sb);
+		sb.append(" documentSettings ##\n");
+		sb.append(format("%s=%s\n","documentClass",documentClass));
+		sb.append(format("%s=%s\n","alinea",alinea));
+		sb.append(format("%s=%s\n","chapterName",chapterName));
+		sb.append("##\n");
+		return sb;
 	}
 	
 	private StringBuilder mkString(String before, String sep, String after, Function<Package,String> packageConverter, 
@@ -129,19 +139,27 @@ public class DocumentParameters {
 		sb.append(after + "\n");
 		return sb;
 	}
-
-	public String getDocumentClass() {
-		return documentClass;
-	}
-
-	public String getAlinea() {
-		return alinea;
-	}
-
-	public String getChapterName() {
-		return chapterName;
-	}
 	
+	public void loadSettings(String settings) {
+		// Temporary fix... those fields may be replaced by an HashMap later if
+		// the application requires to add some more. For the moment, it would change
+		// too much code for no real benefit
+		Map<String,Setter<String>> setters = new HashMap<>();
+		setters.put("documentClass",this::setDocumentClass);
+		setters.put("alinea"       ,this::setAlinea       );
+		setters.put("chapterName"  ,this::setChapterName  );
+		
+		Pattern p = Pattern.compile("(\\S+)\\s*=\\s*(\\S+)");
+		Matcher m = p.matcher(settings);
+		
+		while (m.find()) {
+			if (setters.containsKey(m.group(1))) {
+				setters.get(m.group(1)).set(m.group(2));
+				System.out.println(m.group());
+			}
+		}
+	}
+
 	/**
 	 * Returns a view of the selected packages. This view has a an uni-directional 
 	 * binding with the actual collection of packages. Modifications on the view 
@@ -163,4 +181,28 @@ public class DocumentParameters {
     public ObservableList<String> getIncludesView() {
        return includesView;
     }
+    
+    public String getDocumentClass() {
+		return documentClass;
+	}
+
+	public String getAlinea() {
+		return alinea;
+	}
+
+	public String getChapterName() {
+		return chapterName;
+	}
+
+	public void setDocumentClass(String documentClass) {
+		this.documentClass = documentClass;
+	}
+
+	public void setAlinea(String alinea) {
+		this.alinea = alinea;
+	}
+
+	public void setChapterName(String chapterName) {
+		this.chapterName = chapterName;
+	}
 }
