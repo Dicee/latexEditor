@@ -3,8 +3,6 @@ package guifx;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
-import static javafx.scene.input.KeyCombination.ALT_DOWN;
-import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import guifx.utils.CodeEditor;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
@@ -30,6 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
+import static javafx.scene.input.KeyCombination.*;
 import javafx.application.Application;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
@@ -125,6 +124,8 @@ public class LatexEditor extends Application {
 	private Consumer<Node> 							setEditorZone;
 	private Node									textMode;
 	private SplitPane								splitPane;
+	
+	private final LateXPidia						encyclopedia	= new LateXPidia();
 
     @Override
     public void start(Stage primaryStage) {
@@ -585,6 +586,7 @@ public class LatexEditor extends Application {
         Menu menuFile    = new Menu();
         Menu menuEdit    = new Menu();
         Menu menuOptions = new Menu();
+        Menu menuHelp    = new Menu();
         
         // set submenu File
         MenuItem newDoc  = new MenuItem();
@@ -599,11 +601,22 @@ public class LatexEditor extends Application {
         MenuItem settings = new MenuItem();
         settings.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
         
+        ImageView checkedIcon = new ImageView(new Image(getClass().getResourceAsStream(Settings.properties.getProperty("checkedIcon"))));
+        menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
+        		Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
+        
+        // set submenu Help
+        MenuItem doc      = new MenuItem();
+        doc.setOnAction(ev -> { if (!encyclopedia.isShowing()) encyclopedia.show();});
+        menuHelp.getItems().add(doc);
+        
+        // set accelerators for all menu items
         newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
         save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
         saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
         load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
         generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
+        doc     .setAccelerator(new KeyCharacterCombination("H",CONTROL_DOWN         ));
         settings.setAccelerator(new KeyCharacterCombination("O",CONTROL_DOWN         ));
         quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
         generate.setDisable(true);
@@ -615,16 +628,12 @@ public class LatexEditor extends Application {
         generate.setOnAction(ev -> generate());
         quit    .setOnAction(ev -> System.exit(0));
         
-        menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions);
+        menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions,menuHelp);
         
         // bind the text properties
-        List<String>   properties = Arrays.asList("file","edit","options","newDocument","save","saveAs","load","generate","quit","settings");
-        List<MenuItem> menus      = Arrays.asList(menuFile,menuEdit,menuOptions,newDoc,save,saveAs,load,generate,quit,settings);
+        List<String>   properties = Arrays.asList("file","edit","options","help","documentation","newDocument","save","saveAs","load","generate","quit","settings");
+        List<MenuItem> menus      = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,doc,newDoc,save,saveAs,load,generate,quit,settings);
         IntStream.range(0,menus.size()).forEach(i -> menus.get(i).textProperty().bind(strings.getObservableProperty(properties.get(i))));
-        
-		ImageView checkedIcon = new ImageView(new Image(getClass().getResourceAsStream(Settings.properties.getProperty("checkedIcon"))));
-		menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
-			Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
     }
     
     private void save() {
