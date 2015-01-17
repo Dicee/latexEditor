@@ -18,12 +18,12 @@ public class ContextToolBar extends ToolBar {
 		setPrefWidth(prefWidth);
 		
 		title = new Label();
-		title.setFont(Font.font("",FontWeight.BOLD,20));
+		title.setFont(Font.font("",FontWeight.BOLD,15));
 		title.setAlignment(Pos.CENTER);
 		title.textProperty().bind(titleProperty);
 		getItems().add(0,title);		
 		
-		widthProperty().addListener(obs -> resizeItems());		
+//		widthProperty().addListener(obs -> resizeItems());		
 	}
 	
 	private final void resizeItems() {

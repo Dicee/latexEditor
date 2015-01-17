@@ -49,7 +49,8 @@ public class LateXMaker {
 	}
 	
 	public String makeCodeListing(String language, String text) {
-		return format("\\begin{lstlisting}[language=%s]\n%s\n\\end{lstlisting}",language,language.equals("latex") ? text.trim() : format(text.trim()));
+		System.out.println(language + " " + text);
+		return format("\\begin{lstlisting}[language=%s]\n%s\n\\end{lstlisting}",language,text.trim());
 	}
 	
 	public String makeChapter(String content) {
