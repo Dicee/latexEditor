@@ -1,24 +1,23 @@
-\newcommand{\reportsubject}{d\'{e}veloppement d'une plateforme offrant la possibilit\'{e} de commander des biscuits
-personnalis\'{e}s}
-\newcommand{\reporttitle}{Rapport de stage}
-\newcommand{\reportauthor}{David Courtinot}
+\newcommand{\reportsubject}{${subject}}
+\newcommand{\reporttitle}{${title}}
+\newcommand{\reportauthor}{${first_author_name}}
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
-\begin{titlepage}
 
+\begin{titlepage}
 \begin{center}
 
 \begin{minipage}[t]{0.48\textwidth}
   \begin{flushleft}
-    \includegraphics [width=30mm]{INPT-N7.png} \\[0.5cm]
+    {?image_left!=null? \includegraphics [width=30mm]{${image_left}} \\[0.5cm] ?}
     \begin{spacing}{1.5}
-      \textsc{\LARGE INPT - ENSEEIHT}
+      \textsc{\LARGE ${legend_left}}
     \end{spacing}
   \end{flushleft}
 \end{minipage}
 \begin{minipage}[t]{0.48\textwidth}
   \begin{flushright}
-    \includegraphics [width=30mm]{poult.png} \\[0.5cm]
-    \textsc{\LARGE Groupe Poult}
+    {?image_right!=null? \includegraphics [width=30mm]{${image_right}} \\[0.5cm] ?}
+    \textsc{\LARGE ${legend_right}}
   \end{flushright}
 \end{minipage} \\[1.5cm]
 
@@ -35,18 +34,14 @@ personnalis\'{e}s}
 \end{minipage}
 \begin{minipage}[t]{0.6\textwidth}
   \begin{flushright} \large
-    \emph{Responsables :} \\
-    ---  Tuteur \'{e}cole  --- \\
-    M. Simone \textsc{Gasparini} \\
-    ---  Tuteur entreprise  --- \\
-    M. Emmanuel \textsc{Salomon}
+		${flush_right}
   \end{flushright}
 \end{minipage}
 
 \vfill
 
-{\large 18 Juin 2014 - 14 Ao\^{u}t 2014}
-
+{\large ${date}}
 \end{center}
-
 \end{titlepage}
+
+\tableofcontents

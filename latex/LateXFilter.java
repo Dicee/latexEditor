@@ -23,13 +23,15 @@ public class LateXFilter {
 		tokens.put("ï","\\\"{i}");				
 		tokens.put("#","\\#"    );				
 		tokens.put("&","\\&"    );				
+		tokens.put("_","\\_"    );				
+		tokens.put("%","\\%"    );				
 	}
 	
 	public static String filter(String s) {
 		for (String key : tokens.keySet()) 
 			s = s.replace(key,tokens.get(key));
 		//The LateX commentaries are a bit particular case
-		s = s.replaceAll("(?i)([^\\\\]|\\A)%","$1\\\\%");
+//		s = s.replaceAll("(?i)([^\\\\]|\\A)%","$1\\\\%");
 		return s;
 	}
 }

@@ -27,7 +27,6 @@ public class LateXPidia extends Stage {
 			this.encyclopedia  = new Encyclopedia<>(Paths.get(LateXPidia.class.getResource("/data/documentation/encyclopedia.txt").toURI()),Function.identity());
 			BorderPane root    = new BorderPane();
 			
-			System.out.println(properties.getProperty("searchIcon"));
 			ImageView  icon    = new ImageView(new Image(LateXPidia.class.getResourceAsStream(properties.getProperty("searchIcon"))));
 			TextField  field   = new TextField();
 			HBox       box     = new HBox(7,icon,field);

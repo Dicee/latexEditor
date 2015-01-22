@@ -19,6 +19,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
@@ -31,8 +32,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import latex.DocumentParameters;
 import utils.GetterSetter;
-
-
 
 public class PreferencesPane {
 	private static final int	PREFERRED_WIDTH		= 500;
@@ -128,6 +127,21 @@ public class PreferencesPane {
                 else 
                 	deleteMenu.hide();
             }
+		});
+		
+		listView.setOnKeyPressed(ev -> {
+			int selected = listView.getSelectionModel().getSelectedIndex();
+			int insert   = selected;
+			if (ev.isControlDown() && ev.isAltDown()) {
+				if      (ev.getCode() == KeyCode.DOWN) insert++;
+				else if (ev.getCode() == KeyCode.UP  ) insert--;
+			}
+			if (0 <= insert && insert <= items.size()) {
+				T tmp = items.get(selected);
+				items.set(selected,items.get(insert));
+				items.set(insert,tmp);
+				listView.getSelectionModel().select(insert);
+			}
 		});
 		
 		// set "add element" bar

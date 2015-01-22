@@ -1,0 +1,6 @@
+\definecolor{colBasic}{rgb}{0.7,0.44,0.23}
+\definecolor{colKeyword}{rgb}{0.58,0.15,0.5}
+\definecolor{colBackground}{rgb}{0.15,0.15,0.15}
+\definecolor{colComment}{rgb}{0.4,0.4,0.4}
+\definecolor{colString}{rgb}{0.9,0.4,0}
+\definecolor{colIdent}{rgb}{1,0.75,0.75}

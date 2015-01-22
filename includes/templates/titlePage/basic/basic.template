@@ -1,0 +1,4 @@
+\huge{\title{${title}}}
+\large{\author{${first_author_name}}}
+\maketitle
+\tableofcontents

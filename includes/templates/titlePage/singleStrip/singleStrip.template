@@ -1,0 +1,49 @@
+%\usepackage[some]{background}
+\definecolor{titlepagecolor}{cmyk}{1,.60,0,.40}
+\DeclareFixedFont{\bigsf}{T1}{phv}{b}{n}{${title_size}cm}
+
+\backgroundsetup{
+scale=1,
+angle=0,
+opacity=1,
+contents={\begin{tikzpicture}[remember picture,overlay]
+ \path [fill=titlepagecolor] (-0.5\paperwidth,5) rectangle (0.5\paperwidth,10);  
+\end{tikzpicture}}
+}
+\makeatletter                       
+\def\printauthor{%                  
+    {\large \@author}}              
+\makeatother
+\author{%
+    ${first_author_name} {?first_author_info!=null? \\
+	${first_author_info}?} {?second_author_name!=null?	\vspace{40pt} \\ 
+	${second_author_name}?}	{?second_author_info!=null? \\ 
+	${second_author_info}?}}
+	
+\begin{titlepage}
+\BgThispage
+\newgeometry{left=1cm,right=4cm}
+\vspace*{2cm}
+\noindent
+\textcolor{white}{\bigsf ${title}}
+\vspace*{2.5cm}\par
+\noindent
+\begin{minipage}{0.35\linewidth}
+    \begin{flushright}
+        \printauthor
+    \end{flushright}
+\end{minipage} \hspace{15pt}
+%
+\begin{minipage}{0.02\linewidth}
+    \rule{1pt}{175pt}
+\end{minipage} \hspace{-10pt}
+%
+\begin{minipage}{0.6\linewidth}
+\vspace{5pt}
+\hspace{10pt}
+\begin{minipage}{\linewidth}
+	${description}
+\end{minipage}
+\end{minipage}
+\end{titlepage}
+\restoregeometry

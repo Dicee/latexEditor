@@ -1,0 +1,23 @@
+%\usepackage{tikz}
+%\usepackage{fix-cm}
+% command to facilitate the change in font size
+\newcommand\myfont[2]{\fontsize{#1}{#2}\selectfont}
+
+\definecolor{verticalStrip}{rgb}{${vertical_strip_color}}
+\definecolor{horizontalStrip}{rgb}{${horizontal_strip_color}}
+\DeclareFixedFont{\bigsf}{T1}{ppc}{b}{n}{${title_size}cm}
+
+    \begin{tikzpicture}[remember picture,overlay,line width=0mm]
+      \draw [draw=verticalStrip,fill=verticalStrip]
+        (current page.south west) rectangle (1.5,1);
+      \draw [draw=horizontalStrip,fill=horizontalStrip]
+        (current page.north west) rectangle (\paperwidth,1);
+      \node[xshift=.6\paperwidth,yshift=1.8cm,text=white,font=\myfont{40}{48}] {${description}};
+      \node[yshift=.5cm,xshift=2.5cm] at (current page.center)
+        [text width=8cm,text=white,font=\bigsf,above right]{${title}};
+      \node[yshift=.5cm,xshift=1cm] at (current page.south west)
+        [text width=6cm,text=white,font=\Large,above right]{${date}};
+      {?img!=null? 
+      \node[yshift=1cm,xshift=.6\paperwidth] at (current page.south west)
+        [text width=5cm,text centered,above right]{\includegraphics[scale=${img_scale}]{${img}}}; ?}
+    \end{tikzpicture}

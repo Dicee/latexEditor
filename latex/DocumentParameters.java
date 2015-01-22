@@ -1,6 +1,7 @@
 package latex;
 
 import static java.lang.String.format;
+import guifx.LatexEditor;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ public class DocumentParameters {
 		this.chapterName   = chapterName;
 		addPackage("fontenc","T1");
 		addPackage("babel","francais");
+		addPackage("background","some");
 		include(DEFAULT_INCLUDES);
 		addPackages(DEFAULT_PACKAGES);
 	}
@@ -105,7 +107,7 @@ public class DocumentParameters {
 	public StringBuilder latexify(StringBuilder sb, LateXMaker lm) {
 		return mkString("","","",
 			p -> p.latexify(lm),
-			name -> Source.fromURL(DocumentParameters.class.getResource("includes/" + name),Codec.UTF8()).addString(sb),
+			name -> Source.fromFile(LatexEditor.LATEX_HOME + "/includes/" + name,Codec.UTF8()).addString(sb),
 			sb);
 	}
 	
@@ -134,6 +136,7 @@ public class DocumentParameters {
 				commandConverter.accept(name);
 			}
 		} catch (Throwable t) {
+			t.printStackTrace();
 			throw new Error(String.format("Package %s does not exist",name));
 		}		
 		sb.append(after + "\n");
@@ -152,12 +155,9 @@ public class DocumentParameters {
 		Pattern p = Pattern.compile("(\\S+)\\s*=\\s*(\\S+)");
 		Matcher m = p.matcher(settings);
 		
-		while (m.find()) {
-			if (setters.containsKey(m.group(1))) {
+		while (m.find()) 
+			if (setters.containsKey(m.group(1))) 
 				setters.get(m.group(1)).set(m.group(2));
-				System.out.println(m.group());
-			}
-		}
 	}
 
 	/**

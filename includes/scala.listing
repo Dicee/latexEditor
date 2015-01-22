@@ -14,11 +14,10 @@ morestring=[b]',
 morestring=[b]"""
 }[keywords,comments,strings]
 
-\definecolor{purple}{rgb}{0.5,0,0.41}
-\geometry{top=3cm, bottom=3cm, left=2.6cm , right=2.6cm}
 \lstset{
+float=hbp,
 language=scala,
-basicstyle=\normalsize,
+basicstyle=\ttfamily\small\color{colBasic},
 upquote=true,
 aboveskip={1.5\baselineskip},
 columns=fullflexible,
@@ -27,17 +26,19 @@ extendedchars=true,
 breaklines=true,
 showtabs=false,
 showspaces=false,
+frame=trbl, 
 tabsize=4,
+numbers=left,
+breakautoindent=true,
+extendedchars=true,
 showstringspaces=false,
 identifierstyle=\ttfamily,
-keywordstyle=\bf\color[rgb]{0.5,0,0.41},
-commentstyle=\color[rgb]{0.25,0.37,0.75},
-stringstyle=\color[rgb]{0.16,0,1},}
- 
-\newcommand{\code}[1]{%
-\lstinline[%keywordstyle=,%
-flexiblecolumns=true,%
-basicstyle=\ttfamily]£#1£}
- 
-% activate the language and predefine settings
-\lstset{language=Scala} 
+frameround=ffff,
+captionpos=b,
+xrightmargin=0cm,
+xleftmargin=0cm,
+backgroundcolor=\color{colBackground},
+keywordstyle=\bf\color{colKeyword},
+commentstyle=\color{colComment},
+identifierstyle=\color{colIdent}, 
+stringstyle=\color{colString},}
