@@ -6,15 +6,16 @@
 \definecolor{verticalStrip}{rgb}{${vertical_strip_color}}
 \definecolor{horizontalStrip}{rgb}{${horizontal_strip_color}}
 \DeclareFixedFont{\bigsf}{T1}{ppc}{b}{n}{${title_size}cm}
+\DeclareFixedFont{\sf}{T1}{ppc}{b}{n}{${description_size}cm}
 
     \begin{tikzpicture}[remember picture,overlay,line width=0mm]
       \draw [draw=verticalStrip,fill=verticalStrip]
         (current page.south west) rectangle (1.5,1);
       \draw [draw=horizontalStrip,fill=horizontalStrip]
         (current page.north west) rectangle (\paperwidth,1);
-      \node[xshift=.6\paperwidth,yshift=1.8cm,text=white,font=\myfont{40}{48}] {${description}};
+      \node[xshift=.6\paperwidth,yshift=1.8cm,text=white,font=\sf] {${description}};
       \node[yshift=.5cm,xshift=2.5cm] at (current page.center)
-        [text width=8cm,text=white,font=\bigsf,above right]{${title}};
+        [text width=8cm,text=black,font=\bigsf,above right]{${title}};
       \node[yshift=.5cm,xshift=1cm] at (current page.south west)
         [text width=6cm,text=white,font=\Large,above right]{${date}};
       {?img!=null? 
