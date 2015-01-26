@@ -67,7 +67,7 @@ public class LateXMaker {
 	}
 	
 	public String makeList(String[] list) {
-		StringBuilder result = new StringBuilder("~\\\\\n\\begin{itemize}\n");
+		StringBuilder result = new StringBuilder("\\vspace{4mm}\n\\begin{itemize}\n");
 			for (String elt : list) 
 				result.append(format("\\item %s\\vspace{1mm}\n",filter(elt.trim())));
 		return result + "\\end{itemize}\n";

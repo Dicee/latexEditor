@@ -1,0 +1,60 @@
+%\usepackage{lmodern}
+%\usepackage{xspace}
+%\usepackage{hyperref}
+
+\definecolor{sup_strip_color}{rgb}{${sup_strip_color}}
+\definecolor{inf_strip_color}{rgb}{${inf_strip_color}}
+
+\DeclareFixedFont{\bigsf}{T1}{phv}{b}{n}{${title_size}cm}
+
+\makeatletter                       
+\def\printauthor{%                  
+    {{\large \@author}}}              
+\makeatother
+
+\author{${first_author_name}}
+
+\begin{titlepage}
+
+\newgeometry{left=1cm,right=4cm}
+\begin{tikzpicture}[overlay,remember picture]
+% the black stripe with the title
+\node[
+  fill=inf_strip_color,
+  anchor=north west,
+  text width=\paperwidth,
+  text height=2cm,
+  text depth=2cm,
+  inner xsep=1cm,
+  font=\color{white}\bigsf 
+  ] 
+ at ([yshift=-2.5cm]current page.north west) (blackrect) {${title}};
+% the khaki stripe
+\path[fill=sup_strip_color] 
+  (blackrect.north west) rectangle ++(\paperwidth,2.5cm);
+\end{tikzpicture}
+
+\vspace*{4.5cm}
+
+\noindent
+\begin{minipage}{0.35\linewidth}
+    \begin{flushright}
+        \printauthor
+    \end{flushright}
+\end{minipage} \hspace{15pt}
+%
+\begin{minipage}{0.02\linewidth}
+    \rule{1pt}{175pt}
+\end{minipage} \hspace{-10pt}
+%
+\begin{minipage}{0.6\linewidth}
+\vspace{5pt}
+\newenvironment{test}{\begin{center}}{\end{center}}
+\hspace{10pt}
+\begin{minipage}{\linewidth} 
+${description}
+\end{minipage}
+\end{minipage}
+
+\end{titlepage}
+\restoregeometry
