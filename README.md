@@ -96,7 +96,7 @@ actuallyTheTitleAlso=IsATemplate
 soItsJust=TheSame
 ##
 ```
-The `>` symbols are only meant to allow the UI to identify the structure of the document, but they are unnecessary when working with command-line only. Yet, it is recommended to use it as it also improve the readability. All the keywords are presented in the sample of code provided. You must keep the order of the first three elements (but you don't need to fill them), the rest can be anything. The `commands` have to be stored in the `LATEX_HOME/includes` directory (environment variable to define) and the templates in the `LATEX_HOME/includes/templates` directory. For a file with the following path : `LATEX_HOME/includes/templates/titlePage/header/header.template`, the code will look like :
+The `>` symbols are only meant to allow the UI to identify the structure of the document, but they are unnecessary when working with command-line only. Yet, it is recommended to use it as it also improves the readability. All the keywords are presented in the sample of code provided. The `commands` have to be stored in the `LATEX_HOME/includes` directory (environment variable to define) and the templates in the `LATEX_HOME/includes/templates` directory. For a file with the following path : `LATEX_HOME/includes/templates/titlePage/header/header.template`, the code will look like :
 
 ```javatex
 template[titlePage.headerTemplate] ##
