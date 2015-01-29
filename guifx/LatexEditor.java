@@ -98,7 +98,7 @@ public class LatexEditor extends Application {
 
 	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
 
-	private File									currentDir		= new File(System.getenv("LATEX_HOME"));
+	private File									currentDir		= new File(LATEX_HOME);
 	private File									currentFile		= null;
 
 	private boolean									saved			= false;

@@ -22,3 +22,4 @@
       \node[yshift=1cm,xshift=.6\paperwidth] at (current page.south west)
         [text width=5cm,text centered,above right]{\includegraphics[scale=${img_scale}]{${img}}}; ?}
     \end{tikzpicture}
+\tableofcontents

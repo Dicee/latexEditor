@@ -90,3 +90,4 @@ ${description}
 
 \end{titlepage}
 \restoregeometry
+\tableofcontents

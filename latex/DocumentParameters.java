@@ -120,7 +120,7 @@ public class DocumentParameters {
 		sb.append("##\n");
 		return sb;
 	}
-	
+
 	private StringBuilder mkString(String before, String sep, String after, Function<Package,String> packageConverter, 
 			Consumer<String> commandConverter, StringBuilder sb) {
 		FXCollections.sort(packagesView);

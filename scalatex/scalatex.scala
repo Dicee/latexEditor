@@ -7,12 +7,15 @@ import latex.elements.LateXElement
 import utils.TokenReader
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
+import scala.collection.JavaConversions._
+import latex.elements.Templates
 
 object scalatex extends App {
     val lm            = new LateXMaker
     val latexElements = ArrayBuffer[LateXElement]()
     
     try {
+    	Templates.init();
     	args.toList match {
     		case "-tex" :: x :: y :: Nil => toTex(x,y)
     		case "-pdf" :: x :: y :: Nil => toPdf(x,y)
@@ -25,7 +28,7 @@ object scalatex extends App {
 	
 	def toTex(input: String, output: String) = {
 		val (in,out) = (getPath(input,output,".tex"))
-	    fromJavatex(in)
+	    fromJavatex(in,out)
 	    out
 	}
 	
@@ -42,16 +45,17 @@ object scalatex extends App {
 	    else                    (new File(input),new File(input.substring(0,input.lastIndexOf('.')) + ext))
 	}
 	
-	def fromJavatex(f: File) {
-	    lm.getParameters.clear
-	    latexElements   .clear
-	    
-	    val tr      = new TokenReader(new FileReader(f),"##")
-	    val buffer  = for (x <- tr) yield x.trim
-	    val decl    = buffer.zipWithIndex.filter(_._2 % 2 == 0).map(_._1)
-	    val content = buffer.zipWithIndex.filter(_._2 % 2 == 1).map(_._1)
-	    decl.zip(content).foreach { case (a,b) => newLateXElement(a,b) }
-	}
+	def fromJavatex(in: File, out: File) = {
+        lm.getParameters.clear
+        latexElements   .clear
+        
+        val tr      = new TokenReader(new FileReader(in),"##")
+        val buffer  = for (x <- tr) yield x.trim
+        val decl    = buffer.zipWithIndex.filter(_._2 % 2 == 0).map(_._1)
+        val content = buffer.zipWithIndex.filter(_._2 % 2 == 1).map(_._1)
+        decl.zip(content).foreach { case (a,b) => newLateXElement(a,b) }
+        lm.makeDocument(out,latexElements)
+    }
 	
 	def newLateXElement(decl: String, content: String) = decl match {
 	    case "packages"         => lm.getParameters.addPackages (content.split("[;\\s+]|;\\s+"): _*)

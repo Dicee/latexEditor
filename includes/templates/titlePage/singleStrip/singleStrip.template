@@ -47,3 +47,4 @@ contents={\begin{tikzpicture}[remember picture,overlay]
 \end{minipage}
 \end{titlepage}
 \restoregeometry
+\tableofcontents

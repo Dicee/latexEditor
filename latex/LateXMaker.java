@@ -34,7 +34,7 @@ public class LateXMaker {
 		 sb.append("\\documentclass{" + parameters.getDocumentClass() + "}\n");
 		 parameters.latexify(sb,this); 
 		 sb.append("\n\\begin{document}\n");			
-		 sb.append("\\renewcommand{\\contentsname}{Sommaire}\n");
+//		 sb.append("\\renewcommand{\\contentsname}{Sommaire}\n");
 		 sb.append("\\renewcommand{\\chaptername}{" + filter(parameters.getChapterName()) + "}\n");
 		 sb.append("\\renewcommand{\\thechapter}{\\Roman{chapter}}\n");		
 		 return sb.toString();

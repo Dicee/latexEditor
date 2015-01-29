@@ -25,7 +25,7 @@ public class Package implements LateXElement, Comparable<Package> {
 
 	@Override
 	public void setText(String text) {
-		String  pattern = "(\\w*)\\s*\\[\\s*(\\w*)\\s*\\]";
+		String  pattern = "(\\w*)\\s*\\[(.+)\\]";
 		Pattern p       = Pattern.compile(pattern);
 		Matcher m       = p.matcher(text.trim());
 		if (m.matches()) {
