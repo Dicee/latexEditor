@@ -105,7 +105,7 @@ public class LateXMaker {
 			}
 		}
 	}
-
+	
 	public String includeGraphic(String path, String caption, String scale) {			
 		return includeGraphic(path,caption,Float.parseFloat(scale));		
 	}

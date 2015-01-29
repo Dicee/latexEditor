@@ -1,6 +1,6 @@
 package latex.elements;
 
-import static guifx.LatexEditor.TEMPLATES;
+import static latex.elements.Templates.TEMPLATES;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +39,8 @@ public interface LateXElement extends Textifiable {
             		t.copyFrom(from = TEMPLATES.get(m.group(2).substring(0,m.group(2).indexOf("."))).stream()
             			.filter(template -> template.getAbsoluteTemplateName().equals(m.group(2)))
             			.findFirst()
-            			.get());
+            			// lazy fetch of the template
+            			.orElseGet(() -> Templates.loadTemplate(m.group(2))));
             	}
             	
             	t.copyFrom(content,from.getText(),from.getAbsoluteTemplateName());
