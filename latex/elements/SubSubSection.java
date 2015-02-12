@@ -16,5 +16,4 @@ public class SubSubSection extends AbstractLateXElement {
 	public AbstractLateXElement clone() {
 		return new SubSubSection(content);
 	}
-
 }

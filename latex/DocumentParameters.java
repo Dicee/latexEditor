@@ -194,15 +194,15 @@ public class DocumentParameters {
 		return chapterName;
 	}
 
-	public void setDocumentClass(String documentClass) {
-		this.documentClass = documentClass;
+	public void setDocumentClass(String s) {
+		documentClass = s;
 	}
 
-	public void setAlinea(String alinea) {
-		this.alinea = alinea;
+	public void setAlinea(String s) {
+		alinea = s;
 	}
 
-	public void setChapterName(String chapterName) {
-		this.chapterName = chapterName;
+	public void setChapterName(String s) {
+		chapterName = s;
 	}
 }

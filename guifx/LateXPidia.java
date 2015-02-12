@@ -41,6 +41,5 @@ public class LateXPidia extends Stage {
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
-		
 	}
 }

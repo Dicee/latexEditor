@@ -16,4 +16,3 @@ public class LateXCode extends AbstractLateXElement {
 		return new LateXCode(getText());
 	}
 }
-

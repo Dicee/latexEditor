@@ -18,16 +18,17 @@ public interface LateXElement extends Textifiable {
 	public static LateXElement newLateXElement(String opName, String content) {
     	LateXElement elt;
         switch (opName) {
-            case "title"         : elt = new Title          (       ); break;
-            case "chapter"       : elt = new Chapter        (content); break;
-            case "section"       : elt = new Section        (content); break;
-            case "subsection"    : elt = new Subsection     (content); break;
-            case "subsubsection" : elt = new SubSubSection  (content); break;
-            case "paragraph"     : elt = new Paragraph      (content); break;
-            case "list"          : elt = new List           (content); break;
-            case "code"          : elt = new ProgrammingCode(content); break;
-            case "latex"         : elt = new LateXCode      (content); break;
-            case "image"         : elt = new Inclusion      (content); break;
+            case "title"         : elt = new Title              (       ); break;
+            case "chapter"       : elt = new Chapter            (content); break;
+            case "section"       : elt = new Section            (content); break;
+            case "subsection"    : elt = new Subsection         (content); break;
+            case "subsubsection" : elt = new SubSubSection      (content); break;
+            case "paragraph"     : elt = new Paragraph          (content); break;
+            case "list"          : elt = new List               (content); break;
+            case "code"          : elt = new ProgrammingCode    (content); break;
+            case "latex"         : elt = new LateXCode          (content); break;
+            case "image"         : elt = new Inclusion          (content); break;
+            case "preprocessor"  : elt = new PreprocessorCommand(content); break;
             default              : 
             	Template t = new Template();
             	Pattern  p = Pattern.compile("(template|title)\\s*\\[(.+)\\]");

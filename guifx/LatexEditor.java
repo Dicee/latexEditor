@@ -75,6 +75,7 @@ import javafx.stage.Stage;
 import javafx.util.Pair;
 import latex.LateXMaker;
 import latex.elements.LateXElement;
+import latex.elements.PreprocessorCommand;
 import latex.elements.Template;
 import latex.elements.Templates;
 import latex.elements.Title;
@@ -110,6 +111,7 @@ public class LatexEditor extends Application {
 	private Stage									primaryStage;
 	private TreeView<NamedObject<LateXElement>>		tree;
 	private TreeItem<NamedObject<LateXElement>>		treeRoot;
+	private TreeItem<NamedObject<LateXElement>>		titleRoot;
 	private TreeItem<NamedObject<LateXElement>>		currentNode		= null;
 	private TreeItem<NamedObject<LateXElement>>		clipBoard		= null;
 
@@ -198,10 +200,13 @@ public class LatexEditor extends Application {
 	}
 
 	private void setTree() {
-		ImageView img = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("titleIcon"))));
+		ImageView titleImg   = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("titleIcon"))));
+		ImageView preprocImg = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("preprocIcon"))));
 
-		treeRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title()),img);
-		tree     = new TreeView<>(treeRoot);
+		treeRoot  = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("preprocessor"),new PreprocessorCommand("")),preprocImg);
+		tree      = new TreeView<>(treeRoot);
+		titleRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title()),titleImg);
+		treeRoot.getChildren().add(titleRoot);
 
 		tree.setMinSize(200,50);
 		treeRoot.setExpanded(true);
@@ -784,19 +789,22 @@ public class LatexEditor extends Application {
 
 	public void setElements(NamedList<LateXElement> elts) {
 		tree.getSelectionModel().clearSelection();
-		treeRoot.getChildren().clear();
-
+		titleRoot.getChildren().clear();
+		userTextArea.setText(currentNode.getValue().bean.getText());
+		
 		LateXElement              root = elts.getValue().get(0);
 		NamedObject<LateXElement> no   = new NamedObject<LateXElement>(strings.getObservableProperty(root.getType()),root);
 		treeRoot.setValue(no);
 		userTextArea.setText(currentNode.getValue().bean.getText());
+		
+		root = elts.getValue().get(1);
+		no   = new NamedObject<LateXElement>(strings.getObservableProperty(root.getType()),root);
+		titleRoot.setValue(no);
 
-		setElements(elts,treeRoot,0,elts.getKey().size());
-		tree.getSelectionModel().select(treeRoot);
+		setElements(elts,titleRoot,1,elts.getKey().size());
 		treeRoot.setExpanded(false);
 		userTextArea.setDisable(false);
-
-		tree.getSelectionModel().select(treeRoot);
+		tree.getSelectionModel().select(titleRoot);
 	}
 
 	public void toPdf() throws IOException {
@@ -895,7 +903,7 @@ public class LatexEditor extends Application {
 					String declaration = it.next();
 					String content     = it.next();
 
-					switch (declaration) {
+					switch (declaration.trim()) {
 						case "packages"        : lm.getParameters().addPackages(content.split("[;\\s+]|;\\s+")); break;
 						case "commands"        : lm.getParameters().include(content.split("[;\\s+]|;\\s+"    )); break;
 						case "documentSettings": lm.getParameters().loadSettings(content);                       break;

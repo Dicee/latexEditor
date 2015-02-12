@@ -233,4 +233,3 @@ public class Settings {
 		}
 	}
 }
-
