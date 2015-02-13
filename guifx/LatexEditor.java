@@ -731,6 +731,7 @@ public class LatexEditor extends Application {
 
 			currentFile   = file;
 			lateXElements = new ArrayList<>();
+			lateXElements.add(new PreprocessorCommand(""));
 			lateXElements.add(new Title());
 
 			List<String> names = new ArrayList<>();
@@ -789,7 +790,7 @@ public class LatexEditor extends Application {
 
 	public void setElements(NamedList<LateXElement> elts) {
 		tree.getSelectionModel().clearSelection();
-		titleRoot.getChildren().clear();
+		treeRoot.getChildren().clear();
 		userTextArea.setText(currentNode.getValue().bean.getText());
 		
 		LateXElement              root = elts.getValue().get(0);
@@ -797,14 +798,10 @@ public class LatexEditor extends Application {
 		treeRoot.setValue(no);
 		userTextArea.setText(currentNode.getValue().bean.getText());
 		
-		root = elts.getValue().get(1);
-		no   = new NamedObject<LateXElement>(strings.getObservableProperty(root.getType()),root);
-		titleRoot.setValue(no);
-
-		setElements(elts,titleRoot,1,elts.getKey().size());
+		setElements(elts,treeRoot,0,elts.getKey().size());
 		treeRoot.setExpanded(false);
 		userTextArea.setDisable(false);
-		tree.getSelectionModel().select(titleRoot);
+		tree.getSelectionModel().select(treeRoot);
 	}
 
 	public void toPdf() throws IOException {
