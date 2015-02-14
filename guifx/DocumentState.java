@@ -1,5 +1,5 @@
 package guifx;
-//
+
 import java.util.List;
 
 import latex.elements.LateXElement;

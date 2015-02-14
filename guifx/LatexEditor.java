@@ -1,11 +1,11 @@
 package guifx;
 
 import static guifx.utils.Settings.properties;
-import static latex.elements.Templates.TEMPLATES;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
+import static latex.elements.Templates.TEMPLATES;
 import guifx.utils.CodeEditor;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
@@ -18,6 +18,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -25,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javafx.application.Application;
@@ -111,7 +112,6 @@ public class LatexEditor extends Application {
 	private Stage									primaryStage;
 	private TreeView<NamedObject<LateXElement>>		tree;
 	private TreeItem<NamedObject<LateXElement>>		treeRoot;
-	private TreeItem<NamedObject<LateXElement>>		titleRoot;
 	private TreeItem<NamedObject<LateXElement>>		currentNode		= null;
 	private TreeItem<NamedObject<LateXElement>>		clipBoard		= null;
 
@@ -200,13 +200,9 @@ public class LatexEditor extends Application {
 	}
 
 	private void setTree() {
-		ImageView titleImg   = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("titleIcon"))));
-		ImageView preprocImg = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("preprocIcon"))));
-
-		treeRoot  = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("preprocessor"),new PreprocessorCommand("")),preprocImg);
+		treeRoot  = newTreeItem(new PreprocessorCommand(""));
 		tree      = new TreeView<>(treeRoot);
-		titleRoot = new TreeItem<>(new NamedObject<>(strings.getObservableProperty("title"),new Title()),titleImg);
-		treeRoot.getChildren().add(titleRoot);
+		treeRoot.getChildren().add(newTreeItem(new Title()));
 
 		tree.setMinSize(200,50);
 		treeRoot.setExpanded(true);
@@ -731,11 +727,10 @@ public class LatexEditor extends Application {
 
 			currentFile   = file;
 			lateXElements = new ArrayList<>();
+			lateXElements.add(new PreprocessorCommand(""));
 			lateXElements.add(new Title());
 
-			List<String> names = new ArrayList<>();
-			names.add(" ");
-			setElements(new NamedList<>(names,lateXElements));
+			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
 			saved = false;
 			save();
 
@@ -767,44 +762,28 @@ public class LatexEditor extends Application {
 	public NamedList<LateXElement> getElements() {
 		return getElements(treeRoot,"");
 	}
-
-	private TreeItem<NamedObject<LateXElement>> setElements(NamedList<LateXElement> elts, TreeItem<NamedObject<LateXElement>> parentNode,
-			int index, int max) {
-		List<String> names = elts.getKey();
-		List<LateXElement> objects = elts.getValue();
-		int level = names.get(index).length();
-
-		for (int i = index + 1; i < max && level < names.get(i).length(); i++) {
-			int currentLevel = names.get(i).length();
-			if (currentLevel == level + 1) {
-				TreeItem<NamedObject<LateXElement>> childNode = newTreeItem(objects.get(i));
-				tree.getSelectionModel().select(childNode);
-				childNode = setElements(elts,childNode,i,max);
-				parentNode.getChildren().add(childNode);
+	
+	private void setElements(List<Pair<Integer,LateXElement>> elts) {
+		tree.getSelectionModel().clearSelection();
+		if (elts.isEmpty()) treeRoot = newTreeItem(new PreprocessorCommand(""));
+		else {
+			treeRoot = newTreeItem(elts.get(0).getValue());
+			Deque<Pair<Integer,TreeItem<NamedObject<LateXElement>>>> stack = new LinkedList<>();
+			stack.push(new Pair<>(elts.get(0).getKey(),treeRoot));
+			
+			for (Pair<Integer,LateXElement> elt : elts.subList(1,elts.size())) {
+				TreeItem<NamedObject<LateXElement>> node = newTreeItem(elt.getValue());
+				
+				while (stack.peek().getKey() >= elt.getKey()) stack.pop();
+				stack.peek().getValue().getChildren().add(node);
+				stack.push(new Pair<>(elt.getKey(),node));
 			}
 		}
-		parentNode.setExpanded(false);
-		return parentNode;
-	}
-
-	public void setElements(NamedList<LateXElement> elts) {
-		tree.getSelectionModel().clearSelection();
-		titleRoot.getChildren().clear();
-		userTextArea.setText(currentNode.getValue().bean.getText());
 		
-		LateXElement              root = elts.getValue().get(0);
-		NamedObject<LateXElement> no   = new NamedObject<LateXElement>(strings.getObservableProperty(root.getType()),root);
-		treeRoot.setValue(no);
-		userTextArea.setText(currentNode.getValue().bean.getText());
-		
-		root = elts.getValue().get(1);
-		no   = new NamedObject<LateXElement>(strings.getObservableProperty(root.getType()),root);
-		titleRoot.setValue(no);
-
-		setElements(elts,titleRoot,1,elts.getKey().size());
+		tree.setRoot(treeRoot);
 		treeRoot.setExpanded(false);
 		userTextArea.setDisable(false);
-		tree.getSelectionModel().select(titleRoot);
+		tree.getSelectionModel().select(treeRoot);
 	}
 
 	public void toPdf() throws IOException {
@@ -817,8 +796,6 @@ public class LatexEditor extends Application {
 			pb.directory(currentDir.getAbsoluteFile());
 
 			StringBuilder sb = new StringBuilder();
-			// final Object o = new Object();
-
 			Function<String, Consumer<String>> consumerFactory = s -> str -> {
 				sb.append(str);
 				sb.append("\n");
@@ -887,54 +864,58 @@ public class LatexEditor extends Application {
 			if (file != null) {
 				currentDir  = file.getParentFile();
 				currentFile = file;
+				List<Pair<Integer,LateXElement>> elts = readFromJavatex(file);
+				setElements(elts);
 
-				TokenReader        tr       = new TokenReader(new FileReader(file),"##");
-				List<String>       buffer   = new LinkedList<>();
-				List<LateXElement> elements = new ArrayList<>();
-				List<String>       names    = new ArrayList<>();
-				lm.getParameters().clear();
-
-				String s;
-				while ((s = tr.readToNextToken()) != null)
-					buffer.add(s.trim());
-
-				Iterator<String> it    = buffer.iterator();
-				while (it.hasNext()) {
-					String declaration = it.next();
-					String content     = it.next();
-
-					switch (declaration.trim()) {
-						case "packages"        : lm.getParameters().addPackages(content.split("[;\\s+]|;\\s+")); break;
-						case "commands"        : lm.getParameters().include(content.split("[;\\s+]|;\\s+"    )); break;
-						case "documentSettings": lm.getParameters().loadSettings(content);                       break;
-						default:
-							Pattern p = Pattern.compile("\\s*(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?\\s*");
-							Matcher m = p.matcher(declaration);
-
-							Predicate<String> nullOrEmpty = str -> str == null || str.isEmpty();
-							if (m.matches()) {
-								elements.add(LateXElement.newLateXElement(m.group(2) + (nullOrEmpty.test(m.group(4)) ? "" : m.group(3)),
-										content));
-								names.add(m.group(1));
-							}
-					}
-				}
-
-				tr.close();
-				setElements(new NamedList<>(names,elements));
 				primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
+				savedState = new DocumentState(elts.stream().map(kv -> kv.getValue()).collect(Collectors.toList()));
 				setSaved(true);
-				savedState = new DocumentState(elements);
 				generate.setDisable(false);
 			}
 		} catch (FileNotFoundException e) {
 			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
-					.masthead(strings.getProperty("anErrorOccurredMessage"))
-					.message(String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath())).showError();
+				.masthead(strings.getProperty("anErrorOccurredMessage"))
+				.message(String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()))
+				.showError();
 		} catch (IOException e) {
 			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
-					.masthead(strings.getProperty("anErrorOccurredMessage")).message(strings.getProperty("ioLoadError")).showError();
+				.masthead(strings.getProperty("anErrorOccurredMessage"))
+				.message(strings.getProperty("ioLoadError")).showError();
+		} catch (WrongFormatException e) {
+			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
+				.masthead(strings.getProperty("anErrorOccurredMessage"))
+				.message(String.format(strings.getProperty("malformedJavatexError"),e.getMessage()))
+				.showError();
 		}
+	}
+	
+	private List<Pair<Integer,LateXElement>> readFromJavatex(File f) 
+			throws IOException, FileNotFoundException, WrongFormatException {
+		TokenReader                      tr   = new TokenReader(new FileReader(f),"##");
+		List<Pair<Integer,LateXElement>> res  = new LinkedList<>();  
+		
+		String s;
+		while ((s = tr.readToNextToken()) != null) {
+			String decl    = s.trim();
+			String content = tr.readToNextToken().trim();
+			
+			switch (decl) {
+				case "packages"        : lm.getParameters().addPackages(content.split("[;\\s+]|;\\s+")); break;
+				case "commands"        : lm.getParameters().include(content.split("[;\\s+]|;\\s+"    )); break;
+				case "documentSettings": lm.getParameters().loadSettings(content);                       break;
+				default:
+					Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
+					Matcher m = p.matcher(decl);
+
+					if (m.matches()) {
+						String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
+						res.add(new Pair<>(m.group(1).length(),LateXElement.newLateXElement(m.group(2) + param,content)));
+					} else
+						throw new WrongFormatException(decl);
+			}
+		}
+		tr.close();
+		return res;
 	}
 	
 	/**
@@ -974,5 +955,10 @@ public class LatexEditor extends Application {
 			Dialogs.create().owner(null)
 				.title(strings.getProperty("error")).masthead(strings.getProperty("anErrorOccurredMessage"))
 				.message(strings.getProperty("undefinedHome")).showError();
+	}
+	
+	private class WrongFormatException extends Exception { 
+		private static final long	serialVersionUID	= 1L;
+		public WrongFormatException(String msg) { super(msg); }
 	}
 }
