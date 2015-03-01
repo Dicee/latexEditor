@@ -1,6 +1,7 @@
 package latex.elements;
 
 import static latex.elements.Templates.TEMPLATES;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,6 +14,7 @@ public interface LateXElement extends Textifiable {
 	
 	public String latexify(LateXMaker lm);
 	public int getDepth();
+	public java.util.List<LateXElement> getChildren();
 	public LateXElement clone();
 	
 	public static LateXElement newLateXElement(String opName, String content) {
@@ -29,6 +31,7 @@ public interface LateXElement extends Textifiable {
             case "latex"         : elt = new LateXCode          (content); break;
             case "image"         : elt = new Inclusion          (content); break;
             case "preprocessor"  : elt = new PreprocessorCommand(content); break;
+            case "environment"   : elt = new Environment        (content); break;
             default              : 
             	Template t = new Template();
             	Pattern  p = Pattern.compile("(template|title)\\s*\\[(.+)\\]");

@@ -3,9 +3,7 @@ package latex;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import latex.elements.LateXElement;
-
-public class Package implements LateXElement, Comparable<Package> {
+public class Package implements Comparable<Package> {
 	String	name;
 	String	option;
 
@@ -18,12 +16,10 @@ public class Package implements LateXElement, Comparable<Package> {
 		this.option = option;
 	}
 
-	@Override
 	public String getText() {
 		return option == null ?	name : String.format("%s[%s]",name,option);
 	}
 
-	@Override
 	public void setText(String text) {
 		String  pattern = "(\\w*)\\s*\\[(.+)\\]";
 		Pattern p       = Pattern.compile(pattern);
@@ -35,33 +31,19 @@ public class Package implements LateXElement, Comparable<Package> {
 			name = text;
 	}
 
-	@Override
-	public String getType() {
-		return "Package";
-	}
-
-	@Override
 	public String textify() {
 		return getText();
 	}
 
-	@Override
 	public String latexify(LateXMaker lm) {
 		return lm.makePackage(option,name);
 	}
 
-	@Override
-	public int getDepth() {
-		return LateXElement.DEPTH_MAX;
-	}
-
-	@Override
 	public String toString() {
 		return option != null ?	String.format("%s[%s]",name,option) : name;
 	}
 	
-	@Override
-	public LateXElement clone() {
+	public Package clone() {
 		return new Package(name,option);
 	}
 	

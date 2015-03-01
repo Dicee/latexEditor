@@ -864,6 +864,8 @@ public class LatexEditor extends Application {
 			if (file != null) {
 				currentDir  = file.getParentFile();
 				currentFile = file;
+				lm.getParameters().clear();
+				
 				List<Pair<Integer,LateXElement>> elts = readFromJavatex(file);
 				setElements(elts);
 

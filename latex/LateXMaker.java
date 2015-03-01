@@ -22,7 +22,8 @@ public class LateXMaker {
 	private int						chapterCount	= 0, figureCount = 1;
 	private static final String[]	romanNumbers	= { "I", "II", "III", "IV", "VI", "VII", "VIII", "IX" };
 	private DocumentParameters		parameters;
-	private boolean 				preproc;
+	private boolean					preproc;
+	private BufferedWriter			out;
 	
 	public LateXMaker(DocumentParameters dp) {
 		this.parameters = dp;
@@ -48,8 +49,10 @@ public class LateXMaker {
 		 return beginDocument("");
 	}
 	
-	public String makeParagraph(String text) {
-		return format("\\paragraph{}\n\\hspace{%s}\\textnormal{%s}\n",parameters.getAlinea(),filter(text));
+	public String makeParagraph(String title, String text) {
+		return title.isEmpty() ? 
+			format("\\paragraph{}\n\\hspace{%s}%s\n",parameters.getAlinea(),filter(text)) :
+			format("\\paragraph{%s}\n%s\n",filter(title),filter(text));
 	}
 	
 	private String makeBalise(String name, String content) {		
@@ -75,7 +78,7 @@ public class LateXMaker {
 	}
 	
 	public String makeList(String[] list) {
-		StringBuilder result = new StringBuilder("\\vspace{3mm}\n\\begin{itemize}\n");
+		StringBuilder result = new StringBuilder("\\vspace{1.5mm}\n\\begin{itemize}\n");
 			for (String elt : list) 
 				result.append(format("\\item %s\\vspace{1mm}\n",filter(elt.trim())));
 		return result + "\\end{itemize}\n";
@@ -100,27 +103,60 @@ public class LateXMaker {
 		figureCount  = 1;
 		preproc      = false;
 		
-		BufferedWriter fw = null;
+		out = null;
 		try {
-			fw = new BufferedWriter(new FileWriter(f));
+			out = new BufferedWriter(new FileWriter(f));
 			
 			String begin;
-			if (latexElements.get(0) instanceof PreprocessorCommand)
-				begin = beginDocument();
-			else {
+			if (latexElements.get(0) instanceof PreprocessorCommand) {
 				PreprocessorCommand preproc = (PreprocessorCommand) latexElements.get(0);
 				begin                       = beginDocument(preproc.latexify(this));
-				latexElements               = latexElements.subList(0,latexElements.size());
+				latexElements               = latexElements.subList(1,latexElements.size());
 			}
-			fw.write(begin + "\n");
+			else begin = beginDocument();
+			out.write(begin + "\n");
 			
 			for (LateXElement elt : latexElements) 
-				fw.write(elt.latexify(this) + "\n");	
-			fw.write(finishDocument() + "\n");
+				out.write(elt.latexify(this) + "\n");	
+			out.write(finishDocument() + "\n");
 		} finally {
-			if (fw != null) {
-				fw.flush();
-				fw.close();
+			if (out != null) {
+				out.flush();
+				out.close();
+			}
+		}
+	}
+//	
+//	private void makeRoot(LateXElement root) {
+//		if (root instanceof PreprocessorCommand) {
+//			PreprocessorCommand preproc = (PreprocessorCommand) root;
+//			out.write(beginDocument(preproc.latexify(this)) + "\n");
+//			List<LateXElement>  elts    = root.getChildren();
+//		}
+//		else out.write(beginDocument() + "\n");
+//	}
+	
+	public void makeDocument(File f, LateXElement root) throws IOException {
+		chapterCount = 0;
+		figureCount  = 1;
+		preproc      = false;
+		
+		out = null;
+		try {
+			out = new BufferedWriter(new FileWriter(f));
+			
+			String begin;
+			if (root instanceof PreprocessorCommand) {
+				PreprocessorCommand preproc = (PreprocessorCommand) root;
+				begin                       = beginDocument(preproc.latexify(this));
+				List<LateXElement>  elts    = root.getChildren();
+			}
+			else begin = beginDocument();
+			out.write(begin + "\n");
+		} finally {
+			if (out != null) {
+				out.flush();
+				out.close();
 			}
 		}
 	}
@@ -164,5 +200,9 @@ public class LateXMaker {
 		if (preproc) throw new IllegalStateException("Illegal use of the 'preprocessor' element");
 		else preproc = true;
 		return content;
+	}
+
+	public String makeEnvironment(String content) {
+		throw new UnsupportedOperationException();
 	}
 }
