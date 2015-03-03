@@ -23,8 +23,9 @@ public class LateXFilter {
 		tokens.put("ï","\\\"{i}");				
 		tokens.put("#","\\#"    );				
 		tokens.put("&","\\&"    );				
-//		tokens.put("_","\\_"    );				
-		tokens.put("%","\\%"    );				
+
+		tokens.put("(?<=[^\\])_","\\_");				
+		tokens.put("(?<=[^\\])%","\\%");
 	}
 	
 	public static String filter(String s) {
