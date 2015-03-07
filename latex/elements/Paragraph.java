@@ -16,7 +16,7 @@ public class Paragraph extends AbstractLateXElement {
 		int     index     = content.indexOf('\n');
 		index             = index == -1 ? content.length() : index;
 		String  firstLine = content.substring(0,index);
-		Matcher m         = titleReg.matcher(firstLine);
+		Matcher m         = titleReg.matcher(firstLine.trim());
 		return m.matches() ? lm.makeParagraph(m.group(1),content.substring(index + 1)) : lm.makeParagraph("",content);
 	}
 	
