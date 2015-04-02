@@ -13,6 +13,12 @@ def load_properties(path):
 			res[split[0].strip()] = split[1].strip()
 	return res
 			
+"""Load a property file in a dictionary"""
+def print_properties(props,path):
+	with open(path,"w") as writer:
+		for (k,v) in props:
+			writer.write("{}={}\n".format(k,v))
+			
 """Interpret the regular expressions inputted by the user and convert them into Python regular expressions"""
 def read_regexps(args,root):
 	def get_pattern(file):
@@ -87,7 +93,7 @@ def print_usage():
 	print("\n--------------\n     USAGE\n--------------")
 	print("\nThis command enables to export (resp. import) files matching a regex to (resp. from) a given Eclipse project from (resp. to) a git repository.")
 	print("\nSyntax : update <operation> regex*")
-	print("\n\nArgument 'operation' can be any of the following : \n  . export\n  . import")
+	print("\n\nArgument 'operation' can be any of the following : \n  . export\n  . import\n  . ignore")
 	
 """Fail and exit with a message"""
 def fail(msg):
@@ -97,21 +103,27 @@ def fail(msg):
 	
 if __name__ == '__main__':
 	props = load_properties("update.ini")
+	ends  = (props["eclipse-project"],props["repository"])
 	
 	if sys.argv[1] == "import":
-		ends = (props["eclipse-project"],props["repository"])
+		
 	elif sys.argv[1] == "export":
-		ends = (props["repository"],props["eclipse-project"])
+		ends = (ends[1],ends[0])
+	elif sys.argv[1] in [ "import","ignore" ]:
 	else:
 		fail(sys.argv[1] + " is not a valid operation")
 	
 	if len(sys.argv) < 3:
 		fail("Not enough arguments.")
 		
-	ignore   = [ "update.ini","update.py","README.md","codemirror-4.8","lib","tmp" ]
+	ignore   = set(props["ignore"].split(";"))
 	regs     = read_regexps([ f for f in os.listdir(ends[0]) if accept(f,ignore) ],ends[0]) if sys.argv[2] == "-all" else read_regexps(sys.argv[2:],ends[0])
 	files    = fetch_files(ignore,ends[0])
 	selected = filter_files(regs,files)
 
 	if selected:
-		copy_files(selected,ends[0],ends[1])
+		if sys.argv[1] == "ignore":
+			props["ignore"] = ";".join(ignore.union(selected))
+			print_properties(props,"update.ini")
+		else:
+			copy_files(selected,ends[0],ends[1])

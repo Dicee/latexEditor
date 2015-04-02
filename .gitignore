@@ -1,6 +1,7 @@
 .metadata
 bin/
 .classpath
+.project
 
 update.ini
 tmp/

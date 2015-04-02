@@ -6,6 +6,8 @@ import static java.util.Arrays.asList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import static latex.elements.Templates.TEMPLATES;
+import guifx.actions.ActionManager;
+import guifx.actions.CancelableAction;
 import guifx.utils.CodeEditor;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
@@ -62,6 +64,8 @@ import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCharacterCombination;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -130,6 +134,7 @@ public class LatexEditor extends Application {
 	private SplitPane								splitPane;
 
 	private final LateXPidia						encyclopedia	= new LateXPidia();
+	private final ActionManager						actionManager	= new ActionManager();
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -142,6 +147,7 @@ public class LatexEditor extends Application {
 
 		VBox header = setHeader();
 		root.getChildren().addAll(header,editZone);
+		setGlobalEventHandler(root);
 
 		Scene scene = new Scene(root,0,0);
 		primaryStage.setTitle(strings.getProperty("frameTitle"));
@@ -157,6 +163,18 @@ public class LatexEditor extends Application {
 		primaryStage.show();
 	}
 
+	private void setGlobalEventHandler(Node root) {
+		root.addEventHandler(KeyEvent.KEY_PRESSED,new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent ev) {
+				if      (ev.getCode() == KeyCode.DELETE && currentNode != null)    { cutNode(false); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown()) { cutNode(true ); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown()) { copyNode ()   ; ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown()) { pasteNode()   ; ev.consume(); }
+			}
+		});
+	}
+	
 	private VBox setHeader() {
 		VBox header           = new VBox();
 		ImageView pdfIcon     = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("pdfIcon"    ))));
@@ -223,8 +241,8 @@ public class LatexEditor extends Application {
 				LateXElement elt = currentNode.getValue().bean;
 
 				buildAddMenus(elt);
-				// buildClipboardMenus(elt);
-				buildDeleteMenu(elt);
+				buildClipboardMenus(elt);
+				buildDeleteMenu();
 
 				// display the popup
 				addMenu.show(tree,pt.getX() + 10,pt.getY() + 10);
@@ -345,52 +363,29 @@ public class LatexEditor extends Application {
 		setEditorZone.accept(borderPane);
 	}
 
-	// private void buildClipboardMenus(LateXElement elt) {
-	// if (!(elt instanceof Title)) {
-	// MenuItem copy = new MenuItem("Copier");
-	// MenuItem cut = new MenuItem("Couper");
-	// MenuItem paste = new MenuItem("Coller");
-	//
-	// copy.setOnAction((ActionEvent ev) -> clipBoard = currentNode);
-	// cut.setOnAction((ActionEvent ev) -> deleteNode(true));
-	// paste.setOnAction((ActionEvent ev) -> {
-	// if (clipBoard == null) {
-	// //Still need to create my own dialog class...
-	// } else {
-	// LateXElement clipboardElt = clipBoard.getValue();
-	// if (elt.getDepth() < clipboardElt.getDepth())
-	// currentNode.getChildren().add(0,clipBoard);
-	// else if (elt.getDepth() == clipboardElt.getDepth()) {
-	// TreeItem<LateXElement> parent = currentNode.getParent();
-	// int index = parent.getChildren().indexOf(currentNode);
-	// if (index < parent.getChildren().size() - 1)
-	// parent.getChildren().add(index + 1,clipBoard);
-	// else
-	// parent.getChildren().add(clipBoard);
-	// }
-	// }
-	// });
-	//
-	// addMenu.getItems().add(copy);
-	// addMenu.getItems().add(cut);
-	// addMenu.getItems().add(paste);
-	// }
-	// }
-
-	private void deleteNode(boolean saveInClipboard) {
-		TreeItem<NamedObject<LateXElement>> parent = currentNode.getParent();
-		parent.getChildren().remove(currentNode);
-		clipBoard   = saveInClipboard ? currentNode : clipBoard;
-		currentNode = null;
-	}
-
-	private void buildDeleteMenu(LateXElement elt) {
-		MenuItem delete;
+	private void buildClipboardMenus(LateXElement elt) {
 		if (!(elt instanceof Title)) {
-			addMenu.getItems().add(delete = new MenuItem());
-			delete.textProperty().bind(strings.getObservableProperty("delete"));
-			delete.setOnAction(ev -> deleteNode(false));
+			MenuItem copy  = new MenuItem();
+			MenuItem cut   = new MenuItem();
+			MenuItem paste = new MenuItem();
+			
+			copy .textProperty().bind(strings.getObservableProperty("copy" ));
+			cut  .textProperty().bind(strings.getObservableProperty("cut"  ));
+			paste.textProperty().bind(strings.getObservableProperty("paste"));
+
+			copy .setOnAction(ev -> copyNode());
+			cut  .setOnAction(ev -> cutNode(true));
+			paste.setOnAction(ev -> pasteNode());
+			addMenu.getItems().addAll(copy,cut,paste);
 		}
+	}
+	
+	private void buildDeleteMenu() {
+		MenuItem delete = new MenuItem();
+		addMenu.getItems().add(delete);
+		delete.textProperty().bind(strings.getObservableProperty("delete"));
+		delete.setOnAction(ev -> cutNode(false));
+		if (currentNode.getParent() == null) delete.setDisable(true);
 	}
 
 	private void buildAddMenus(LateXElement elt) {
@@ -447,27 +442,6 @@ public class LatexEditor extends Application {
 				}
 			}
 		}
-	}
-
-	private void addSibling(String command) {
-		TreeItem<NamedObject<LateXElement>>                 newElt   = newTreeItem(LateXElement.newLateXElement(command,""));
-		ObservableList<TreeItem<NamedObject<LateXElement>>> children = currentNode.getParent().getChildren();
-		int i = children.indexOf(currentNode);
-		if (i == children.size() - 1)
-			children.add(newElt);
-		else
-			children.add(i + 1,newElt);
-		setSaved(false);
-	}
-
-	private void addChild(String command, int option) {
-		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
-		if (option == INSERT_TAIL)
-			currentNode.getChildren().add(newElt);
-		else
-			currentNode.getChildren().add(0,newElt);
-		currentNode.setExpanded(true);
-		setSaved(false);
 	}
 
 	private Node setEditZone() {
@@ -577,7 +551,7 @@ public class LatexEditor extends Application {
 
 		// handle resize events
 		HBox.setHgrow(textEditor,Priority.ALWAYS);
-		HBox.setHgrow(tree,Priority.NEVER);
+		HBox.setHgrow(tree      ,Priority.NEVER);
 		tree.setMinWidth(210);
 		tree.setMinHeight(500);
 		textEditor.setMinWidth(420);
@@ -606,11 +580,16 @@ public class LatexEditor extends Application {
 		MenuItem quit   = new MenuItem();
 		generate        = new MenuItem();
 		menuFile.getItems().addAll(newDoc,load,save,saveAs,generate,quit);
+		
+		// set submenu Edit
+		MenuItem undo = new MenuItem();
+		MenuItem redo = new MenuItem();
+		undo.disableProperty().bind(actionManager.hasPreviousProperty().not());
+		redo.disableProperty().bind(actionManager.hasNextProperty().not());
+		menuEdit.getItems().addAll(undo,redo);
 
 		// set submenu Options
-		MenuItem settings = new MenuItem();
-		settings.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
-
+		MenuItem  settings    = new MenuItem();
 		ImageView checkedIcon = new ImageView(new Image(getClass().getResourceAsStream(Settings.properties.getProperty("checkedIcon"))));
 		menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
 				Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
@@ -624,30 +603,45 @@ public class LatexEditor extends Application {
 		menuHelp.getItems().add(doc);
 
 		// set accelerators for all menu items
-		newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN));
-		save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN));
+		newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
+		save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
 		saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
-		load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN));
-		generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN));
-		doc     .setAccelerator(new KeyCharacterCombination("H",CONTROL_DOWN));
-		settings.setAccelerator(new KeyCharacterCombination("O",CONTROL_DOWN));
-		quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN));
+		load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
+		generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
+		quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
+		undo    .setAccelerator(new KeyCharacterCombination("Z",CONTROL_DOWN         ));
+		redo    .setAccelerator(new KeyCharacterCombination("Y",CONTROL_DOWN         ));
+		settings.setAccelerator(new KeyCharacterCombination("O",CONTROL_DOWN         ));
+		doc     .setAccelerator(new KeyCharacterCombination("H",CONTROL_DOWN         ));
 		generate.setDisable(true);
 
-		newDoc  .setOnAction(ev -> { createDocument(); lateXElements = new ArrayList<>(); });
+		// set actions
+		newDoc  .setOnAction(ev -> { 
+			createDocument();
+			lateXElements = new ArrayList<>();
+			lateXElements.add(new PreprocessorCommand(""));
+			lateXElements.add(new Title());
+			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
+			
+			setSaved(false);
+			save();
+		});
 		save    .setOnAction(ev -> save());
 		saveAs  .setOnAction(ev -> { createDocument(); save(); });
 		load    .setOnAction(ev -> load());
 		generate.setOnAction(ev -> generate());
 		quit    .setOnAction(ev -> System.exit(0));
-
-		menuBar .getMenus().addAll(menuFile,menuEdit,menuOptions,menuHelp);
+		undo    .setOnAction(ev -> actionManager.undo());
+		redo    .setOnAction(ev -> actionManager.redo());
+		settings.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
 
 		// bind the text properties
 		List<String> properties = Arrays.asList("file","edit","options","help","documentation","newDocument","save","saveAs","load",
-				"generate","quit","settings");
-		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,doc,newDoc,save,saveAs,load,generate,quit,settings);
+				"generate","quit","undo","redo","settings");
+		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,doc,newDoc,save,saveAs,load,generate,quit,undo,redo,settings);
 		IntStream.range(0,menus.size()).forEach(i -> menus.get(i).textProperty().bind(strings.getObservableProperty(properties.get(i))));
+		
+		menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions,menuHelp);
 	}
 
 	private void save() {
@@ -725,22 +719,15 @@ public class LatexEditor extends Application {
 			if (i == -1 || !s.substring(i).equals(".javatex"))
 				file = new File(s + ".javatex");
 
-			currentFile   = file;
-			lateXElements = new ArrayList<>();
-			lateXElements.add(new PreprocessorCommand(""));
-			lateXElements.add(new Title());
-
-			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
-			saved = false;
-			save();
-
+			currentFile = file;
 			primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
 			generate.setDisable(false);
+			actionManager.reset();
 		}
 	}
 
-	private class NamedList<E> extends Pair<List<String>, List<E>> {
-		private static final long	serialVersionUID	= 1L;
+	private class NamedList<E> extends Pair<List<String>,List<E>> {
+		private static final long serialVersionUID = 1L;
 		public NamedList(List<String> a, List<E> b) { super(a,b); }
 	}
 
@@ -781,7 +768,7 @@ public class LatexEditor extends Application {
 		}
 		
 		tree.setRoot(treeRoot);
-		treeRoot.setExpanded(false);
+		treeRoot.setExpanded(true);
 		userTextArea.setDisable(false);
 		tree.getSelectionModel().select(treeRoot);
 	}
@@ -850,7 +837,7 @@ public class LatexEditor extends Application {
 		}
 	}
 
-	public void load() {
+	private void load() {
 		saved = false;
 		FileChooser f = new FileChooser();
 		f.setTitle("Charger un document");
@@ -874,6 +861,7 @@ public class LatexEditor extends Application {
 				setSaved(true);
 				generate.setDisable(false);
 			}
+			actionManager.reset();
 		} catch (FileNotFoundException e) {
 			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
 				.masthead(strings.getProperty("anErrorOccurredMessage"))
@@ -918,6 +906,115 @@ public class LatexEditor extends Application {
 		}
 		tr.close();
 		return res;
+	}
+	
+	// controls
+	private void addChild(String command, int option) {
+		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
+		TreeItem<NamedObject<LateXElement>> parent = currentNode;
+		
+		actionManager.perform(new CancelableAction() {
+			@Override
+			public void peform() {
+				if (option == INSERT_TAIL) currentNode.getChildren().add(  newElt);
+				else                       currentNode.getChildren().add(0,newElt);
+				currentNode.setExpanded(true);
+				setSaved(false);
+			}
+			
+			@Override
+			public void cancel() {
+				parent.getChildren().remove(newElt);
+			}
+		});
+	}
+	
+	private void addSibling(String command) {
+		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
+		TreeItem<NamedObject<LateXElement>> parent = currentNode.getParent();
+		TreeItem<NamedObject<LateXElement>> node   = currentNode;
+		
+		actionManager.perform(new CancelableAction() {
+			@Override
+			public void peform() {
+				int i = parent.getChildren().indexOf(node);
+				if (i == parent.getChildren().size() - 1) parent.getChildren().add(newElt);
+				else                                      parent.getChildren().add(i + 1,newElt);
+				setSaved(false);
+			}
+			
+			@Override
+			public void cancel() {
+				parent.getChildren().remove(newElt);
+			}
+		});
+	} 
+	
+	private void cutNode(boolean saveToClipboard) {
+		TreeItem<NamedObject<LateXElement>>	parent = currentNode.getParent();
+		TreeItem<NamedObject<LateXElement>> node   = currentNode;
+		int                                 index  = parent.getChildren().indexOf(node);
+		if (saveToClipboard) 
+			clipBoard = currentNode;
+		
+		actionManager.perform(new CancelableAction() {
+			@Override
+			public void peform() {
+				
+				TreeItem<NamedObject<LateXElement>> next;
+				if      (parent.getChildren().size() == 1        ) next = parent;
+				else if (index != parent.getChildren().size() - 1) next = parent.getChildren().get(index + 1);
+				else                                               next = parent.getChildren().get(index - 1);
+				parent.getChildren().remove(node);
+				tree.getSelectionModel().select(next);
+			}
+			
+			@Override
+			public void cancel() {
+				parent.getChildren().add(index,node);
+				tree.getSelectionModel().select(node);
+			}
+		});
+	}
+	
+	private void copyNode() {
+		clipBoard = cloneNode(currentNode);
+	}
+	
+	private TreeItem<NamedObject<LateXElement>> cloneNode(TreeItem<NamedObject<LateXElement>> node) {
+		TreeItem<NamedObject<LateXElement>> root = newTreeItem(node.getValue().bean.clone());
+		root.getChildren().addAll(node.getChildren().stream().map(n -> cloneNode(n)).collect(Collectors.toList()));
+		return root;
+	}
+	
+	private void pasteNode() {
+		TreeItem<NamedObject<LateXElement>> toPaste      = cloneNode(clipBoard);
+		TreeItem<NamedObject<LateXElement>> current      = currentNode;
+		LateXElement                        clipboardElt = toPaste    .getValue().bean;
+		LateXElement                        elt          = currentNode.getValue().bean;
+		TreeItem<NamedObject<LateXElement>>	parent       = elt.getDepth() < clipboardElt.getDepth() ? currentNode : currentNode.getParent();
+		
+		if (elt.getDepth() <= clipboardElt.getDepth())
+			actionManager.perform(new CancelableAction() {
+				@Override
+				public void peform() {
+					if (toPaste != null) {
+						if (elt.getDepth() < clipboardElt.getDepth())
+							parent.getChildren().add(0,toPaste);
+						else if (elt.getDepth() == clipboardElt.getDepth()) {
+							int index = parent.getChildren().indexOf(current);
+							if (index < parent.getChildren().size() - 1) parent.getChildren().add(index + 1,toPaste);
+							else                                         parent.getChildren().add(toPaste);
+						} 
+						tree.getSelectionModel().select(toPaste);
+					}
+				}
+				
+				@Override
+				public void cancel() {
+					parent.getChildren().remove(toPaste);
+				}
+			});
 	}
 	
 	/**
