@@ -16,7 +16,7 @@ def load_properties(path):
 """Load a property file in a dictionary"""
 def print_properties(props,path):
 	with open(path,"w") as writer:
-		for (k,v) in props:
+		for k,v in props.items():
 			writer.write("{}={}\n".format(k,v))
 			
 """Interpret the regular expressions inputted by the user and convert them into Python regular expressions"""
@@ -37,19 +37,20 @@ def read_regexps(args,root):
 			return [ file ]
 	
 	def get_regex(s):
-		return "^" + root + "/" + s.replace(".","\.").replace("*","[^/]+") + "$"
+		prefix = "" if root == "." else root + "/"
+		return "^" + prefix + s.replace(".","\.").replace("*","[^/]+") + "$"
 			
 	return [ re.compile(get_regex(item)) for arg in args for item in get_pattern(arg) ]
 
 """Determine whether a file should be ignored or not"""
 def accept(name,ignore):
-	return not(name.startswith(".")) and name not in ignore and not(name.endswith("jar"))
+	return name not in ignore
 	
 def absolute_path(root,subfile):
 	return subfile if root == '.' else root + "/" + subfile
 	
 """Fetch the list of the absolute path of all the files recursively contained by the given root"""
-def fetch_files(ignore,root):		
+def fetch_files(ignore,root):
 	if not os.path.isdir(root):
 		return frozenset({ root }) if accept(root,ignore) else frozenset()
 		
@@ -63,7 +64,7 @@ def filter_files(regs,files):
 		matches += [ file for file in files if reg.match(file) ]
 		
 	if matches:
-		print(len(matches),"matches")
+		print(len(matches),"match(es)")
 	else:
 		print("Found no file matching any of these regular expressions")
 	return matches
@@ -91,9 +92,9 @@ def copy_files(files,from_dir,to_dir):
 """Print the usage of the command to the user"""
 def print_usage():
 	print("\n--------------\n     USAGE\n--------------")
-	print("\nThis command enables to export (resp. import) files matching a regex to (resp. from) a given Eclipse project from (resp. to) a git repository.")
+	print("\nThis command enables to export (resp. import) files matching a regex to (resp. from) a given project from (resp. to) a git repository.")
 	print("\nSyntax : update <operation> regex*")
-	print("\n\nArgument 'operation' can be any of the following : \n  . export\n  . import\n  . ignore")
+	print("\n\nArgument 'operation' can be any of the following : \n  . export\n  . import\n  . ignore\n  . unignore")
 	
 """Fail and exit with a message"""
 def fail(msg):
@@ -102,28 +103,30 @@ def fail(msg):
 	exit()
 	
 if __name__ == '__main__':
-	props = load_properties("update.ini")
-	ends  = (props["eclipse-project"],props["repository"])
-	
-	if sys.argv[1] == "import":
-		
-	elif sys.argv[1] == "export":
-		ends = (ends[1],ends[0])
-	elif sys.argv[1] in [ "import","ignore" ]:
-	else:
-		fail(sys.argv[1] + " is not a valid operation")
-	
 	if len(sys.argv) < 3:
 		fail("Not enough arguments.")
+	
+	props = load_properties("update.ini")
+	
+	if sys.argv[1] in [ "export","import" ]:
+		ends = (props["eclipse-project"],props["repository"])
+		if sys.argv[1] == "export":
+			ends = (ends[1],ends[0])
+		home = ends[0]
+	elif sys.argv[1] in [ "ignore","unignore" ]:
+		home = "."
+	else:
+		fail(sys.argv[1] + " is not a valid operation")
 		
-	ignore   = set(props["ignore"].split(";"))
-	regs     = read_regexps([ f for f in os.listdir(ends[0]) if accept(f,ignore) ],ends[0]) if sys.argv[2] == "-all" else read_regexps(sys.argv[2:],ends[0])
-	files    = fetch_files(ignore,ends[0])
-	selected = filter_files(regs,files)
+	local_ignore = set(props["ignore"].strip().split(";")).difference([""])
+	ignore       = { home + "/" + x for x in local_ignore }
+	regs         = read_regexps([ f for f in os.listdir(home) if accept(f,ignore) ],home) if sys.argv[2] == "-all" else read_regexps(sys.argv[2:],home)
+	files        = fetch_files(ignore,home)
+	selected     = filter_files(regs,files)
 
 	if selected:
-		if sys.argv[1] == "ignore":
-			props["ignore"] = ";".join(ignore.union(selected))
+		if sys.argv[1] in [ "ignore","unignore" ]:
+			props["ignore"] = ";".join(local_ignore.union(selected) if sys.argv[1] == "ignore" else local_ignore.difference(selected))
 			print_properties(props,"update.ini")
 		else:
 			copy_files(selected,ends[0],ends[1])
