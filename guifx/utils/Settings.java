@@ -4,6 +4,7 @@ import static guifx.utils.Settings.strings;
 import static javafx.application.Application.STYLESHEET_CASPIAN;
 import static javafx.application.Application.STYLESHEET_MODENA;
 import static javafx.application.Application.setUserAgentStylesheet;
+import guifx.components.CodeEditor;
 import impl.org.controlsfx.i18n.Localization;
 
 import java.io.BufferedReader;
@@ -19,7 +20,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javafx.beans.property.Property;
 import javafx.event.ActionEvent;
@@ -46,17 +45,6 @@ public class Settings {
 	public static final String					PREF_SKIN		= "defaultStyle";
 	public static final String					PREF_LANGUAGE	= "defaultLanguage";
 	public static final String					PREF_THEME		= "defaultTheme";
-
-	private static List<String>					themes;
-	static {
-		try {
-			themes = Arrays.asList(new File(Settings.class.getResource("codemirror-4.8/theme").toURI()).listFiles()).stream()
-				.map(f -> f.getName().substring(0,f.getName().lastIndexOf(".")))
-				.collect(Collectors.toList());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
 	public static void init() {
 		// load preferences and program constants
@@ -161,7 +149,7 @@ public class Settings {
 		chooseTheme.textProperty().bind(strings.getObservableProperty("theme"));
 		
 		MenuItem selectedMenu = null;
-		for (String themeName : themes) {
+		for (String themeName : CodeEditor.THEMES) {
 			MenuItem themeMenu  = new MenuItem(themeName);
 			themeMenu.setOnAction(ev -> {
 				changePreference(themeMenu,PREF_THEME,themeName,checkedIcon);
