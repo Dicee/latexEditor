@@ -96,7 +96,7 @@ import scala.io.Source;
 import utils.StreamPrinter;
 import utils.TokenReader;
 
-public class LatexEditor extends Application {
+public class LatexEditor extends Application implements StateListener {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 	private static final Map<String, String>		LANGUAGES;
 	public static final String						LATEX_HOME		= 
@@ -931,9 +931,9 @@ public class LatexEditor extends Application {
 		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
 		TreeItem<NamedObject<LateXElement>> parent = currentNode;
 		
-		actionManager.perform(new CancelableAction() {
+		actionManager.perform(new CancelableAction(actionManager) {
 			@Override
-			public void peform() {
+			public void performImpl() {
 				if (option == INSERT_TAIL) currentNode.getChildren().add(  newElt);
 				else                       currentNode.getChildren().add(0,newElt);
 				currentNode.setExpanded(true);
@@ -952,9 +952,9 @@ public class LatexEditor extends Application {
 		TreeItem<NamedObject<LateXElement>> parent = currentNode.getParent();
 		TreeItem<NamedObject<LateXElement>> node   = currentNode;
 		
-		actionManager.perform(new CancelableAction() {
+		actionManager.perform(new CancelableAction(actionManager) {
 			@Override
-			public void peform() {
+			public void performImpl() {
 				int i = parent.getChildren().indexOf(node);
 				if (i == parent.getChildren().size() - 1) parent.getChildren().add(newElt);
 				else                                      parent.getChildren().add(i + 1,newElt);
@@ -975,9 +975,9 @@ public class LatexEditor extends Application {
 		if (saveToClipboard) 
 			clipBoard = currentNode;
 		
-		actionManager.perform(new CancelableAction() {
+		actionManager.perform(new CancelableAction(actionManager) {
 			@Override
-			public void peform() {
+			public void performImpl() {
 				
 				TreeItem<NamedObject<LateXElement>> next;
 				if      (parent.getChildren().size() == 1        ) next = parent;
@@ -1013,9 +1013,9 @@ public class LatexEditor extends Application {
 		TreeItem<NamedObject<LateXElement>>	parent       = elt.getDepth() < clipboardElt.getDepth() ? currentNode : currentNode.getParent();
 		
 		if (elt.getDepth() <= clipboardElt.getDepth())
-			actionManager.perform(new CancelableAction() {
+			actionManager.perform(new CancelableAction(actionManager) {
 				@Override
-				public void peform() {
+				public void performImpl() {
 					if (toPaste != null) {
 						if (elt.getDepth() < clipboardElt.getDepth())
 							parent.getChildren().add(0,toPaste);
@@ -1083,4 +1083,10 @@ public class LatexEditor extends Application {
 		private static final long	serialVersionUID	= 1L;
 		public WrongFormatException(String msg) { super(msg); }
 	}
+
+	@Override
+	public void handleChangeEvent() { primaryStage.setTitle(String.format("*%s - LateX Editor 4.0",currentFile.getAbsolutePath())); }
+
+	@Override
+	public void handleSaveEvent() { primaryStage.setTitle(String.format("%s - LateX Editor 4.0",currentFile.getAbsolutePath())); }
 }

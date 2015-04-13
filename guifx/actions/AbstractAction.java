@@ -1,16 +1,16 @@
 package guifx.actions;
 
 public abstract class AbstractAction implements Action {
-	protected ActionManager actionManager;
+	private final boolean save;
 
-	public AbstractAction(ActionManager actionManager) {
-		this.actionManager = actionManager;
+	public AbstractAction(boolean save) {
+		this.save = save;
 	}
 	
 	@Override
-	public void perform() {
+	final public void perform(ActionManager actionManager) {
 		performImpl();
-		actionManager.handleChangeEvent();
+		actionManager.setSaved(save);
 	}
 
 	protected abstract void performImpl();

@@ -1,5 +1,7 @@
 package guifx.actions;
 
+import guifx.StateListener;
+
 import java.util.Deque;
 import java.util.LinkedList;
 
@@ -16,11 +18,18 @@ public class ActionManager {
 	private BooleanProperty			hasPrevious	= new SimpleBooleanProperty(false);
 	
 	public void perform(Action action) {
-		action.perform();
+		action.perform(this);
 		if (action instanceof CancelableAction) { previous.push((CancelableAction) action); hasPrevious.set(true); }
 		else                                    clearPrev();
 		clearNext();
 	}
+	
+	protected void performCancelableAction(CancelableAction action) {
+		previous.push(action); 
+		hasPrevious.set(true);
+	}
+	
+	protected void performAction(CancelableAction action) { clearPrev(); }
 	
 	public void undo() {
 		if (!previous.isEmpty()) { 
@@ -57,6 +66,6 @@ public class ActionManager {
 		return hasPrevious;
 	}
 
-	public void handleChangeEvent() { isSaved = false; }
-	public void handleSaveEvent() { isSaved = true; }
+	public void setSaved(boolean saved) { isSaved = saved; }
+	public boolean isSaved() { return isSaved; }
 }

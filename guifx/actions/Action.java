@@ -1,5 +1,5 @@
 package guifx.actions;
 
 public interface Action {
-	public void perform();
+	public void perform(ActionManager manager);
 }
