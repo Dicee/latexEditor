@@ -1,5 +1,9 @@
 package guifx.actions;
 
-public interface CancelableAction extends Action {
-	public void cancel();
+public abstract class CancelableAction extends AbstractAction {
+	public CancelableAction(ActionManager actionManager) {
+		super(actionManager);
+	}
+
+	public abstract void cancel();
 }

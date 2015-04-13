@@ -2,7 +2,7 @@ package guifx;
 
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
-import guifx.utils.ContextToolBar;
+import guifx.components.ContextToolBar;
 
 import java.net.URISyntaxException;
 import java.nio.file.Paths;

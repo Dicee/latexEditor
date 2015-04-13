@@ -1,10 +1,16 @@
-package guifx.utils;
+package guifx.components;
 
 import static guifx.utils.Settings.PREF_THEME;
 import static guifx.utils.Settings.properties;
+import guifx.utils.Settings;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javafx.scene.layout.BorderPane;
 import javafx.scene.web.WebView;
@@ -19,7 +25,20 @@ import scala.io.Source;
  * editor.
  */
 public class CodeEditor extends BorderPane {
-	private static final Map<String,String> MIMES;
+	private static final Map<String, String>	MIMES;
+	public  static final List<String>			THEMES;
+	
+	static {
+		List<String> res = new ArrayList<>();
+		try {
+			res = Arrays.asList(new File(Settings.class.getResource("../components/codemirror-4.8/theme").toURI()).listFiles()).stream()
+				.map(f -> f.getName().substring(0,f.getName().lastIndexOf(".")))
+				.collect(Collectors.toList());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		THEMES = new ArrayList<>(res);
+	}
 	
 	/** a webview used to encapsulate the CodeMirror JavaScript. */
 	public final WebView	webview	= new WebView();

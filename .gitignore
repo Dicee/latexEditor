@@ -2,7 +2,8 @@
 bin/
 .classpath
 .project
-
+*.class
+.cache
 update.ini
 tmp/
 bak/

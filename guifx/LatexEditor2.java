@@ -2,13 +2,13 @@ package guifx;
 
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
-import static java.util.Arrays.asList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import static latex.elements.Templates.TEMPLATES;
 import guifx.actions.ActionManager;
 import guifx.actions.CancelableAction;
 import guifx.components.CodeEditor;
+import guifx.components.ControlledTreeView;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
 
@@ -53,7 +53,6 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
-import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TitledPane;
@@ -86,20 +85,16 @@ import latex.elements.Title;
 
 import org.controlsfx.dialog.Dialogs;
 
+import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
-import scala.collection.mutable.StringBuilder;
 import utils.StreamPrinter;
 import utils.TokenReader;
 
-public class LatexEditor extends Application {
-	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
+public class LatexEditor2 extends Application {
 	private static final Map<String, String>		LANGUAGES;
 	public static final String						LATEX_HOME		= 
 		System.getenv("LATEX_HOME").replace(System.getProperty("file.separator"),"/");
-
-	private static final int						INSERT_HEAD		= 0;
-	private static final int						INSERT_TAIL		= 1;
 
 	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
 
@@ -113,12 +108,17 @@ public class LatexEditor extends Application {
 	private final LateXMaker						lm				= new LateXMaker();
 
 	private Stage									primaryStage;
+	
+	private ControlledTreeView<NamedObject<LateXElement>> controlledTreeView;
+	
+	/////////////////////////////////////////////////////////////////////////////////
 	private TreeView<NamedObject<LateXElement>>		tree;
 	private TreeItem<NamedObject<LateXElement>>		treeRoot;
 	private TreeItem<NamedObject<LateXElement>>		currentNode		= null;
 	private TreeItem<NamedObject<LateXElement>>		clipBoard		= null;
 
 	private ContextMenu								addMenu			= new ContextMenu();
+	///////////////////////////////////////////////////////////////////////////////
 	private ContextMenu								templatesList	= new ContextMenu();
 	private MenuBar									menuBar;
 
@@ -217,14 +217,13 @@ public class LatexEditor extends Application {
 	}
 
 	private void setTree() {
-		treeRoot  = newTreeItem(new PreprocessorCommand(""));
-		tree      = new TreeView<>(treeRoot);
-		treeRoot.getChildren().add(newTreeItem(new Title()));
+		TreeItem<NamedObject<LateXElement>> root = newTreeItem(new PreprocessorCommand(""));
+		controlledTreeView = new LateXEditorTreeView(root,actionManager);
+		root.getChildren().add(newTreeItem(new Title()));
 
-		tree.setMinSize(200,50);
-		treeRoot.setExpanded(true);
-		currentNode = treeRoot;
-		tree.setOnMouseClicked(new EventHandler<MouseEvent>() {
+		controlledTreeView.setMinSize(200,50);
+		root.setExpanded(true);
+		controlledTreeView.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			@Override
 			public void handle(MouseEvent mev) {
 				if (mev.getButton().equals(MouseButton.SECONDARY))
@@ -362,86 +361,7 @@ public class LatexEditor extends Application {
 		setEditorZone.accept(borderPane);
 	}
 
-	private void buildClipboardMenus(LateXElement elt) {
-		if (!(elt instanceof Title)) {
-			MenuItem copy  = new MenuItem();
-			MenuItem cut   = new MenuItem();
-			MenuItem paste = new MenuItem();
-			
-			copy .textProperty().bind(strings.getObservableProperty("copy" ));
-			cut  .textProperty().bind(strings.getObservableProperty("cut"  ));
-			paste.textProperty().bind(strings.getObservableProperty("paste"));
-
-			copy .setOnAction(ev -> copyNode());
-			cut  .setOnAction(ev -> cutNode(true));
-			paste.setOnAction(ev -> pasteNode());
-			addMenu.getItems().addAll(copy,cut,paste);
-		}
-	}
 	
-	private void buildDeleteMenu() {
-		MenuItem delete = new MenuItem();
-		addMenu.getItems().add(delete);
-		delete.textProperty().bind(strings.getObservableProperty("delete"));
-		delete.setOnAction(ev -> cutNode(false));
-		if (currentNode.getParent() == null) delete.setDisable(true);
-	}
-
-	private void buildAddMenus(LateXElement elt) {
-		Menu addChildHead, addChildTail, addSibling = null;
-		Map<Menu, Integer> map = null;
-
-		// determine the main elements of the popup
-		if (elt.getDepth() != LateXElement.DEPTH_MAX) {
-			addMenu.getItems().add(addChildHead = new Menu());
-			addMenu.getItems().add(addChildTail = new Menu());
-			map = new HashMap<>();
-			map.put(addChildHead,INSERT_HEAD);
-			map.put(addChildTail,INSERT_TAIL);
-
-			addChildHead.textProperty().bind(strings.getObservableProperty("addChildHead"));
-			addChildTail.textProperty().bind(strings.getObservableProperty("addChildTail"));
-		}
-
-		if (elt.getDepth() != LateXElement.DEPTH_MIN) {
-			addMenu.getItems().add(addSibling = new Menu());
-			addSibling.textProperty().bind(strings.getObservableProperty("addSibling"));
-		}
-
-		// determine the secondary elements of the popup
-		for (Integer depth : NODES_TYPES_MAP.keySet()) {
-			// first, the children elements
-			if (map != null) {
-				map.entrySet().stream().forEach(entry -> {
-					Menu addChild = entry.getKey();
-					if (depth > elt.getDepth()) {
-						if (!addChild.getItems().isEmpty())
-							addChild.getItems().add(new SeparatorMenuItem());
-
-						for (String type : NODES_TYPES_MAP.get(depth)) {
-							MenuItem item = new MenuItem();
-							item.textProperty().bind(strings.getObservableProperty(type));
-							addChild.getItems().add(item);
-							item.setOnAction(ev -> {
-								addChild(type,entry.getValue());
-								addMenu.hide();
-							});
-						}
-					}
-				});
-			}
-
-			// then, the sibling elements
-			if (addSibling != null && depth == elt.getDepth()) {
-				for (String type : NODES_TYPES_MAP.get(depth)) {
-					MenuItem item = new MenuItem();
-					item.textProperty().bind(strings.getObservableProperty(type));
-					addSibling.getItems().add(item);
-					item.setOnAction(event -> addSibling(type));
-				}
-			}
-		}
-	}
 
 	private Node setEditZone() {
 		// set the text editor
@@ -1022,16 +942,6 @@ public class LatexEditor extends Application {
 	 */
 	public static void main(String[] args) {
 		launch(args);
-	}
-
-	static {
-		NODES_TYPES_MAP = new HashMap<>();
-		NODES_TYPES_MAP.put(0,asList("title"));
-		NODES_TYPES_MAP.put(1,asList("chapter"));
-		NODES_TYPES_MAP.put(2,asList("section"));
-		NODES_TYPES_MAP.put(3,asList("subsection"));
-		NODES_TYPES_MAP.put(4,asList("subsubsection"));
-		NODES_TYPES_MAP.put(5,asList("paragraph","list","image","code","latex","template"));
 	}
 
 	static {

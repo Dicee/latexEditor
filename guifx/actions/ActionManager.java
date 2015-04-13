@@ -7,6 +7,8 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
 public class ActionManager {
+	private boolean isSaved = true;
+	
 	private Deque<CancelableAction>	previous	= new LinkedList<>();
 	private Deque<CancelableAction>	next		= new LinkedList<>();
 
@@ -14,7 +16,7 @@ public class ActionManager {
 	private BooleanProperty			hasPrevious	= new SimpleBooleanProperty(false);
 	
 	public void perform(Action action) {
-		action.peform();
+		action.perform();
 		if (action instanceof CancelableAction) { previous.push((CancelableAction) action); hasPrevious.set(true); }
 		else                                    clearPrev();
 		clearNext();
@@ -54,4 +56,7 @@ public class ActionManager {
 	public BooleanProperty hasPreviousProperty() {
 		return hasPrevious;
 	}
+
+	public void handleChangeEvent() { isSaved = false; }
+	public void handleSaveEvent() { isSaved = true; }
 }
