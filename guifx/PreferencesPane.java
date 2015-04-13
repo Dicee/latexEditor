@@ -1,6 +1,6 @@
 package guifx;
 
-import static guifx.utils.Settings.strings;
+import static guifx.utils.Settings.bindProperty;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,8 +43,9 @@ public class PreferencesPane {
 		this.params        = params;
 		Stage primaryStage = new Stage(StageStyle.DECORATED);
 		
-		Button close = new Button("Fermer");
+		Button close = new Button("");
 		close.setOnAction(ev ->	primaryStage.hide());
+		bindProperty(close.textProperty(),"close");
 		
 		AnchorPane footer = new AnchorPane(close);
 		AnchorPane.setBottomAnchor(close,10d);
@@ -61,7 +62,7 @@ public class PreferencesPane {
 		footer.setPadding(new Insets(5,0,0,0));
 		
 		Scene scene = new Scene(root,PREFERRED_WIDTH,PREFERRED_HEIGHT,Color.WHITESMOKE);
-		primaryStage.setTitle("Options du document");
+		bindProperty(primaryStage.titleProperty(),"documentOptions");
 		primaryStage.setScene(scene);
 		primaryStage.setResizable(false);
 		primaryStage.setOnCloseRequest(ev -> primaryStage.hide());
@@ -83,7 +84,7 @@ public class PreferencesPane {
 		IntStream.range(0,options.size()).forEach(i -> { 
 			Label     label = new Label();
 			label.setFont(LatexEditor.subtitlesFont);
-			label.textProperty().bind(strings.getObservableProperty(options.get(i)));
+			bindProperty(label.textProperty(),options.get(i));
 			
 			TextField field = new TextField(getSetters.get(i).get());
 			field.textProperty().addListener((obs,oldValue,newValue) -> getSetters.get(i).set(newValue));
@@ -93,7 +94,7 @@ public class PreferencesPane {
 		});
 		
 		Tab optionsTab = new Tab();
-		optionsTab.textProperty().bind(strings.getObservableProperty("documentSettings"));
+		bindProperty(optionsTab.textProperty(),"documentSettings");
 		optionsTab.setContent(grid);
 		optionsTab.setClosable(false);
 		tabPane.getTabs().add(optionsTab);
@@ -150,7 +151,7 @@ public class PreferencesPane {
 		HBox      searchBar = new HBox(5,field,add);
 		searchBar.setPadding(new Insets(10,0,0,0));
 		
-		add.textProperty().bind(strings.getObservableProperty("add"));
+		bindProperty(add.textProperty(),"add");
 		add.setOnAction(ev -> { 
 			if (!field.getText().isEmpty()) {
 				addOp.accept(field.getText());
@@ -166,7 +167,7 @@ public class PreferencesPane {
 		HBox.setHgrow(field,Priority.ALWAYS);
 		
 		Tab packageTab = new Tab();
-		packageTab.textProperty().bind(strings.getObservableProperty(tabName));
+		bindProperty(packageTab.textProperty(),tabName);
 		packageTab.setContent(pane);
 		packageTab.setClosable(false);
 		tabPane.getTabs().add(packageTab);

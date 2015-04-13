@@ -1,5 +1,6 @@
 package guifx;
 
+import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.strings;
 import guifx.utils.NamedObject;
 
@@ -30,7 +31,7 @@ public class TemplateForm extends BorderPane {
 		HBox                          header      = new HBox(10,pickerLabel,colPicker);
 		
 		BorderPane.setMargin(header,new Insets(0,0,5,0));
-		pickerLabel.textProperty().bind(strings.getObservableProperty("pickColor"));
+		bindProperty(pickerLabel.textProperty(),"pickColor");
 		pickerLabel.setFont(LatexEditor.subtitlesFont);
 		
 		colPicker.setOnAction(ev -> {

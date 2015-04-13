@@ -86,9 +86,7 @@ public class CodeEditor extends BorderPane {
 
 	/**
 	 * Create a new code editor.
-	 * 
-	 * @param editingCode
-	 *            the initial code to be edited in the code editor.
+	 * @param editingCode the initial code to be edited in the code editor.
 	 */
 	public CodeEditor(String editingCode) {
 		this.editingCode = editingCode;
@@ -98,12 +96,12 @@ public class CodeEditor extends BorderPane {
 	
 	static {
 		MIMES = new HashMap<>();
-		MIMES.put("text/x-java"    ,"clike/clike.js");
-		MIMES.put("text/x-c++src"  ,"clike/clike.js");
-		MIMES.put("text/x-csrc"    ,"clike/clike.js");
-		MIMES.put("text/x-scala"   ,"clike/clike.js");
-		MIMES.put("text/x-stex"    ,"stex/stex.js");
+		MIMES.put("text/x-java"    ,"clike/clike.js"          );
+		MIMES.put("text/x-c++src"  ,"clike/clike.js"          );
+		MIMES.put("text/x-csrc"    ,"clike/clike.js"          );
+		MIMES.put("text/x-scala"   ,"clike/clike.js"          );
+		MIMES.put("text/x-stex"    ,"stex/stex.js"            );
 		MIMES.put("text/javascript","javascript/javascript.js");
-		MIMES.put("text/x-python"  ,"python/python.js");
+		MIMES.put("text/x-python"  ,"python/python.js"        );
 	}
 }

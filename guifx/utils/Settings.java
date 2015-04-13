@@ -1,5 +1,6 @@
 package guifx.utils;
 
+import static guifx.utils.Settings.strings;
 import static javafx.application.Application.STYLESHEET_CASPIAN;
 import static javafx.application.Application.STYLESHEET_MODENA;
 import static javafx.application.Application.setUserAgentStylesheet;
@@ -28,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javafx.beans.property.Property;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
@@ -97,6 +99,10 @@ public class Settings {
 			e.printStackTrace();
 		}
 	}
+    
+    public static void bindProperty(Property<String> toBind, String property) {
+    	toBind.bind(strings.getObservableProperty(property));
+    }
     
     public static Menu getChooseStyleMenu(final ImageView checkedIcon) {
 		Menu chooseStyle       = new Menu();		

@@ -1,5 +1,6 @@
 package guifx;
 
+import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
@@ -9,6 +10,7 @@ import static latex.elements.Templates.TEMPLATES;
 import guifx.actions.ActionManager;
 import guifx.actions.CancelableAction;
 import guifx.utils.CodeEditor;
+import guifx.utils.JavatexIO;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
 
@@ -34,8 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -77,6 +79,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Pair;
 import latex.LateXMaker;
 import latex.elements.LateXElement;
@@ -162,61 +165,7 @@ public class LatexEditor extends Application {
 		primaryStage.setHeight(bounds.getHeight());
 		primaryStage.show();
 	}
-
-	private void setGlobalEventHandler(Node root) {
-		root.addEventHandler(KeyEvent.KEY_PRESSED,new EventHandler<KeyEvent>() {
-			@Override
-			public void handle(KeyEvent ev) {
-				if      (ev.getCode() == KeyCode.DELETE && currentNode != null)    { cutNode(false); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown()) { cutNode(true ); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown()) { copyNode ()   ; ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown()) { pasteNode()   ; ev.consume(); }
-			}
-		});
-	}
 	
-	private VBox setHeader() {
-		VBox header           = new VBox();
-		ImageView pdfIcon     = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("pdfIcon"    ))));
-		ImageView texIcon     = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("texIcon"    ))));
-		ImageView previewIcon = new ImageView(new Image(LatexEditor.class.getResourceAsStream(properties.getProperty("previewIcon"))));
-
-		Button tex     = new Button("",texIcon);
-		Button preview = new Button("",previewIcon);
-		Button pdf     = new Button("",pdfIcon);
-		tex    .textProperty().bind(strings.getObservableProperty("generateLatex"));
-		pdf    .textProperty().bind(strings.getObservableProperty("generatePdf"));
-		preview.textProperty().bind(strings.getObservableProperty("preview"));
-
-		tex.setOnAction(ev -> generate());
-		preview.setOnAction(ev -> {
-			try {
-				preview();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		});
-		pdf.setOnAction(ev -> {
-			try {
-				toPdf();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		});
-		ToolBar tb = new ToolBar(tex,preview,pdf);
-		header.getChildren().addAll(menuBar,tb);
-		return header;
-	}
-
-	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement l) {
-		String command = l.getType();
-		String url     = properties.getProperty(command + "Icon");
-		Node   icon    = new ImageView(new Image(getClass().getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
-
-		NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),l);
-		return icon == null ? new TreeItem<>(no) : new TreeItem<>(no,icon);
-	}
-
 	private void setTree() {
 		treeRoot  = newTreeItem(new PreprocessorCommand(""));
 		tree      = new TreeView<>(treeRoot);
@@ -225,54 +174,9 @@ public class LatexEditor extends Application {
 		tree.setMinSize(200,50);
 		treeRoot.setExpanded(true);
 		currentNode = treeRoot;
-		tree.setOnMouseClicked(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent mev) {
-				if (mev.getButton().equals(MouseButton.SECONDARY))
-					openContextMenu(new Point2D(mev.getScreenX(),mev.getScreenY()));
-				else
-					addMenu.hide();
-			}
-
-			private void openContextMenu(Point2D pt) {
-				// creation of the relevant contextual popup
-				addMenu.hide();
-				addMenu.getItems().clear();
-				LateXElement elt = currentNode.getValue().bean;
-
-				buildAddMenus(elt);
-				buildClipboardMenus(elt);
-				buildDeleteMenu();
-
-				// display the popup
-				addMenu.show(tree,pt.getX() + 10,pt.getY() + 10);
-			}
-		});
-
+		tree.setOnMouseClicked(handleMouseClickOnTree());
 		tree.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-		tree.getSelectionModel().selectedItemProperty().addListener(
-			(ObservableValue<? extends TreeItem<NamedObject<LateXElement>>> ov, TreeItem<NamedObject<LateXElement>> formerItem,
-				TreeItem<NamedObject<LateXElement>> newItem) -> {
-				if (formerItem != null && currentNode != null) {
-					String text = userTextArea.getText();
-					if (!currentNode.getValue().bean.getText().equals(text))
-						setSaved(false);
-					if (!(formerItem.getValue().bean instanceof Template))
-						formerItem.getValue().bean.setText(userTextArea.getText());
-				}
-				if (newItem != null && newItem.getValue() != null) {
-					if (newItem.getValue().bean instanceof Template)
-						buildAvailableTemplatesList((Template) newItem.getValue().bean);
-					else {
-						userTextArea.setText(newItem.getValue().bean.getText());
-						setEditorZone.accept(textMode);
-					}
-					splitPane.setDividerPositions(0.5);
-					splitPane.autosize();
-					info.textProperty().bind(strings.getObservableProperty(newItem.getValue().bean.getType() + "Tip"));
-					currentNode = newItem;
-				}
-			});
+		tree.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
 
 		// tree.setCellFactory(new Callback<TreeView<NamedObject<LateXElement>>,
 		// TreeCell<NamedObject<LateXElement>>>() {
@@ -306,11 +210,330 @@ public class LatexEditor extends Application {
 		// });
 	}
 
+	private EventHandler<MouseEvent> handleMouseClickOnTree() {
+		return new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent mev) {
+				if (mev.getButton().equals(MouseButton.SECONDARY))
+					openContextMenu(new Point2D(mev.getScreenX(),mev.getScreenY()));
+				else
+					addMenu.hide();
+			}
+
+			private void openContextMenu(Point2D pt) {
+				// creation of the relevant contextual popup
+				addMenu.hide();
+				addMenu.getItems().clear();
+				LateXElement elt = currentNode.getValue().bean;
+
+				buildAddMenus(elt);
+				buildClipboardMenus(elt);
+				buildDeleteMenu();
+
+				// display the popup
+				addMenu.show(tree,pt.getX() + 10,pt.getY() + 10);
+			}
+		};
+	}
+
+	private ChangeListener<TreeItem<NamedObject<LateXElement>>> updateTreeOnChange() {
+		return (ObservableValue<? extends TreeItem<NamedObject<LateXElement>>> ov, TreeItem<NamedObject<LateXElement>> formerItem,
+			TreeItem<NamedObject<LateXElement>> newItem) -> {
+			if (formerItem != null && currentNode != null) {
+				String text = userTextArea.getText();
+				if (!currentNode.getValue().bean.getText().equals(text))
+					setSaved(false);
+				if (!(formerItem.getValue().bean instanceof Template))
+					formerItem.getValue().bean.setText(userTextArea.getText());
+			}
+			if (newItem != null && newItem.getValue() != null) {
+				if (newItem.getValue().bean instanceof Template)
+					buildAvailableTemplatesList((Template) newItem.getValue().bean);
+				else {
+					userTextArea.setText(newItem.getValue().bean.getText());
+					setEditorZone.accept(textMode);
+				}
+				splitPane.setDividerPositions(0.5);
+				splitPane.autosize();
+				bindProperty(info.textProperty(),newItem.getValue().bean.getType() + "Tip");
+				currentNode = newItem;
+			}
+		};
+	}
+	
+	private Node setEditZone() {
+		VBox      textEditor  = setTextEditor();
+		Accordion leftToolbar = setLeftToolbar();
+		SplitPane splitPane   = setSplitPane(textEditor);
+
+		BorderPane borderPane = new BorderPane();
+		borderPane.setLeft(leftToolbar);
+		borderPane.setCenter(splitPane);
+		borderPane.setPadding(new Insets(15));
+
+		HBox.setHgrow(textEditor,Priority.ALWAYS);
+		HBox.setHgrow(tree      ,Priority.NEVER);
+		tree.setMinWidth(210);
+		tree.setMinHeight(500);
+
+		return borderPane;
+	}
+
+	private SplitPane setSplitPane(VBox textEditor) {
+		outputTextArea = new TextArea();
+		outputTextArea.setMinHeight(50);
+		outputTextArea.setEditable(false);
+		outputTextArea.setPrefHeight(100);
+
+		splitPane = new SplitPane();
+		splitPane.setOrientation(Orientation.VERTICAL);
+		splitPane.getItems().addAll(textMode = new HBox(textEditor,setOutputCode()),outputTextArea);
+		splitPane.setDividerPositions(0.5);
+		splitPane.autosize();
+
+		this.setEditorZone = nodes -> splitPane.getItems().set(0,nodes);
+		return splitPane;
+	}
+
+	private CodeEditor setOutputCode() {
+		outputCode = new CodeEditor("");
+		outputCode.setMinHeight(20);
+
+		Label  label = new Label();
+		Button clear = new Button();
+		Button paste = new Button();
+		ComboBox<String> languages = new ComboBox<>();
+		languages.getItems().addAll(LANGUAGES.keySet());
+		languages.setOnAction(ev -> outputCode.setLanguage(LANGUAGES.get(languages.getSelectionModel().getSelectedItem())));
+
+		bindProperty(label.textProperty(),"selectLanguage");
+		bindProperty(clear.textProperty(),"clear");
+		bindProperty(paste.textProperty(),"pasteToEditor");
+
+		clear.setOnAction(ev -> outputCode.setCode(""));
+		paste.setOnAction(ev -> {
+			userTextArea.cut();
+			userTextArea.insertText(userTextArea.getCaretPosition(),outputCode.getCodeAndSnapshot());
+		});
+
+		HBox buttons = new HBox(10,label,languages,clear,paste);
+		buttons.setPadding(new Insets(10));
+		outputCode.setBottom(buttons);
+		
+		return outputCode;
+	}
+
+	private VBox setTextEditor() {
+		info = new Label();
+		bindProperty(info.textProperty(),"editZoneTip");
+		info.setFont(subtitlesFont);
+		
+		userTextArea = new TextArea();
+		userTextArea.setPrefSize(600,550);
+		userTextArea.setPrefHeight(420);
+
+		VBox textEditor = new VBox(info,userTextArea);
+		textEditor.setPadding(new Insets(5));
+		textEditor.setSpacing(5);
+		textEditor.setMinWidth(420);
+		return textEditor;
+	}
+
+	private Accordion setLeftToolbar() {
+		TitledPane shortcutsPane = setSpecialCharsShortcut();
+		TitledPane treePane      = setTreePane();
+
+		Accordion accordion = new Accordion();
+		accordion.getPanes().addAll(treePane,shortcutsPane);
+		accordion.setExpandedPane(treePane);
+		accordion.setPadding(new Insets(10));
+		
+		return accordion;
+	}
+	
+	private TitledPane setTreePane() {
+		TitledPane treePane = new TitledPane("",tree);
+		bindProperty(treePane.textProperty(),"treeTitle");
+		tree.setPadding(new Insets(50,5,5,5));
+		return treePane;
+	}
+
+	private TitledPane setSpecialCharsShortcut() {
+		String[] ops = { 
+			"\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
+			"\\forall","\\partial","\\exists","\\nexists","\\varnothing",
+			 "\\bigcap","\\bigcup","\\bigint","\\prod","\\sum",
+			 "\\nabla","\\in","\\notin","\\ni","",
+			 "^{}","_{}","\\leq","\\geq","\\neq",
+			"\\mid\\mid.\\mid\\mid"
+		};
+
+		String[] ctes = { 
+			"\\alpha","\\beta","\\gamma","\\delta","\\epsilon","\\mu","\\nu","\\xi","\\pi","\\rho",
+	        "\\omega","\\Omega","\\theta","\\Delta","\\Psi","\\eta","\\lambda","\\sigma","\\tau",
+			"\\chi","\\phi","\\infty"
+	    };
+
+		Image img = getResourceImage(properties.getProperty("operatorsIcon"));
+		IconSelectionView operators = new IconSelectionView(img,6,5,ops,strings.getObservableProperty("operators"));
+		operators.setActionListener(e -> {
+			userTextArea.cut();
+			userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
+		});
+
+		img = getResourceImage(properties.getProperty("alphabetIcon"));
+		IconSelectionView greekAlphabet = new IconSelectionView(img,5,5,ctes,strings.getObservableProperty("greekAlphabet"));
+		greekAlphabet.setActionListener(e -> {
+			userTextArea.cut();
+			userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
+		});
+
+		IconSelectionBox box = new IconSelectionBox();
+		box.addSelectionView(operators);
+		box.addSelectionView(greekAlphabet);
+		box.setPadding(new Insets(5,5,5,20));
+		
+		TitledPane boxPane = new TitledPane("",box);
+		bindProperty(boxPane.textProperty(),"boxTitle");
+		return boxPane;
+	}
+	
+	private void setMenuBar() {
+		// set main menu bar
+		menuBar          = new MenuBar();
+		Menu menuFile    = new Menu();
+		Menu menuEdit    = new Menu();
+		Menu menuOptions = new Menu();
+		Menu menuHelp    = new Menu();
+
+		// set submenu File
+		MenuItem newDoc = new MenuItem();
+		MenuItem save   = new MenuItem();
+		MenuItem saveAs = new MenuItem();
+		MenuItem load   = new MenuItem();
+		MenuItem quit   = new MenuItem();
+		generate        = new MenuItem();
+		menuFile.getItems().addAll(newDoc,load,save,saveAs,generate,quit);
+		
+		// set submenu Edit
+		MenuItem undo = new MenuItem();
+		MenuItem redo = new MenuItem();
+		undo.disableProperty().bind(actionManager.hasPreviousProperty().not());
+		redo.disableProperty().bind(actionManager.hasNextProperty().not());
+		menuEdit.getItems().addAll(undo,redo);
+
+		// set submenu Options
+		MenuItem  settings    = new MenuItem();
+		ImageView checkedIcon = new ImageView(getResourceImage(properties.getProperty("checkedIcon")));
+		menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
+				Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
+
+		// set submenu Help
+		MenuItem doc = new MenuItem();
+		doc.setOnAction(ev -> {
+			if (!encyclopedia.isShowing())
+				encyclopedia.show();
+		});
+		menuHelp.getItems().add(doc);
+
+		// set accelerators for all menu items
+		newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
+		save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
+		saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
+		load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
+		generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
+		quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
+		undo    .setAccelerator(new KeyCharacterCombination("Z",CONTROL_DOWN         ));
+		redo    .setAccelerator(new KeyCharacterCombination("Y",CONTROL_DOWN         ));
+		settings.setAccelerator(new KeyCharacterCombination("O",CONTROL_DOWN         ));
+		doc     .setAccelerator(new KeyCharacterCombination("H",CONTROL_DOWN         ));
+		generate.setDisable(true);
+
+		// set actions
+		newDoc  .setOnAction(ev -> { 
+			createDocument();
+			lateXElements = new ArrayList<>();
+			lateXElements.add(new PreprocessorCommand(""));
+			lateXElements.add(new Title());
+			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
+			
+			setSaved(false);
+			save();
+		});
+		save    .setOnAction(ev -> save());
+		saveAs  .setOnAction(ev -> { createDocument(); save(); });
+		load    .setOnAction(ev -> load());
+		generate.setOnAction(ev -> generate());
+		quit    .setOnAction(ev -> System.exit(0));
+		undo    .setOnAction(ev -> actionManager.undo());
+		redo    .setOnAction(ev -> actionManager.redo());
+		settings.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
+
+		// bind the text properties
+		List<String> properties = Arrays.asList("file","edit","options","help","documentation","newDocument","save","saveAs","load",
+				"generate","quit","undo","redo","settings");
+		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,doc,newDoc,save,saveAs,load,generate,quit,undo,redo,settings);
+		IntStream.range(0,menus.size()).forEach(i -> bindProperty(menus.get(i).textProperty(),properties.get(i)));
+		
+		menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions,menuHelp);
+	}
+
+	private VBox setHeader() {
+		VBox header           = new VBox();
+		ImageView pdfIcon     = new ImageView(getResourceImage(properties.getProperty("pdfIcon"    )));
+		ImageView texIcon     = new ImageView(getResourceImage(properties.getProperty("texIcon"    )));
+		ImageView previewIcon = new ImageView(getResourceImage(properties.getProperty("previewIcon")));
+		
+		Button tex     = new Button("",texIcon);
+		Button preview = new Button("",previewIcon);
+		Button pdf     = new Button("",pdfIcon);
+		bindProperty(tex    .textProperty(),"generateLatex");
+		bindProperty(pdf    .textProperty(),"generatePdf");
+		bindProperty(preview.textProperty(),"preview");
+		
+		tex.setOnAction(ev -> generate());
+		preview.setOnAction(ev -> {
+			try {
+				preview();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		});
+		pdf.setOnAction(ev -> toPdf());
+		
+		ToolBar tb = new ToolBar(tex,preview,pdf);
+		header.getChildren().addAll(menuBar,tb);
+		return header;
+	}
+	
+	private void setGlobalEventHandler(Node root) {
+		root.addEventHandler(KeyEvent.KEY_PRESSED,new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent ev) {
+				if      (ev.getCode() == KeyCode.DELETE && currentNode != null)    { cutNode(false); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown()) { cutNode(true ); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown()) { copyNode ()   ; ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown()) { pasteNode()   ; ev.consume(); }
+			}
+		});
+	}
+
+	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement l) {
+		String command = l.getType();
+		String url     = properties.getProperty(command + "Icon");
+		Node   icon    = new ImageView(getResourceImage(url != null ? url : properties.getProperty("leafIcon")));
+
+		NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),l);
+		return icon == null ? new TreeItem<>(no) : new TreeItem<>(no,icon);
+	}
+
+	
+
 	private void buildAvailableTemplatesList(Template t) {
 		templatesList.getItems().clear();
 		// creation of the UI elements
 		Button showMenu = new Button();
-		showMenu.textProperty().bind(strings.getObservableProperty("showAvailableTemplates"));
+		bindProperty(showMenu.textProperty(),"showAvailableTemplates");
 		showMenu.setOnAction(ev -> {
 			if (!templatesList.isShowing())
 				templatesList.show(showMenu,Side.RIGHT,0,0);
@@ -369,9 +592,9 @@ public class LatexEditor extends Application {
 			MenuItem cut   = new MenuItem();
 			MenuItem paste = new MenuItem();
 			
-			copy .textProperty().bind(strings.getObservableProperty("copy" ));
-			cut  .textProperty().bind(strings.getObservableProperty("cut"  ));
-			paste.textProperty().bind(strings.getObservableProperty("paste"));
+			bindProperty(copy .textProperty(),"copy" );
+			bindProperty(cut  .textProperty(),"cut"  );
+			bindProperty(paste.textProperty(),"paste");
 
 			copy .setOnAction(ev -> copyNode());
 			cut  .setOnAction(ev -> cutNode(true));
@@ -383,7 +606,7 @@ public class LatexEditor extends Application {
 	private void buildDeleteMenu() {
 		MenuItem delete = new MenuItem();
 		addMenu.getItems().add(delete);
-		delete.textProperty().bind(strings.getObservableProperty("delete"));
+		bindProperty(delete.textProperty(),"delete");
 		delete.setOnAction(ev -> cutNode(false));
 		if (currentNode.getParent() == null) delete.setDisable(true);
 	}
@@ -400,13 +623,13 @@ public class LatexEditor extends Application {
 			map.put(addChildHead,INSERT_HEAD);
 			map.put(addChildTail,INSERT_TAIL);
 
-			addChildHead.textProperty().bind(strings.getObservableProperty("addChildHead"));
-			addChildTail.textProperty().bind(strings.getObservableProperty("addChildTail"));
+			bindProperty(addChildHead.textProperty(),"addChildHead");
+			bindProperty(addChildTail.textProperty(),"addChildTail");
 		}
 
 		if (elt.getDepth() != LateXElement.DEPTH_MIN) {
 			addMenu.getItems().add(addSibling = new Menu());
-			addSibling.textProperty().bind(strings.getObservableProperty("addSibling"));
+			bindProperty(addSibling.textProperty(),"addSibling");
 		}
 
 		// determine the secondary elements of the popup
@@ -421,7 +644,7 @@ public class LatexEditor extends Application {
 
 						for (String type : NODES_TYPES_MAP.get(depth)) {
 							MenuItem item = new MenuItem();
-							item.textProperty().bind(strings.getObservableProperty(type));
+							bindProperty(item.textProperty(),type);
 							addChild.getItems().add(item);
 							item.setOnAction(ev -> {
 								addChild(type,entry.getValue());
@@ -436,7 +659,7 @@ public class LatexEditor extends Application {
 			if (addSibling != null && depth == elt.getDepth()) {
 				for (String type : NODES_TYPES_MAP.get(depth)) {
 					MenuItem item = new MenuItem();
-					item.textProperty().bind(strings.getObservableProperty(type));
+					bindProperty(item.textProperty(),type);
 					addSibling.getItems().add(item);
 					item.setOnAction(event -> addSibling(type));
 				}
@@ -444,205 +667,7 @@ public class LatexEditor extends Application {
 		}
 	}
 
-	private Node setEditZone() {
-		// set the text editor
-		info = new Label();
-		userTextArea = new TextArea();
-		userTextArea.setPrefSize(600,550);
-		info.textProperty().bind(strings.getObservableProperty("editZoneTip"));
-		info.setFont(subtitlesFont);
-
-		VBox textEditor = new VBox(info,userTextArea);
-		textEditor.setPadding(new Insets(5));
-		textEditor.setSpacing(5);
-
-		// set the left area (shortcuts for special characters)
-		String[] ops = { 
-			"\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
-			"\\forall","\\partial","\\exists","\\nexists","\\varnothing",
-			 "\\bigcap","\\bigcup","\\bigint","\\prod","\\sum",
-			 "\\nabla","\\in","\\notin","\\ni","",
-			 "^{}","_{}","\\leq","\\geq","\\neq",
-			"\\mid\\mid.\\mid\\mid"
-		};
-
-		String[] ctes = { 
-			"\\alpha","\\beta","\\gamma","\\delta","\\epsilon","\\mu","\\nu","\\xi","\\pi","\\rho",
-	        "\\omega","\\Omega","\\theta","\\Delta","\\Psi","\\eta","\\lambda","\\sigma","\\tau",
-			"\\chi","\\phi","\\infty"
-	    };
-
-		Image img = new Image(LatexEditor.class.getResourceAsStream("/data/Operateurs.png"));
-		IconSelectionView operators = new IconSelectionView(img,6,5,ops,strings.getObservableProperty("operators"));
-		operators.setActionListener(e -> {
-			userTextArea.cut();
-			userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
-		});
-
-		img = new Image(LatexEditor.class.getResourceAsStream("/data/AlphabetGrec.png"));
-		IconSelectionView greekAlphabet = new IconSelectionView(img,5,5,ctes,strings.getObservableProperty("greekAlphabet"));
-		greekAlphabet.setActionListener(e -> {
-			userTextArea.cut();
-			userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
-		});
-
-		IconSelectionBox box = new IconSelectionBox();
-		box.addSelectionView(operators);
-		box.addSelectionView(greekAlphabet);
-
-		// set the left area (tree arborescence of the document)
-		TitledPane treePane = new TitledPane("",tree);
-		treePane.textProperty().bind(strings.getObservableProperty("treeTitle"));
-		// tree.setPadding(new Insets(5,5,5,5));
-		tree.setPadding(new Insets(50,5,5,5));
-
-		TitledPane boxPane = new TitledPane("",box);
-		boxPane.textProperty().bind(strings.getObservableProperty("boxTitle"));
-		// box.setPadding(new Insets(5,5,5,5));
-		box.setPadding(new Insets(5,5,5,20));
-
-		// set the left area (add th tree and the shortcuts in an accordion)
-		Accordion accordion = new Accordion();
-		accordion.getPanes().addAll(treePane,boxPane);
-		accordion.setExpandedPane(treePane);
-		accordion.setPadding(new Insets(10));
-
-		// set the code editor
-		outputCode = new CodeEditor("");
-		outputCode.setMinHeight(20);
-
-		Label  label = new Label();
-		Button clear = new Button();
-		Button paste = new Button();
-		ComboBox<String> languages = new ComboBox<>();
-		languages.getItems().addAll(LANGUAGES.keySet());
-		languages.setOnAction(ev -> outputCode.setLanguage(LANGUAGES.get(languages.getSelectionModel().getSelectedItem())));
-
-		label.textProperty().bind(strings.getObservableProperty("selectLanguage"));
-		clear.textProperty().bind(strings.getObservableProperty("clear"));
-		paste.textProperty().bind(strings.getObservableProperty("pasteToEditor"));
-
-		clear.setOnAction(ev -> outputCode.setCode(""));
-		paste.setOnAction(ev -> {
-			userTextArea.cut();
-			userTextArea.insertText(userTextArea.getCaretPosition(),outputCode.getCodeAndSnapshot());
-		});
-
-		HBox buttons = new HBox(10,label,languages,clear,paste);
-		buttons.setPadding(new Insets(10));
-		outputCode.setBottom(buttons);
-
-		outputTextArea = new TextArea();
-		outputTextArea.setMinHeight(50);
-		outputTextArea.setEditable(false);
-
-		// merge all the elements
-		textMode = new HBox(textEditor,outputCode);
-		splitPane = new SplitPane();
-		splitPane.setOrientation(Orientation.VERTICAL);
-		splitPane.getItems().addAll(textMode,outputTextArea);
-
-		this.setEditorZone = nodes -> splitPane.getItems().set(0,nodes);
-
-		BorderPane borderPane = new BorderPane();
-		borderPane.setLeft(accordion);
-		borderPane.setCenter(splitPane);
-		borderPane.setPadding(new Insets(15));
-
-		// handle resize events
-		HBox.setHgrow(textEditor,Priority.ALWAYS);
-		HBox.setHgrow(tree      ,Priority.NEVER);
-		tree.setMinWidth(210);
-		tree.setMinHeight(500);
-		textEditor.setMinWidth(420);
-		userTextArea.setPrefHeight(420);
-		outputTextArea.setPrefHeight(100);
-
-		splitPane.setDividerPositions(0.5);
-		splitPane.autosize();
-
-		return borderPane;
-	}
-
-	private void setMenuBar() {
-		// set main menu bar
-		menuBar          = new MenuBar();
-		Menu menuFile    = new Menu();
-		Menu menuEdit    = new Menu();
-		Menu menuOptions = new Menu();
-		Menu menuHelp    = new Menu();
-
-		// set submenu File
-		MenuItem newDoc = new MenuItem();
-		MenuItem save   = new MenuItem();
-		MenuItem saveAs = new MenuItem();
-		MenuItem load   = new MenuItem();
-		MenuItem quit   = new MenuItem();
-		generate        = new MenuItem();
-		menuFile.getItems().addAll(newDoc,load,save,saveAs,generate,quit);
-		
-		// set submenu Edit
-		MenuItem undo = new MenuItem();
-		MenuItem redo = new MenuItem();
-		undo.disableProperty().bind(actionManager.hasPreviousProperty().not());
-		redo.disableProperty().bind(actionManager.hasNextProperty().not());
-		menuEdit.getItems().addAll(undo,redo);
-
-		// set submenu Options
-		MenuItem  settings    = new MenuItem();
-		ImageView checkedIcon = new ImageView(new Image(getClass().getResourceAsStream(Settings.properties.getProperty("checkedIcon"))));
-		menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
-				Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
-
-		// set submenu Help
-		MenuItem doc = new MenuItem();
-		doc.setOnAction(ev -> {
-			if (!encyclopedia.isShowing())
-				encyclopedia.show();
-		});
-		menuHelp.getItems().add(doc);
-
-		// set accelerators for all menu items
-		newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
-		save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
-		saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
-		load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
-		generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
-		quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
-		undo    .setAccelerator(new KeyCharacterCombination("Z",CONTROL_DOWN         ));
-		redo    .setAccelerator(new KeyCharacterCombination("Y",CONTROL_DOWN         ));
-		settings.setAccelerator(new KeyCharacterCombination("O",CONTROL_DOWN         ));
-		doc     .setAccelerator(new KeyCharacterCombination("H",CONTROL_DOWN         ));
-		generate.setDisable(true);
-
-		// set actions
-		newDoc  .setOnAction(ev -> { 
-			createDocument();
-			lateXElements = new ArrayList<>();
-			lateXElements.add(new PreprocessorCommand(""));
-			lateXElements.add(new Title());
-			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
-			
-			setSaved(false);
-			save();
-		});
-		save    .setOnAction(ev -> save());
-		saveAs  .setOnAction(ev -> { createDocument(); save(); });
-		load    .setOnAction(ev -> load());
-		generate.setOnAction(ev -> generate());
-		quit    .setOnAction(ev -> System.exit(0));
-		undo    .setOnAction(ev -> actionManager.undo());
-		redo    .setOnAction(ev -> actionManager.redo());
-		settings.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
-
-		// bind the text properties
-		List<String> properties = Arrays.asList("file","edit","options","help","documentation","newDocument","save","saveAs","load",
-				"generate","quit","undo","redo","settings");
-		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,doc,newDoc,save,saveAs,load,generate,quit,undo,redo,settings);
-		IntStream.range(0,menus.size()).forEach(i -> menus.get(i).textProperty().bind(strings.getObservableProperty(properties.get(i))));
-		
-		menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions,menuHelp);
-	}
+	
 
 	private void save() {
 		try {
@@ -682,12 +707,9 @@ public class LatexEditor extends Application {
 
 	private void generate() {
 		try {
-			if (savedState.getCurrentState().isEmpty())
-				save();
+			if (savedState.getCurrentState().isEmpty()) save();
 			String path = currentFile.getAbsolutePath();
-			int    i    = path.lastIndexOf(".");
-			path        = i == -1 ? path + ".tex" : path.substring(0,i) + ".tex";
-			lm.makeDocument(new File(path),savedState.getCurrentState());
+			JavatexIO.toTex(lm,savedState.getCurrentState(),path);
 
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
 			outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
@@ -704,27 +726,31 @@ public class LatexEditor extends Application {
 	}
 
 	private void createDocument() {
-		FileChooser f = new FileChooser();
-		f.setTitle("Nouveau document");
-		f.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
-
-		if (currentDir != null)
-			f.setInitialDirectory(currentDir);
-
-		File file = f.showSaveDialog(primaryStage);
+		File file = chooseFile(primaryStage,true,"javatex",strings.getProperty("javatexFiles"),"*.javatex");
 		if (file != null) {
-			currentDir = file.getParentFile();
-			String s = file.getPath();
-			int i = s.indexOf(".");
-			if (i == -1 || !s.substring(i).equals(".javatex"))
-				file = new File(s + ".javatex");
-
-			currentFile = file;
 			primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
 			generate.setDisable(false);
 			actionManager.reset();
 		}
 	}
+	
+	private File chooseFile(Window window, boolean save, String wantedExtension, String filterName, String... extensions) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(strings.getProperty("newDocument"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(filterName,extensions));
+        if (currentDir != null) chooser.setInitialDirectory(currentDir);
+			
+		File selectedFile = save ? chooser.showSaveDialog(window) : chooser.showOpenDialog(window);
+		if (selectedFile != null) {
+			currentFile = selectedFile;
+			currentDir  = currentFile.getParentFile();
+			
+			String s = selectedFile.getPath();
+			int i = s.indexOf(".");
+			if (i == -1 || !s.substring(i).equals(wantedExtension)) selectedFile = new File(s + wantedExtension);
+		}
+        return selectedFile;
+    }
 
 	private class NamedList<E> extends Pair<List<String>,List<E>> {
 		private static final long serialVersionUID = 1L;
@@ -773,14 +799,9 @@ public class LatexEditor extends Application {
 		tree.getSelectionModel().select(treeRoot);
 	}
 
-	public void toPdf() throws IOException {
+	public void toPdf() {
 		if (currentFile != null) {
 			generate();
-
-			String path = currentFile.getCanonicalPath();
-			ProcessBuilder pb = new ProcessBuilder("pdflatex","-halt-on-error",String.format("%s.tex",
-					path.substring(0,path.lastIndexOf("."))));
-			pb.directory(currentDir.getAbsoluteFile());
 
 			StringBuilder sb = new StringBuilder();
 			Function<String, Consumer<String>> consumerFactory = s -> str -> {
@@ -789,9 +810,10 @@ public class LatexEditor extends Application {
 			};
 
 			try {
-				Process       p           = pb.start();
-				StreamPrinter inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply(""));
-				StreamPrinter errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply(""));
+				ProcessBuilder pb          = JavatexIO.toPdfProcessBuilder(currentDir,currentFile);
+				Process        p           = pb.start();
+				StreamPrinter  inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply(""));
+				StreamPrinter  errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply(""));
 				new Thread(inputStream).start();
 				new Thread(errorStream).start();
 				p.waitFor();
@@ -1025,6 +1047,7 @@ public class LatexEditor extends Application {
 		launch(args);
 	}
 
+	// initializers and utilitary methods/classes
 	static {
 		NODES_TYPES_MAP = new HashMap<>();
 		NODES_TYPES_MAP.put(0,asList("title"));
@@ -1037,13 +1060,13 @@ public class LatexEditor extends Application {
 
 	static {
 		LANGUAGES = new HashMap<>();
-		LANGUAGES.put("Java","text/x-java");
-		LANGUAGES.put("C++","text/x-c++src");
-		LANGUAGES.put("C","text/x-csrc");
-		LANGUAGES.put("Scala","text/x-scala");
-		LANGUAGES.put("LaTeX","text/x-stex");
+		LANGUAGES.put("Java"      ,"text/x-java"    );
+		LANGUAGES.put("C++"       ,"text/x-c++src"  );
+		LANGUAGES.put("C"         ,"text/x-csrc"    );
+		LANGUAGES.put("Scala"     ,"text/x-scala"   );
+		LANGUAGES.put("LaTeX"     ,"text/x-stex"    );
 		LANGUAGES.put("Javascript","text/javascript");
-		LANGUAGES.put("Python","text/x-python");
+		LANGUAGES.put("Python"    ,"text/x-python"  );
 	}
 
 	// load the templates and all associated localized texts
@@ -1054,6 +1077,10 @@ public class LatexEditor extends Application {
 			Dialogs.create().owner(null)
 				.title(strings.getProperty("error")).masthead(strings.getProperty("anErrorOccurredMessage"))
 				.message(strings.getProperty("undefinedHome")).showError();
+	}
+	
+	private static Image getResourceImage(String path) {
+		return new Image(LatexEditor.class.getResourceAsStream(path));
 	}
 	
 	private class WrongFormatException extends Exception { 
