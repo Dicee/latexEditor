@@ -18,16 +18,16 @@ import javafx.util.Pair;
 import latex.elements.LateXElement;
 
 public abstract class ControlledTreeView<T> extends TreeView<T> {
-	protected static final int						INSERT_HEAD	= 0;
-	protected static final int						INSERT_TAIL	= 1;
-	
-	protected ActionManager	actionManager;
+	protected static final int	INSERT_HEAD	= 0;
+	protected static final int	INSERT_TAIL	= 1;
 
-	protected TreeItem<T>	treeRoot;
-	protected TreeItem<T>	currentNode	= null;
-	protected TreeItem<T>	clipBoard	= null;
+	protected ActionManager		actionManager;
 
-	protected ContextMenu	addMenu		= new ContextMenu();
+	protected TreeItem<T>		treeRoot;
+	protected TreeItem<T>		currentNode	= null;
+	protected TreeItem<T>		clipBoard	= null;
+
+	protected ContextMenu		addMenu		= new ContextMenu();
 
 	public ControlledTreeView(TreeItem<T> root, ActionManager actionManager) {
 		super(root);
@@ -51,16 +51,16 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 
 	public abstract void addChildToSelectedNode(T elt, int option);
 	
-	void setElements(TreeItem<T> root, List<Pair<Integer,T>> elts, Function<T,TreeItem<T>> factory) {
+	public void setElements(TreeItem<T> root, List<Pair<Integer, T>> elts, Function<T, TreeItem<T>> factory) {
 		getSelectionModel().clearSelection();
 		treeRoot = root;
-		
+
 		if (!elts.isEmpty()) {
 			Deque<Pair<Integer, TreeItem<T>>> stack = new LinkedList<>();
 			stack.push(new Pair<>(elts.get(0).getKey(),treeRoot));
 
-			for (Pair<Integer,T> elt : elts.subList(1,elts.size())) {
-				TreeItem<NamedObject<T>> node = factory.apply(elt.getValue());
+			for (Pair<Integer, T> elt : elts.subList(1,elts.size())) {
+				TreeItem<T> node = factory.apply(elt.getValue());
 
 				while (stack.peek().getKey() >= elt.getKey())
 					stack.pop();
@@ -68,14 +68,12 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 				stack.push(new Pair<>(elt.getKey(),node));
 			}
 		}
-			
-			setRoot(treeRoot);
-			treeRoot.setExpanded(true);
-			getSelectionModel().select(treeRoot);
+
+		setRoot(treeRoot);
+		treeRoot.setExpanded(true);
+		getSelectionModel().select(treeRoot);
 	}
 
-	public TreeItem<T> getCurrentNode() {
-		return currentNode;
-	}
-//	public abstract void addChild(T elt, int option);
+	public TreeItem<T> getCurrentNode() { return currentNode; }
+	public abstract void addChild(T elt, int option);
 }

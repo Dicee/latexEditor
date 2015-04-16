@@ -129,18 +129,16 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		}
 	}
 	
-	@Override
 	private void addChild(String command, int option) {
 		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
 		TreeItem<NamedObject<LateXElement>> parent = currentNode;
 		
 		actionManager.perform(new CancelableAction() {
 			@Override
-			public void perform() {
+			public void doAction() {
 				if (option == INSERT_TAIL) currentNode.getChildren().add(  newElt);
 				else                       currentNode.getChildren().add(0,newElt);
 				currentNode.setExpanded(true);
-//				actionManager.setSaved(false);
 			}
 			
 			@Override

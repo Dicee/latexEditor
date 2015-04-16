@@ -10,6 +10,7 @@ import static latex.elements.Templates.TEMPLATES;
 import guifx.actions.ActionManager;
 import guifx.actions.CancelableAction;
 import guifx.components.CodeEditor;
+import guifx.utils.DialogsFactory;
 import guifx.utils.JavatexIO;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
@@ -746,19 +747,19 @@ public class LatexEditor extends Application {
 			}
 			actionManager.reset();
 		} catch (FileNotFoundException e) {
-			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
-				.masthead(strings.getProperty("anErrorOccurredMessage"))
-				.message(String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()))
-				.showError();
+			DialogsFactory.showError(
+				primaryStage,
+				strings.getProperty("error"),
+				strings.getProperty("anErrorOccurredMessage"),
+				String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
 		} catch (IOException e) {
-			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
-				.masthead(strings.getProperty("anErrorOccurredMessage"))
-				.message(strings.getProperty("ioLoadError")).showError();
+			DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
 		} catch (WrongFormatException e) {
-			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
-				.masthead(strings.getProperty("anErrorOccurredMessage"))
-				.message(String.format(strings.getProperty("malformedJavatexError"),e.getMessage()))
-				.showError();
+			DialogsFactory.showError(
+				primaryStage,
+				strings.getProperty("error"),
+				strings.getProperty("anErrorOccurredMessage"),
+				String.format(strings.getProperty("malformedJavatexError"),e.getMessage()));
 		}
 	}
 	
