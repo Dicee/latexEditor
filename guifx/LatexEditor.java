@@ -87,6 +87,7 @@ import latex.elements.PreprocessorCommand;
 import latex.elements.Template;
 import latex.elements.Templates;
 import latex.elements.Title;
+import guifx.components.ControlledTreeView;
 
 import org.controlsfx.dialog.Dialogs;
 
@@ -96,34 +97,30 @@ import scala.io.Source;
 import utils.StreamPrinter;
 import utils.TokenReader;
 
-public class LatexEditor extends Application implements StateListener {
+public class LatexEditor extends Application {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 	private static final Map<String, String>		LANGUAGES;
-	public static final String						LATEX_HOME		= 
-		System.getenv("LATEX_HOME").replace(System.getProperty("file.separator"),"/");
+	public static final String						LATEX_HOME			= System.getenv("LATEX_HOME").replace(System.getProperty("file.separator"),"/");
 
-	private static final int						INSERT_HEAD		= 0;
-	private static final int						INSERT_TAIL		= 1;
+	private static final int						INSERT_HEAD			= 0;
+	private static final int						INSERT_TAIL			= 1;
 
-	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
+	public static final Font						subtitlesFont		= Font.font(null,FontWeight.BOLD,13);
 
-	private File									currentDir		= new File(LATEX_HOME);
-	private File									currentFile		= null;
+	private File									currentDir			= new File(LATEX_HOME);
+	private File									currentFile			= null;
 
-	private boolean									saved			= false;
-	private DocumentState							savedState		= new DocumentState(new ArrayList<>());
+	private boolean									saved				= false;
+	private List<LateXElement>						savedlateXElements	= new ArrayList<>();
 
-	private List<LateXElement>						lateXElements	= new ArrayList<>();
-	private final LateXMaker						lm				= new LateXMaker();
+	private List<LateXElement>						lateXElements		= new ArrayList<>();
+	private final LateXMaker						lm					= new LateXMaker();
 
 	private Stage									primaryStage;
-	private TreeView<NamedObject<LateXElement>>		tree;
-	private TreeItem<NamedObject<LateXElement>>		treeRoot;
-	private TreeItem<NamedObject<LateXElement>>		currentNode		= null;
-	private TreeItem<NamedObject<LateXElement>>		clipBoard		= null;
 
-	private ContextMenu								addMenu			= new ContextMenu();
-	private ContextMenu								templatesList	= new ContextMenu();
+	private ControlledTreeView<NamedObject<LateXElement>> controlledTreeView;
+	
+	private ContextMenu								templatesList		= new ContextMenu();
 	private MenuBar									menuBar;
 
 	private TextArea								userTextArea;
@@ -136,8 +133,8 @@ public class LatexEditor extends Application implements StateListener {
 	private Node									textMode;
 	private SplitPane								splitPane;
 
-	private final LateXPidia						encyclopedia	= new LateXPidia();
-	private final ActionManager						actionManager	= new ActionManager();
+	private final LateXPidia						encyclopedia		= new LateXPidia();
+	private final ActionManager						actionManager		= new ActionManager();
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -167,17 +164,12 @@ public class LatexEditor extends Application implements StateListener {
 	}
 	
 	private void setTree() {
-		treeRoot  = newTreeItem(new PreprocessorCommand(""));
-		tree      = new TreeView<>(treeRoot);
-		treeRoot.getChildren().add(newTreeItem(new Title()));
+		controlledTreeView = new LateXEditorTreeView(newTreeItem(new PreprocessorCommand("")),actionManager);
+		controlledTreeView.setMinSize(200,50);
+		controlledTreeView.getRoot().setExpanded(true);
+		controlledTreeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
 
-		tree.setMinSize(200,50);
-		treeRoot.setExpanded(true);
-		currentNode = treeRoot;
-		tree.setOnMouseClicked(handleMouseClickOnTree());
-		tree.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-		tree.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
-
+		controlledTreeView.getRoot().getChildren().add(newTreeItem(new Title()));
 		// tree.setCellFactory(new Callback<TreeView<NamedObject<LateXElement>>,
 		// TreeCell<NamedObject<LateXElement>>>() {
 		// public TreeCell<NamedObject<LateXElement>>
@@ -210,42 +202,14 @@ public class LatexEditor extends Application implements StateListener {
 		// });
 	}
 
-	private EventHandler<MouseEvent> handleMouseClickOnTree() {
-		return new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent mev) {
-				if (mev.getButton().equals(MouseButton.SECONDARY))
-					openContextMenu(new Point2D(mev.getScreenX(),mev.getScreenY()));
-				else
-					addMenu.hide();
-			}
-
-			private void openContextMenu(Point2D pt) {
-				// creation of the relevant contextual popup
-				addMenu.hide();
-				addMenu.getItems().clear();
-				LateXElement elt = currentNode.getValue().bean;
-
-				buildAddMenus(elt);
-				buildClipboardMenus(elt);
-				buildDeleteMenu();
-
-				// display the popup
-				addMenu.show(tree,pt.getX() + 10,pt.getY() + 10);
-			}
-		};
-	}
-
 	private ChangeListener<TreeItem<NamedObject<LateXElement>>> updateTreeOnChange() {
 		return (ObservableValue<? extends TreeItem<NamedObject<LateXElement>>> ov, TreeItem<NamedObject<LateXElement>> formerItem,
 			TreeItem<NamedObject<LateXElement>> newItem) -> {
-			if (formerItem != null && currentNode != null) {
-				String text = userTextArea.getText();
-				if (!currentNode.getValue().bean.getText().equals(text))
-					setSaved(false);
+			TreeItem<NamedObject<LateXElement>> currentNode = controlledTreeView.getCurrentNode();
+			if (formerItem != null &&  currentNode != null) 
 				if (!(formerItem.getValue().bean instanceof Template))
 					formerItem.getValue().bean.setText(userTextArea.getText());
-			}
+			
 			if (newItem != null && newItem.getValue() != null) {
 				if (newItem.getValue().bean instanceof Template)
 					buildAvailableTemplatesList((Template) newItem.getValue().bean);
@@ -261,6 +225,63 @@ public class LatexEditor extends Application implements StateListener {
 		};
 	}
 	
+	private void buildAvailableTemplatesList(Template t) {
+		templatesList.getItems().clear();
+		// creation of the UI elements
+		Button showMenu = new Button();
+		bindProperty(showMenu.textProperty(),"showAvailableTemplates");
+		showMenu.setOnAction(ev -> {
+			if (!templatesList.isShowing())
+				templatesList.show(showMenu,Side.RIGHT,0,0);
+			else
+				templatesList.hide();
+		});
+
+		BorderPane borderPane = new BorderPane();
+		borderPane.setTop(showMenu);
+		borderPane.setPadding(new Insets(15));
+		borderPane.setPrefHeight(300);
+		BorderPane.setAlignment(showMenu,Pos.CENTER);
+		BorderPane.setMargin(showMenu,new Insets(10,10,30,10));
+
+		// creation of the popup menu
+		Function<String, Consumer<List<Template>>> createMenu = title -> {
+			Menu menu = new Menu(title);
+			return templates -> {
+				templates.stream().forEach(template -> {
+					MenuItem item = new MenuItem(template.getTemplateName());
+					item.setOnAction(ev -> {
+						t.copyFrom(template);
+						TemplateForm form = new TemplateForm(t);
+						borderPane.setCenter(form);
+						BorderPane.setAlignment(form,Pos.CENTER);
+					});
+					menu.getItems().add(item);
+				});
+				templatesList.getItems().add(menu);
+			};
+		};
+
+		switch (t.getType()) {
+			case "template":
+				for (Map.Entry<String, List<Template>> entry : TEMPLATES.entrySet())
+					if (!entry.getKey().equals("title"))
+						createMenu.apply(entry.getKey()).accept(entry.getValue());
+				break;
+			case "title":
+				createMenu.apply("titlePage").accept(TEMPLATES.get("titlePage"));
+				break;
+			default:
+				throw new IllegalArgumentException(String.format("Unkown type %s",t.getType()));
+		}
+
+		TemplateForm form = new TemplateForm(t);
+		borderPane.setCenter(form);
+		BorderPane.setAlignment(form,Pos.CENTER);
+
+		setEditorZone.accept(borderPane);
+	}
+	
 	private Node setEditZone() {
 		VBox      textEditor  = setTextEditor();
 		Accordion leftToolbar = setLeftToolbar();
@@ -271,10 +292,10 @@ public class LatexEditor extends Application implements StateListener {
 		borderPane.setCenter(splitPane);
 		borderPane.setPadding(new Insets(15));
 
-		HBox.setHgrow(textEditor,Priority.ALWAYS);
-		HBox.setHgrow(tree      ,Priority.NEVER);
-		tree.setMinWidth(210);
-		tree.setMinHeight(500);
+		HBox.setHgrow(textEditor        ,Priority.ALWAYS);
+		HBox.setHgrow(controlledTreeView,Priority.NEVER);
+		controlledTreeView.setMinWidth(210);
+		controlledTreeView.setMinHeight(500);
 
 		return borderPane;
 	}
@@ -352,9 +373,9 @@ public class LatexEditor extends Application implements StateListener {
 	}
 	
 	private TitledPane setTreePane() {
-		TitledPane treePane = new TitledPane("",tree);
+		TitledPane treePane = new TitledPane("",controlledTreeView);
 		bindProperty(treePane.textProperty(),"treeTitle");
-		tree.setPadding(new Insets(50,5,5,5));
+		controlledTreeView.setPadding(new Insets(50,5,5,5));
 		return treePane;
 	}
 
@@ -510,10 +531,10 @@ public class LatexEditor extends Application implements StateListener {
 		root.addEventHandler(KeyEvent.KEY_PRESSED,new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent ev) {
-				if      (ev.getCode() == KeyCode.DELETE && currentNode != null)    { cutNode(false); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown()) { cutNode(true ); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown()) { copyNode ()   ; ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown()) { pasteNode()   ; ev.consume(); }
+				if      (ev.getCode() == KeyCode.DELETE && controlledTreeView.getCurrentNode() != null) { cutNode(false); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown())                      { cutNode(true ); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown())                      { copyNode ()   ; ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown())                      { pasteNode()   ; ev.consume(); }
 			}
 		});
 	}
@@ -527,146 +548,9 @@ public class LatexEditor extends Application implements StateListener {
 		return icon == null ? new TreeItem<>(no) : new TreeItem<>(no,icon);
 	}
 
-	private void buildAvailableTemplatesList(Template t) {
-		templatesList.getItems().clear();
-		// creation of the UI elements
-		Button showMenu = new Button();
-		bindProperty(showMenu.textProperty(),"showAvailableTemplates");
-		showMenu.setOnAction(ev -> {
-			if (!templatesList.isShowing())
-				templatesList.show(showMenu,Side.RIGHT,0,0);
-			else
-				templatesList.hide();
-		});
-
-		BorderPane borderPane = new BorderPane();
-		borderPane.setTop(showMenu);
-		borderPane.setPadding(new Insets(15));
-		borderPane.setPrefHeight(300);
-		BorderPane.setAlignment(showMenu,Pos.CENTER);
-		BorderPane.setMargin(showMenu,new Insets(10,10,30,10));
-
-		// creation of the popup menu
-		Function<String, Consumer<List<Template>>> createMenu = title -> {
-			Menu menu = new Menu(title);
-			return templates -> {
-				templates.stream().forEach(template -> {
-					MenuItem item = new MenuItem(template.getTemplateName());
-					item.setOnAction(ev -> {
-						t.copyFrom(template);
-						TemplateForm form = new TemplateForm(t);
-						borderPane.setCenter(form);
-						BorderPane.setAlignment(form,Pos.CENTER);
-					});
-					menu.getItems().add(item);
-				});
-				templatesList.getItems().add(menu);
-			};
-		};
-
-		switch (t.getType()) {
-			case "template":
-				for (Map.Entry<String, List<Template>> entry : TEMPLATES.entrySet())
-					if (!entry.getKey().equals("title"))
-						createMenu.apply(entry.getKey()).accept(entry.getValue());
-				break;
-			case "title":
-				createMenu.apply("titlePage").accept(TEMPLATES.get("titlePage"));
-				break;
-			default:
-				throw new IllegalArgumentException(String.format("Unkown type %s",t.getType()));
-		}
-
-		TemplateForm form = new TemplateForm(t);
-		borderPane.setCenter(form);
-		BorderPane.setAlignment(form,Pos.CENTER);
-
-		setEditorZone.accept(borderPane);
-	}
-
-	private void buildClipboardMenus(LateXElement elt) {
-		if (!(elt instanceof Title)) {
-			MenuItem copy  = new MenuItem();
-			MenuItem cut   = new MenuItem();
-			MenuItem paste = new MenuItem();
-			
-			bindProperty(copy .textProperty(),"copy" );
-			bindProperty(cut  .textProperty(),"cut"  );
-			bindProperty(paste.textProperty(),"paste");
-
-			copy .setOnAction(ev -> copyNode());
-			cut  .setOnAction(ev -> cutNode(true));
-			paste.setOnAction(ev -> pasteNode());
-			addMenu.getItems().addAll(copy,cut,paste);
-		}
-	}
-	
-	private void buildDeleteMenu() {
-		MenuItem delete = new MenuItem();
-		addMenu.getItems().add(delete);
-		bindProperty(delete.textProperty(),"delete");
-		delete.setOnAction(ev -> cutNode(false));
-		if (currentNode.getParent() == null) delete.setDisable(true);
-	}
-
-	private void buildAddMenus(LateXElement elt) {
-		Menu addChildHead, addChildTail, addSibling = null;
-		Map<Menu, Integer> map = null;
-
-		// determine the main elements of the popup
-		if (elt.getDepth() != LateXElement.DEPTH_MAX) {
-			addMenu.getItems().add(addChildHead = new Menu());
-			addMenu.getItems().add(addChildTail = new Menu());
-			map = new HashMap<>();
-			map.put(addChildHead,INSERT_HEAD);
-			map.put(addChildTail,INSERT_TAIL);
-
-			bindProperty(addChildHead.textProperty(),"addChildHead");
-			bindProperty(addChildTail.textProperty(),"addChildTail");
-		}
-
-		if (elt.getDepth() != LateXElement.DEPTH_MIN) {
-			addMenu.getItems().add(addSibling = new Menu());
-			bindProperty(addSibling.textProperty(),"addSibling");
-		}
-
-		// determine the secondary elements of the popup
-		for (Integer depth : NODES_TYPES_MAP.keySet()) {
-			// first, the children elements
-			if (map != null) {
-				map.entrySet().stream().forEach(entry -> {
-					Menu addChild = entry.getKey();
-					if (depth > elt.getDepth()) {
-						if (!addChild.getItems().isEmpty())
-							addChild.getItems().add(new SeparatorMenuItem());
-
-						for (String type : NODES_TYPES_MAP.get(depth)) {
-							MenuItem item = new MenuItem();
-							bindProperty(item.textProperty(),type);
-							addChild.getItems().add(item);
-							item.setOnAction(ev -> {
-								addChild(type,entry.getValue());
-								addMenu.hide();
-							});
-						}
-					}
-				});
-			}
-
-			// then, the sibling elements
-			if (addSibling != null && depth == elt.getDepth()) {
-				for (String type : NODES_TYPES_MAP.get(depth)) {
-					MenuItem item = new MenuItem();
-					bindProperty(item.textProperty(),type);
-					addSibling.getItems().add(item);
-					item.setOnAction(event -> addSibling(type));
-				}
-			}
-		}
-	}
-
 	private void save() {
 		try {
+			TreeItem<NamedObject<LateXElement>> currentNode = controlledTreeView.getCurrentNode();
 			if (!(currentNode.getValue().bean instanceof Template))
 				currentNode.getValue().bean.setText(userTextArea.getText());
 
@@ -686,7 +570,7 @@ public class LatexEditor extends Application implements StateListener {
 				fw.flush();
 				fw.close();
 				setSaved(true);
-				savedState = new DocumentState(state);
+				savedlateXElements = state;
 			}
 		} catch (IOException e) {
 			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
@@ -703,9 +587,9 @@ public class LatexEditor extends Application implements StateListener {
 
 	private void generate() {
 		try {
-			if (savedState.getCurrentState().isEmpty()) save();
+			if (savedlateXElements.isEmpty()) save();
 			String path = currentFile.getAbsolutePath();
-			JavatexIO.toTex(lm,savedState.getCurrentState(),path);
+			JavatexIO.toTex(lm,savedlateXElements,path);
 
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
 			outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
@@ -769,30 +653,11 @@ public class LatexEditor extends Application implements StateListener {
 	}
 
 	public NamedList<LateXElement> getElements() {
-		return getElements(treeRoot,"");
+		return getElements(controlledTreeView.getRoot(),"");
 	}
 	
 	private void setElements(List<Pair<Integer,LateXElement>> elts) {
-		tree.getSelectionModel().clearSelection();
-		if (elts.isEmpty()) treeRoot = newTreeItem(new PreprocessorCommand(""));
-		else {
-			treeRoot = newTreeItem(elts.get(0).getValue());
-			Deque<Pair<Integer,TreeItem<NamedObject<LateXElement>>>> stack = new LinkedList<>();
-			stack.push(new Pair<>(elts.get(0).getKey(),treeRoot));
-			
-			for (Pair<Integer,LateXElement> elt : elts.subList(1,elts.size())) {
-				TreeItem<NamedObject<LateXElement>> node = newTreeItem(elt.getValue());
-				
-				while (stack.peek().getKey() >= elt.getKey()) stack.pop();
-				stack.peek().getValue().getChildren().add(node);
-				stack.push(new Pair<>(elt.getKey(),node));
-			}
-		}
-		
-		tree.setRoot(treeRoot);
-		treeRoot.setExpanded(true);
-		userTextArea.setDisable(false);
-		tree.getSelectionModel().select(treeRoot);
+		controlledTreeView.setElements(newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),elts,this::newTreeItem);
 	}
 
 	public void toPdf() {
@@ -875,7 +740,7 @@ public class LatexEditor extends Application implements StateListener {
 				setElements(elts);
 
 				primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
-				savedState = new DocumentState(elts.stream().map(kv -> kv.getValue()).collect(Collectors.toList()));
+				savedlateXElements = elts.stream().map(kv -> kv.getValue()).collect(Collectors.toList());
 				setSaved(true);
 				generate.setDisable(false);
 			}
@@ -931,9 +796,9 @@ public class LatexEditor extends Application implements StateListener {
 		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
 		TreeItem<NamedObject<LateXElement>> parent = currentNode;
 		
-		actionManager.perform(new CancelableAction(actionManager) {
+		actionManager.perform(new CancelableAction() {
 			@Override
-			public void performImpl() {
+			public void doAction() {
 				if (option == INSERT_TAIL) currentNode.getChildren().add(  newElt);
 				else                       currentNode.getChildren().add(0,newElt);
 				currentNode.setExpanded(true);
@@ -952,9 +817,9 @@ public class LatexEditor extends Application implements StateListener {
 		TreeItem<NamedObject<LateXElement>> parent = currentNode.getParent();
 		TreeItem<NamedObject<LateXElement>> node   = currentNode;
 		
-		actionManager.perform(new CancelableAction(actionManager) {
+		actionManager.perform(new CancelableAction() {
 			@Override
-			public void performImpl() {
+			public void doAction() {
 				int i = parent.getChildren().indexOf(node);
 				if (i == parent.getChildren().size() - 1) parent.getChildren().add(newElt);
 				else                                      parent.getChildren().add(i + 1,newElt);
@@ -975,9 +840,9 @@ public class LatexEditor extends Application implements StateListener {
 		if (saveToClipboard) 
 			clipBoard = currentNode;
 		
-		actionManager.perform(new CancelableAction(actionManager) {
+		actionManager.perform(new CancelableAction() {
 			@Override
-			public void performImpl() {
+			public void doAction() {
 				
 				TreeItem<NamedObject<LateXElement>> next;
 				if      (parent.getChildren().size() == 1        ) next = parent;
@@ -1013,9 +878,9 @@ public class LatexEditor extends Application implements StateListener {
 		TreeItem<NamedObject<LateXElement>>	parent       = elt.getDepth() < clipboardElt.getDepth() ? currentNode : currentNode.getParent();
 		
 		if (elt.getDepth() <= clipboardElt.getDepth())
-			actionManager.perform(new CancelableAction(actionManager) {
+			actionManager.perform(new CancelableAction() {
 				@Override
-				public void performImpl() {
+				public void doAction() {
 					if (toPaste != null) {
 						if (elt.getDepth() < clipboardElt.getDepth())
 							parent.getChildren().add(0,toPaste);
@@ -1083,10 +948,4 @@ public class LatexEditor extends Application implements StateListener {
 		private static final long	serialVersionUID	= 1L;
 		public WrongFormatException(String msg) { super(msg); }
 	}
-
-	@Override
-	public void handleChangeEvent() { primaryStage.setTitle(String.format("*%s - LateX Editor 4.0",currentFile.getAbsolutePath())); }
-
-	@Override
-	public void handleSaveEvent() { primaryStage.setTitle(String.format("%s - LateX Editor 4.0",currentFile.getAbsolutePath())); }
 }

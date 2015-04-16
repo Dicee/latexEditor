@@ -1,17 +1,11 @@
 package guifx.actions;
 
-public abstract class AbstractAction implements Action {
-	private final boolean save;
-
-	public AbstractAction(boolean save) {
-		this.save = save;
+abstract class AbstractAction implements ObservableAction {
+	@Override
+	public final void perform(StateObserver observer) {
+		doAction();
+		updateState(observer);
 	}
 	
-	@Override
-	final public void perform(ActionManager actionManager) {
-		performImpl();
-		actionManager.setSaved(save);
-	}
-
-	protected abstract void performImpl();
+	protected abstract void doAction();
 }

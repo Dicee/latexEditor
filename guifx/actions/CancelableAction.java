@@ -1,12 +1,7 @@
 package guifx.actions;
 
-public abstract class CancelableAction extends AbstractAction {
-	public CancelableAction(ActionManager actionManager) { super(actionManager,false); }
-	
+public abstract class CancelableAction extends AbstractAction {	
 	@Override
-	final public void perform() {
-		action
-	}
-	
+	public final void updateState(StateObserver observer) { observer.handleReversibleStateChange(); }	
 	public abstract void cancel();
 }

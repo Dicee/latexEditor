@@ -1,10 +1,21 @@
 package guifx.components;
 
 import guifx.actions.ActionManager;
+import guifx.utils.NamedObject;
+
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Function;
+
 import javafx.geometry.Point2D;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.util.Pair;
+import latex.elements.LateXElement;
 
 public abstract class ControlledTreeView<T> extends TreeView<T> {
 	protected static final int						INSERT_HEAD	= 0;
@@ -12,7 +23,6 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 	
 	protected ActionManager	actionManager;
 
-	protected TreeView<T>	tree;
 	protected TreeItem<T>	treeRoot;
 	protected TreeItem<T>	currentNode	= null;
 	protected TreeItem<T>	clipBoard	= null;
@@ -20,12 +30,52 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 	protected ContextMenu	addMenu		= new ContextMenu();
 
 	public ControlledTreeView(TreeItem<T> root, ActionManager actionManager) {
+		super(root);
 		this.treeRoot      = root;
 		this.actionManager = actionManager;
 		this.currentNode   = root;
-		this.tree          = new TreeView<>(root);
+		
+		setOnMouseClicked(this::handleMouseClickOnTree);
+		getSelectionModel().selectedItemProperty().addListener((ov,formerItem,newItem) -> currentNode = newItem);
 	}
 	
+	private void handleMouseClickOnTree(MouseEvent mev) {
+		if (mev.getButton().equals(MouseButton.SECONDARY)) {
+			addMenu.hide();
+			addMenu.getItems().clear();
+			openContextMenu(new Point2D(mev.getScreenX(),mev.getScreenY()));
+		} else
+			addMenu.hide(); 
+	}
 	public abstract void openContextMenu(Point2D pt);
-	public abstract void addChild(T elt, int option);
+
+	public abstract void addChildToSelectedNode(T elt, int option);
+	
+	void setElements(TreeItem<T> root, List<Pair<Integer,T>> elts, Function<T,TreeItem<T>> factory) {
+		getSelectionModel().clearSelection();
+		treeRoot = root;
+		
+		if (!elts.isEmpty()) {
+			Deque<Pair<Integer, TreeItem<T>>> stack = new LinkedList<>();
+			stack.push(new Pair<>(elts.get(0).getKey(),treeRoot));
+
+			for (Pair<Integer,T> elt : elts.subList(1,elts.size())) {
+				TreeItem<NamedObject<T>> node = factory.apply(elt.getValue());
+
+				while (stack.peek().getKey() >= elt.getKey())
+					stack.pop();
+				stack.peek().getValue().getChildren().add(node);
+				stack.push(new Pair<>(elt.getKey(),node));
+			}
+		}
+			
+			setRoot(treeRoot);
+			treeRoot.setExpanded(true);
+			getSelectionModel().select(treeRoot);
+	}
+
+	public TreeItem<T> getCurrentNode() {
+		return currentNode;
+	}
+//	public abstract void addChild(T elt, int option);
 }

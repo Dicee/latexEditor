@@ -55,7 +55,7 @@ public class CodeEditor extends BorderPane {
 			.replace("${language}",MIMES.get(mime));
 	}
 	
-	public void setLanguage(String mime) {
+	public void setLanguage(String mime) { 
 		this.mime = mime;
 		getCodeAndSnapshot();
 		refresh();
