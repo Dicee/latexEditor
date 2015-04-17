@@ -11,9 +11,8 @@ import guifx.utils.NamedObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Menu;
@@ -29,9 +28,22 @@ import latex.elements.Title;
 public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXElement>> {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 	
+	public static final TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
+		return newTreeItem(new NamedObject<>(strings.getObservableProperty(elt.getType()),elt));
+	}
+	
+	public static final TreeItem<NamedObject<LateXElement>> newTreeItem(NamedObject<LateXElement> elt) {
+		String url     = properties.getProperty(elt.bean.getType() + "Icon");
+		Node   icon    = new ImageView(new Image(LateXEditorTreeView.class.getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
+		return icon == null ? new TreeItem<>(elt) : new TreeItem<>(elt,icon);
+	}
+	
+	public static final NamedObject<LateXElement> newNamedObject(LateXElement elt) {
+		return new NamedObject<>(strings.getObservableProperty(elt.getType()),elt);
+	}
+	
 	public LateXEditorTreeView(TreeItem<NamedObject<LateXElement>> root, ActionManager actionManager) {
 		super(root,actionManager);
-		
 		getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 	}
 
@@ -45,7 +57,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		buildDeleteMenu();
 
 		// display the popup
-		addMenu.show(tree,pt.getX() + 10,pt.getY() + 10);
+		addMenu.show(this,pt.getX() + 10,pt.getY() + 10);
 	}
 
 	private void buildClipboardMenus(LateXElement elt) {
@@ -58,9 +70,9 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 			cut  .textProperty().bind(strings.getObservableProperty("cut"  ));
 			paste.textProperty().bind(strings.getObservableProperty("paste"));
 
-			copy .setOnAction(ev -> copyNode());
-			cut  .setOnAction(ev -> cutNode(true));
-			paste.setOnAction(ev -> pasteNode());
+			copy .setOnAction(ev -> copySelectedNode());
+			cut  .setOnAction(ev -> cutSelectedNode(true));
+			paste.setOnAction(ev -> pasteFromClipboardToSelectedNode());
 			addMenu.getItems().addAll(copy,cut,paste);
 		}
 	}
@@ -69,7 +81,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		MenuItem delete = new MenuItem();
 		addMenu.getItems().add(delete);
 		delete.textProperty().bind(strings.getObservableProperty("delete"));
-		delete.setOnAction(ev -> cutNode(false));
+		delete.setOnAction(ev -> cutSelectedNode(false));
 		if (currentNode.getParent() == null) delete.setDisable(true);
 	}
 
@@ -109,7 +121,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 							item.textProperty().bind(strings.getObservableProperty(type));
 							addChild.getItems().add(item);
 							item.setOnAction(ev -> {
-								addChild(type,entry.getValue());
+								addChildToSelectedNode(type,entry.getValue());
 								addMenu.hide();
 							});
 						}
@@ -129,8 +141,9 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		}
 	}
 	
-	private void addChild(String command, int option) {
-		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
+	@Override
+	public void addChildToSelectedNode(NamedObject<LateXElement> elt, int option) {
+		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(elt);
 		TreeItem<NamedObject<LateXElement>> parent = currentNode;
 		
 		actionManager.perform(new CancelableAction() {
@@ -148,13 +161,104 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		});
 	}
 	
-	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement l) {
-		String command = l.getType();
-		String url     = properties.getProperty(command + "Icon");
-		Node   icon    = new ImageView(new Image(getClass().getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
-
-		NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),l);
-		return icon == null ? new TreeItem<>(no) : new TreeItem<>(no,icon);
+	private void addChildToSelectedNode(String command, int option) {
+		LateXElement elt = LateXElement.newLateXElement(command,"");
+		addChildToSelectedNode(new NamedObject<>(strings.getObservableProperty(command),elt),option);
+	}
+	
+	
+	@Override
+	public void addSiblingToSelectedNode(NamedObject<LateXElement> elt) {
+		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(elt);
+		TreeItem<NamedObject<LateXElement>> parent = currentNode.getParent();
+		TreeItem<NamedObject<LateXElement>> node   = currentNode;
+		
+		actionManager.perform(new CancelableAction() {
+			@Override
+			public void doAction() {
+				int i = parent.getChildren().indexOf(node);
+				if (i == parent.getChildren().size() - 1) parent.getChildren().add(newElt);
+				else                                      parent.getChildren().add(i + 1,newElt);
+			}
+			
+			@Override
+			public void cancel() {
+				parent.getChildren().remove(newElt);
+			}
+		});
+		
+	}
+	
+	private void addSibling(String command) { 
+		addSiblingToSelectedNode(new NamedObject<>(strings.getObservableProperty(command),LateXElement.newLateXElement(command,"")));
+	} 
+	
+	@Override
+	public void cutSelectedNode(boolean saveToClipboard) {
+		TreeItem<NamedObject<LateXElement>>	parent = currentNode.getParent();
+		TreeItem<NamedObject<LateXElement>> node   = currentNode;
+		int                                 index  = parent.getChildren().indexOf(node);
+		if (saveToClipboard) 
+			clipBoard = currentNode;
+		
+		actionManager.perform(new CancelableAction() {
+			@Override
+			public void doAction() {
+				
+				TreeItem<NamedObject<LateXElement>> next;
+				if      (parent.getChildren().size() == 1        ) next = parent;
+				else if (index != parent.getChildren().size() - 1) next = parent.getChildren().get(index + 1);
+				else                                               next = parent.getChildren().get(index - 1);
+				parent.getChildren().remove(node);
+				getSelectionModel().select(next);
+			}
+			
+			@Override
+			public void cancel() {
+				parent.getChildren().add(index,node);
+				getSelectionModel().select(node);
+			}
+		});
+	}
+	
+	@Override
+	public void copySelectedNode() { clipBoard = cloneNode(currentNode); }
+	
+	private TreeItem<NamedObject<LateXElement>> cloneNode(TreeItem<NamedObject<LateXElement>> node) {
+		TreeItem<NamedObject<LateXElement>> root = newTreeItem(node.getValue().bean.clone());
+		root.getChildren().addAll(node.getChildren().stream().map(n -> cloneNode(n)).collect(Collectors.toList()));
+		return root;
+	}
+	
+	@Override
+	public void pasteFromClipboardToSelectedNode() {
+		TreeItem<NamedObject<LateXElement>> toPaste      = cloneNode(clipBoard);
+		TreeItem<NamedObject<LateXElement>> current      = currentNode;
+		LateXElement                        clipboardElt = toPaste    .getValue().bean;
+		LateXElement                        elt          = currentNode.getValue().bean;
+		TreeItem<NamedObject<LateXElement>>	parent       = elt.getDepth() < clipboardElt.getDepth() ? currentNode : currentNode.getParent();
+		
+		if (elt.getDepth() <= clipboardElt.getDepth())
+			actionManager.perform(new CancelableAction() {
+				@Override
+				public void doAction() {
+					if (toPaste != null) {
+						if (elt.getDepth() < clipboardElt.getDepth())
+							parent.getChildren().add(0,toPaste);
+						else if (elt.getDepth() == clipboardElt.getDepth()) {
+							int index = parent.getChildren().indexOf(current);
+							if (index < parent.getChildren().size() - 1) parent.getChildren().add(index + 1,toPaste);
+							else                                         parent.getChildren().add(toPaste);
+						} 
+						getSelectionModel().select(toPaste);
+					}
+				}
+				
+				@Override
+				public void cancel() {
+					parent.getChildren().remove(toPaste);
+				}
+			});
 	}
 	
 	static {

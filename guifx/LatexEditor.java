@@ -1,5 +1,7 @@
 package guifx;
 
+import static guifx.utils.DialogsFactory.showError;
+import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
@@ -8,9 +10,8 @@ import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import static latex.elements.Templates.TEMPLATES;
 import guifx.actions.ActionManager;
-import guifx.actions.CancelableAction;
 import guifx.components.CodeEditor;
-import guifx.utils.DialogsFactory;
+import guifx.components.ControlledTreeView;
 import guifx.utils.JavatexIO;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
@@ -23,7 +24,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -42,7 +42,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
-import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.Side;
@@ -56,21 +55,16 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCharacterCombination;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -88,7 +82,6 @@ import latex.elements.PreprocessorCommand;
 import latex.elements.Template;
 import latex.elements.Templates;
 import latex.elements.Title;
-import guifx.components.ControlledTreeView;
 
 import org.controlsfx.dialog.Dialogs;
 
@@ -119,7 +112,7 @@ public class LatexEditor extends Application {
 
 	private Stage									primaryStage;
 
-	private ControlledTreeView<NamedObject<LateXElement>> controlledTreeView;
+	private ControlledTreeView<NamedObject<LateXElement>> treeView;
 	
 	private ContextMenu								templatesList		= new ContextMenu();
 	private MenuBar									menuBar;
@@ -165,12 +158,12 @@ public class LatexEditor extends Application {
 	}
 	
 	private void setTree() {
-		controlledTreeView = new LateXEditorTreeView(newTreeItem(new PreprocessorCommand("")),actionManager);
-		controlledTreeView.setMinSize(200,50);
-		controlledTreeView.getRoot().setExpanded(true);
-		controlledTreeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
+		treeView = new LateXEditorTreeView(newTreeItem(new PreprocessorCommand("")),actionManager);
+		treeView.setMinSize(200,50);
+		treeView.getRoot().setExpanded(true);
+		treeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
 
-		controlledTreeView.getRoot().getChildren().add(newTreeItem(new Title()));
+		treeView.getRoot().getChildren().add(newTreeItem(new Title()));
 		// tree.setCellFactory(new Callback<TreeView<NamedObject<LateXElement>>,
 		// TreeCell<NamedObject<LateXElement>>>() {
 		// public TreeCell<NamedObject<LateXElement>>
@@ -206,7 +199,7 @@ public class LatexEditor extends Application {
 	private ChangeListener<TreeItem<NamedObject<LateXElement>>> updateTreeOnChange() {
 		return (ObservableValue<? extends TreeItem<NamedObject<LateXElement>>> ov, TreeItem<NamedObject<LateXElement>> formerItem,
 			TreeItem<NamedObject<LateXElement>> newItem) -> {
-			TreeItem<NamedObject<LateXElement>> currentNode = controlledTreeView.getCurrentNode();
+			TreeItem<NamedObject<LateXElement>> currentNode = treeView.getCurrentNode();
 			if (formerItem != null &&  currentNode != null) 
 				if (!(formerItem.getValue().bean instanceof Template))
 					formerItem.getValue().bean.setText(userTextArea.getText());
@@ -294,9 +287,9 @@ public class LatexEditor extends Application {
 		borderPane.setPadding(new Insets(15));
 
 		HBox.setHgrow(textEditor        ,Priority.ALWAYS);
-		HBox.setHgrow(controlledTreeView,Priority.NEVER);
-		controlledTreeView.setMinWidth(210);
-		controlledTreeView.setMinHeight(500);
+		HBox.setHgrow(treeView,Priority.NEVER);
+		treeView.setMinWidth(210);
+		treeView.setMinHeight(500);
 
 		return borderPane;
 	}
@@ -374,9 +367,9 @@ public class LatexEditor extends Application {
 	}
 	
 	private TitledPane setTreePane() {
-		TitledPane treePane = new TitledPane("",controlledTreeView);
+		TitledPane treePane = new TitledPane("",treeView);
 		bindProperty(treePane.textProperty(),"treeTitle");
-		controlledTreeView.setPadding(new Insets(50,5,5,5));
+		treeView.setPadding(new Insets(50,5,5,5));
 		return treePane;
 	}
 
@@ -532,26 +525,26 @@ public class LatexEditor extends Application {
 		root.addEventHandler(KeyEvent.KEY_PRESSED,new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent ev) {
-				if      (ev.getCode() == KeyCode.DELETE && controlledTreeView.getCurrentNode() != null) { cutNode(false); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown())                      { cutNode(true ); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown())                      { copyNode ()   ; ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown())                      { pasteNode()   ; ev.consume(); }
+				if      (ev.getCode() == KeyCode.DELETE && treeView.getCurrentNode() != null) { treeView.cutSelectedNode                 (false); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown())            { treeView.cutSelectedNode                 (true ); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown())            { treeView.copySelectedNode                (     ); ev.consume(); }
+				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown())            { treeView.pasteFromClipboardToSelectedNode(     ); ev.consume(); }
 			}
 		});
 	}
 
-	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement l) {
-		String command = l.getType();
+	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
+		String command = elt.getType();
 		String url     = properties.getProperty(command + "Icon");
 		Node   icon    = new ImageView(getResourceImage(url != null ? url : properties.getProperty("leafIcon")));
 
-		NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),l);
+		NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),elt);
 		return icon == null ? new TreeItem<>(no) : new TreeItem<>(no,icon);
 	}
 
 	private void save() {
 		try {
-			TreeItem<NamedObject<LateXElement>> currentNode = controlledTreeView.getCurrentNode();
+			TreeItem<NamedObject<LateXElement>> currentNode = treeView.getCurrentNode();
 			if (!(currentNode.getValue().bean instanceof Template))
 				currentNode.getValue().bean.setText(userTextArea.getText());
 
@@ -654,13 +647,16 @@ public class LatexEditor extends Application {
 	}
 
 	public NamedList<LateXElement> getElements() {
-		return getElements(controlledTreeView.getRoot(),"");
+		return getElements(treeView.getRoot(),"");
 	}
 	
 	private void setElements(List<Pair<Integer,LateXElement>> elts) {
-		controlledTreeView.setElements(newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),elts,this::newTreeItem);
+		treeView.setElements(
+			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
+			elts.stream().map(pair -> new Pair<>(pair.getKey(),LateXEditorTreeView.newNamedObject(pair.getValue()))).collect(Collectors.toList()),
+			LateXEditorTreeView::newTreeItem);
 	}
-
+	
 	public void toPdf() {
 		if (currentFile != null) {
 			generate();
@@ -747,15 +743,15 @@ public class LatexEditor extends Application {
 			}
 			actionManager.reset();
 		} catch (FileNotFoundException e) {
-			DialogsFactory.showError(
+			showError(
 				primaryStage,
 				strings.getProperty("error"),
 				strings.getProperty("anErrorOccurredMessage"),
 				String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
 		} catch (IOException e) {
-			DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
+			showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
 		} catch (WrongFormatException e) {
-			DialogsFactory.showError(
+			showError(
 				primaryStage,
 				strings.getProperty("error"),
 				strings.getProperty("anErrorOccurredMessage"),
@@ -790,115 +786,6 @@ public class LatexEditor extends Application {
 		}
 		tr.close();
 		return res;
-	}
-	
-	// controls
-	private void addChild(String command, int option) {
-		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
-		TreeItem<NamedObject<LateXElement>> parent = currentNode;
-		
-		actionManager.perform(new CancelableAction() {
-			@Override
-			public void doAction() {
-				if (option == INSERT_TAIL) currentNode.getChildren().add(  newElt);
-				else                       currentNode.getChildren().add(0,newElt);
-				currentNode.setExpanded(true);
-				setSaved(false);
-			}
-			
-			@Override
-			public void cancel() {
-				parent.getChildren().remove(newElt);
-			}
-		});
-	}
-	
-	private void addSibling(String command) {
-		TreeItem<NamedObject<LateXElement>> newElt = newTreeItem(LateXElement.newLateXElement(command,""));
-		TreeItem<NamedObject<LateXElement>> parent = currentNode.getParent();
-		TreeItem<NamedObject<LateXElement>> node   = currentNode;
-		
-		actionManager.perform(new CancelableAction() {
-			@Override
-			public void doAction() {
-				int i = parent.getChildren().indexOf(node);
-				if (i == parent.getChildren().size() - 1) parent.getChildren().add(newElt);
-				else                                      parent.getChildren().add(i + 1,newElt);
-				setSaved(false);
-			}
-			
-			@Override
-			public void cancel() {
-				parent.getChildren().remove(newElt);
-			}
-		});
-	} 
-	
-	private void cutNode(boolean saveToClipboard) {
-		TreeItem<NamedObject<LateXElement>>	parent = currentNode.getParent();
-		TreeItem<NamedObject<LateXElement>> node   = currentNode;
-		int                                 index  = parent.getChildren().indexOf(node);
-		if (saveToClipboard) 
-			clipBoard = currentNode;
-		
-		actionManager.perform(new CancelableAction() {
-			@Override
-			public void doAction() {
-				
-				TreeItem<NamedObject<LateXElement>> next;
-				if      (parent.getChildren().size() == 1        ) next = parent;
-				else if (index != parent.getChildren().size() - 1) next = parent.getChildren().get(index + 1);
-				else                                               next = parent.getChildren().get(index - 1);
-				parent.getChildren().remove(node);
-				tree.getSelectionModel().select(next);
-			}
-			
-			@Override
-			public void cancel() {
-				parent.getChildren().add(index,node);
-				tree.getSelectionModel().select(node);
-			}
-		});
-	}
-	
-	private void copyNode() {
-		clipBoard = cloneNode(currentNode);
-	}
-	
-	private TreeItem<NamedObject<LateXElement>> cloneNode(TreeItem<NamedObject<LateXElement>> node) {
-		TreeItem<NamedObject<LateXElement>> root = newTreeItem(node.getValue().bean.clone());
-		root.getChildren().addAll(node.getChildren().stream().map(n -> cloneNode(n)).collect(Collectors.toList()));
-		return root;
-	}
-	
-	private void pasteNode() {
-		TreeItem<NamedObject<LateXElement>> toPaste      = cloneNode(clipBoard);
-		TreeItem<NamedObject<LateXElement>> current      = currentNode;
-		LateXElement                        clipboardElt = toPaste    .getValue().bean;
-		LateXElement                        elt          = currentNode.getValue().bean;
-		TreeItem<NamedObject<LateXElement>>	parent       = elt.getDepth() < clipboardElt.getDepth() ? currentNode : currentNode.getParent();
-		
-		if (elt.getDepth() <= clipboardElt.getDepth())
-			actionManager.perform(new CancelableAction() {
-				@Override
-				public void doAction() {
-					if (toPaste != null) {
-						if (elt.getDepth() < clipboardElt.getDepth())
-							parent.getChildren().add(0,toPaste);
-						else if (elt.getDepth() == clipboardElt.getDepth()) {
-							int index = parent.getChildren().indexOf(current);
-							if (index < parent.getChildren().size() - 1) parent.getChildren().add(index + 1,toPaste);
-							else                                         parent.getChildren().add(toPaste);
-						} 
-						tree.getSelectionModel().select(toPaste);
-					}
-				}
-				
-				@Override
-				public void cancel() {
-					parent.getChildren().remove(toPaste);
-				}
-			});
 	}
 	
 	/**
