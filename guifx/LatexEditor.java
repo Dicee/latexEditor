@@ -101,9 +101,6 @@ public class LatexEditor extends Application {
 	private File									currentDir			= new File(LATEX_HOME);
 	private File									currentFile			= null;
 
-	private List<LateXElement>						savedlateXElements	= new ArrayList<>();
-
-	private List<LateXElement>						lateXElements		= new ArrayList<>();
 	private final LateXMaker						lm					= new LateXMaker();
 
 	private Stage									primaryStage;
@@ -140,8 +137,12 @@ public class LatexEditor extends Application {
 		setGlobalEventHandler(root);
 
 		Scene scene = new Scene(root,0,0);
-		primaryStage.setTitle(strings.getProperty("frameTitle"));
 		primaryStage.setScene(scene);
+		primaryStage.setTitle(strings.getProperty("frameTitle")); 
+		actionManager.isSavedProperty().addListener((ov,oldValue,newValue) -> 
+			primaryStage.setTitle(currentFile == null ? 
+				"LateXEditor 4.0" : 
+				String.format(newValue ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath())));
 
 		Screen      screen = Screen.getPrimary();
 		Rectangle2D bounds = screen.getVisualBounds();
@@ -469,7 +470,7 @@ public class LatexEditor extends Application {
 		// set actions
 		newDoc  .setOnAction(ev -> { 
 			createDocument();
-			lateXElements = new ArrayList<>();
+		    List<LateXElement> lateXElements = new ArrayList<>();
 			lateXElements.add(new PreprocessorCommand(""));
 			lateXElements.add(new Title());
 			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
@@ -551,22 +552,17 @@ public class LatexEditor extends Application {
 				currentNode.getValue().bean.setText(userTextArea.getText());
 
 			if (currentFile != null) {
-				File f                           = new File(currentFile.getAbsolutePath());
-				BufferedWriter fw                = new BufferedWriter(new FileWriter(f));
-				NamedList<LateXElement> elements = getElements();
-				Iterator<String>        names    = elements.getKey().iterator();
-				lateXElements                    = new ArrayList<>(elements.getValue());
-				List<LateXElement>      state    = new ArrayList<>();
+				File                    f             = new File(currentFile.getAbsolutePath());
+				BufferedWriter          fw            = new BufferedWriter(new FileWriter(f));
+				NamedList<LateXElement> elements      = getElements();
+				Iterator<String>        names         = elements.getKey().iterator();
+				List<LateXElement>      lateXElements = elements.getValue();
 
 				fw.write(lm.getParameters().textify(new StringBuilder()).toString());
-				for (LateXElement l : lateXElements) {
-					fw.write(String.format("%s %s\n",names.next(),l.textify()));
-					state.add(l.clone());
-				}
+				for (LateXElement l : lateXElements) fw.write(String.format("%s %s\n",names.next(),l.textify()));
 				fw.flush();
 				fw.close();
 				actionManager.handleStateSaved();
-				savedlateXElements = state;
 			}
 		} catch (IOException e) {
 			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
@@ -575,22 +571,9 @@ public class LatexEditor extends Application {
 		}
 	}
 
-//	public void setSaved(boolean b) {
-//		if (!saved && b)      primaryStage.setTitle(primaryStage.getTitle().substring(1));
-//		else if (saved && !b) primaryStage.setTitle("*" + primaryStage.getTitle());
-//		saved = b;
-//	}
-	
-	private void setTitle() {
-//		primaryStage.titleProperty().bin
-		primaryStage.setTitle(currentFile == null ? 
-			"LateXEditor 4.0" : 
-			String.format(actionManager.isSavedProperty().get() ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath()));
-	}
-	
-
 	private void generate() {
 		try {
+			List<LateXElement> lateXElements
 			if (savedlateXElements.isEmpty()) save();
 			String path = currentFile.getAbsolutePath();
 			JavatexIO.toTex(lm,savedlateXElements,path);
@@ -602,10 +585,6 @@ public class LatexEditor extends Application {
 				.masthead(strings.getProperty("anErrorOccurredMessage")).message(strings.getProperty("unfoundFileErrorMessage"))
 				.showError();
 			e.printStackTrace();
-			// Dialogs.create().owner(primaryStage).
-			// title(strings.getProperty("error")).
-			// masthead(strings.getProperty("anErrorOccurredMessage")).
-			// showException(e);
 		}
 	}
 
@@ -615,7 +594,12 @@ public class LatexEditor extends Application {
 			primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
 			generate.setDisable(false);
 			actionManager.reset();
+			resetLateXElements();
 		}
+	}
+	
+	private void resetLateXElements() {
+//		Lat
 	}
 	
 	private File chooseFile(Window window, boolean save, String wantedExtension, String filterName, String... extensions) {
@@ -627,13 +611,10 @@ public class LatexEditor extends Application {
 		File selectedFile = save ? chooser.showSaveDialog(window) : chooser.showOpenDialog(window);
 		if (selectedFile != null) {
 			currentFile = selectedFile;
-			currentDir  = currentFile.getParentFile();
-			
-			String s = selectedFile.getPath();
-			int i = s.indexOf(".");
-			if (i == -1 || !s.substring(i).equals(wantedExtension)) selectedFile = new File(s + wantedExtension);
+			currentDir  = currentFile.getParentFile();			
+			return JavatexIO.fixExtension(selectedFile,wantedExtension);
 		}
-        return selectedFile;
+		return null;
     }
 
 	private class NamedList<E> extends Pair<List<String>,List<E>> {
@@ -663,8 +644,7 @@ public class LatexEditor extends Application {
 	private void setElements(List<Pair<Integer,LateXElement>> elts) {
 		treeView.setElements(
 			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
-			elts.stream().map(pair -> new Pair<>(pair.getKey(),LateXEditorTreeView.newNamedObject(pair.getValue()))).collect(Collectors.toList()),
-			LateXEditorTreeView::newTreeItem);
+			elts.stream().map(pair -> new Pair<>(pair.getKey(),LateXEditorTreeView.newNamedObject(pair.getValue()))).collect(Collectors.toList()));
 	}
 	
 	public void toPdf() {

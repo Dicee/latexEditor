@@ -28,13 +28,14 @@ import latex.elements.Title;
 public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXElement>> {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 	
-	public static final TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
+	public final TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
 		return newTreeItem(new NamedObject<>(strings.getObservableProperty(elt.getType()),elt));
 	}
 	
-	public static final TreeItem<NamedObject<LateXElement>> newTreeItem(NamedObject<LateXElement> elt) {
+	@Override
+	public TreeItem<NamedObject<LateXElement>> newTreeItem(NamedObject<LateXElement> elt) {
 		String url     = properties.getProperty(elt.bean.getType() + "Icon");
-		Node   icon    = new ImageView(new Image(LateXEditorTreeView.class.getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
+		Node   icon    = new ImageView(new Image(getClass().getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
 		return icon == null ? new TreeItem<>(elt) : new TreeItem<>(elt,icon);
 	}
 	

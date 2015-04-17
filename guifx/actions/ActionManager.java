@@ -63,6 +63,7 @@ public class ActionManager implements StateObserver {
 	public void handleIrreversibleStateChange() { 
 		clearPrev();
 		isSaved.set(false);
+		System.out.println("hey");
 	 } 
 	
 	public BooleanProperty hasNextProperty() { return hasNext; }

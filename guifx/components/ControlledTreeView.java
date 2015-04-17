@@ -1,6 +1,7 @@
 package guifx.components;
 
 import guifx.actions.ActionManager;
+import guifx.utils.NamedObject;
 
 import java.util.Deque;
 import java.util.LinkedList;
@@ -14,6 +15,7 @@ import javafx.scene.control.TreeView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Pair;
+import latex.elements.LateXElement;
 
 public abstract class ControlledTreeView<T> extends TreeView<T> {
 	protected static final int	INSERT_HEAD	= 0;
@@ -52,8 +54,9 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 	public abstract void cutSelectedNode(boolean saveToClipboard);
 	public abstract void copySelectedNode();
 	public abstract void pasteFromClipboardToSelectedNode();
+	public abstract TreeItem<T> newTreeItem(T elt);
 	
-	public void setElements(TreeItem<T> root, List<Pair<Integer,T>> elts, Function<T,TreeItem<T>> factory) {
+	public void setElements(TreeItem<T> root, List<Pair<Integer,T>> elts) {
 		getSelectionModel().clearSelection();
 		treeRoot = root;
 
@@ -62,7 +65,7 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 			stack.push(new Pair<>(elts.get(0).getKey(),treeRoot));
 
 			for (Pair<Integer,T> elt : elts.subList(1,elts.size())) {
-				TreeItem<T> node = factory.apply(elt.getValue());
+				TreeItem<T> node = newTreeItem(elt.getValue());
 
 				while (stack.peek().getKey() >= elt.getKey())
 					stack.pop();
@@ -75,6 +78,6 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 		treeRoot.setExpanded(true);
 		getSelectionModel().select(treeRoot);
 	}
-
+	
 	public TreeItem<T> getCurrentNode() { return currentNode; }
 }

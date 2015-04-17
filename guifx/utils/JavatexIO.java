@@ -19,6 +19,13 @@ public class JavatexIO {
 	public static void toTex(LateXMaker lm, List<LateXElement> elts, String path) throws IOException {
 		int    i    = path.lastIndexOf(".");
 		path        = i == -1 ? path + ".tex" : path.substring(0,i) + ".tex";
-		lm.makeDocument(new File(path),elts);
+		lm.makeDocument(fixExtension(new File(path),"tex"),elts);
+	}
+	
+	public static File fixExtension(File file, String extension) {
+		String path = file.getAbsolutePath();
+		int    i    = path.lastIndexOf(".");
+		path        = i == -1 ? path + "." + extension : path.substring(0,i) + "." + extension;
+		return new File(path);
 	}
 }
