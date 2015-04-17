@@ -96,15 +96,11 @@ public class LatexEditor extends Application {
 	private static final Map<String, String>		LANGUAGES;
 	public static final String						LATEX_HOME			= System.getenv("LATEX_HOME").replace(System.getProperty("file.separator"),"/");
 
-	private static final int						INSERT_HEAD			= 0;
-	private static final int						INSERT_TAIL			= 1;
-
 	public static final Font						subtitlesFont		= Font.font(null,FontWeight.BOLD,13);
 
 	private File									currentDir			= new File(LATEX_HOME);
 	private File									currentFile			= null;
 
-	private boolean									saved				= false;
 	private List<LateXElement>						savedlateXElements	= new ArrayList<>();
 
 	private List<LateXElement>						lateXElements		= new ArrayList<>();
@@ -346,7 +342,13 @@ public class LatexEditor extends Application {
 		userTextArea = new TextArea();
 		userTextArea.setPrefSize(600,550);
 		userTextArea.setPrefHeight(420);
-
+		userTextArea.textProperty().addListener((ov,oldValue,newValue) -> { 
+			if (newValue != null) { 
+				treeView.getCurrentNode().getValue().bean.setText(newValue);
+				actionManager.handleIrreversibleStateChange();
+			}
+		});
+		
 		VBox textEditor = new VBox(info,userTextArea);
 		textEditor.setPadding(new Insets(5));
 		textEditor.setSpacing(5);
@@ -472,7 +474,7 @@ public class LatexEditor extends Application {
 			lateXElements.add(new Title());
 			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
 			
-			setSaved(false);
+			actionManager.handleIrreversibleStateChange();
 			save();
 		});
 		save    .setOnAction(ev -> save());
@@ -563,7 +565,7 @@ public class LatexEditor extends Application {
 				}
 				fw.flush();
 				fw.close();
-				setSaved(true);
+				actionManager.handleStateSaved();
 				savedlateXElements = state;
 			}
 		} catch (IOException e) {
@@ -573,11 +575,19 @@ public class LatexEditor extends Application {
 		}
 	}
 
-	public void setSaved(boolean b) {
-		if (!saved && b)      primaryStage.setTitle(primaryStage.getTitle().substring(1));
-		else if (saved && !b) primaryStage.setTitle("*" + primaryStage.getTitle());
-		saved = b;
+//	public void setSaved(boolean b) {
+//		if (!saved && b)      primaryStage.setTitle(primaryStage.getTitle().substring(1));
+//		else if (saved && !b) primaryStage.setTitle("*" + primaryStage.getTitle());
+//		saved = b;
+//	}
+	
+	private void setTitle() {
+//		primaryStage.titleProperty().bin
+		primaryStage.setTitle(currentFile == null ? 
+			"LateXEditor 4.0" : 
+			String.format(actionManager.isSavedProperty().get() ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath()));
 	}
+	
 
 	private void generate() {
 		try {
@@ -718,7 +728,6 @@ public class LatexEditor extends Application {
 	}
 
 	private void load() {
-		saved = false;
 		FileChooser f = new FileChooser();
 		f.setTitle("Charger un document");
 		f.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
@@ -738,7 +747,7 @@ public class LatexEditor extends Application {
 
 				primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
 				savedlateXElements = elts.stream().map(kv -> kv.getValue()).collect(Collectors.toList());
-				setSaved(true);
+				actionManager.handleStateSaved();
 				generate.setDisable(false);
 			}
 			actionManager.reset();
