@@ -99,6 +99,7 @@ public class Encyclopedia<T> {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
+			@SuppressWarnings("unchecked")
 			Entry other = (Entry) obj;
 			if (!getOuterType().equals(other.getOuterType()))
 				return false;

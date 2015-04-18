@@ -1,6 +1,7 @@
 package guifx;
 
 import static guifx.utils.DialogsFactory.showError;
+import guifx.components.LateXEditorTemplateChooser;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.properties;
@@ -10,29 +11,30 @@ import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import static latex.elements.Templates.TEMPLATES;
 import guifx.actions.ActionManager;
-import guifx.components.CodeEditor;
-import guifx.components.ControlledTreeView;
+import guifx.actions.ActionManagerImpl;
+import guifx.actions.NonCancelableAction;
+import guifx.actions.SaveAction;
+import guifx.components.LateXEditorTreeView;
+import guifx.components.generics.CodeEditor;
+import guifx.components.generics.ControlledTreeView;
+import guifx.components.LateXEditorShortcutsPane;
+import guifx.utils.DialogsFactory;
 import guifx.utils.JavatexIO;
 import guifx.utils.NamedObject;
 import guifx.utils.Settings;
+import guifx.utils.WrongFormatException;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -89,7 +91,6 @@ import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
 import utils.StreamPrinter;
-import utils.TokenReader;
 
 public class LatexEditor extends Application {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
@@ -107,6 +108,8 @@ public class LatexEditor extends Application {
 
 	private ControlledTreeView<NamedObject<LateXElement>> treeView;
 	
+	
+	private LateXEditorTemplateChooser				templateChooser;		
 	private ContextMenu								templatesList		= new ContextMenu();
 	private MenuBar									menuBar;
 
@@ -121,8 +124,10 @@ public class LatexEditor extends Application {
 	private SplitPane								splitPane;
 
 	private final LateXPidia						encyclopedia		= new LateXPidia();
-	private final ActionManager						actionManager		= new ActionManager();
+	private final ActionManager						actionManager		= new ActionManagerImpl();
 
+	public static final Image getResourceImage(String path) { return new Image(LatexEditor.class.getResourceAsStream(path)); }
+	
 	@Override
 	public void start(Stage primaryStage) {
 		setTree();
@@ -142,7 +147,9 @@ public class LatexEditor extends Application {
 		actionManager.isSavedProperty().addListener((ov,oldValue,newValue) -> 
 			primaryStage.setTitle(currentFile == null ? 
 				"LateXEditor 4.0" : 
-				String.format(newValue ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath())));
+				String.format(newValue ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath()))
+		);
+		actionManager.isSavedProperty().set(false);
 
 		Screen      screen = Screen.getPrimary();
 		Rectangle2D bounds = screen.getVisualBounds();
@@ -159,38 +166,11 @@ public class LatexEditor extends Application {
 		treeView.setMinSize(200,50);
 		treeView.getRoot().setExpanded(true);
 		treeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
-
 		treeView.getRoot().getChildren().add(newTreeItem(new Title()));
-		// tree.setCellFactory(new Callback<TreeView<NamedObject<LateXElement>>,
-		// TreeCell<NamedObject<LateXElement>>>() {
-		// public TreeCell<NamedObject<LateXElement>>
-		// call(TreeView<NamedObject<LateXElement>> param) {
-		// final TreeCell<NamedObject<LateXElement>> cell = new
-		// TreeCell<NamedObject<LateXElement>>() {
-		// @Override
-		// public void updateItem(NamedObject<LateXElement> item, boolean empty)
-		// {
-		// super.updateItem(item,empty);
-		// if (!empty && item != null) {
-		// textProperty().bind(item.nameProperty());
-		// String url;
-		// if ((url = icons.get(item.bean.getType())) != null) {
-		// ImageView icon = new ImageView(new
-		// Image(getClass().getResourceAsStream(url)));
-		// if (icon != null) {
-		// setGraphic(icon);
-		// System.out.println(getUserData());
-		// }
-		// }
-		// } else {
-		// textProperty().unbind();
-		// setText("");
-		// }
-		// }
-		// };
-		// return cell;
-		// }
-		// });
+	}
+	
+	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) { 
+		return treeView.newTreeItem(new NamedObject<>(strings.getObservableProperty(elt.getType()),elt));
 	}
 
 	private ChangeListener<TreeItem<NamedObject<LateXElement>>> updateTreeOnChange() {
@@ -206,7 +186,7 @@ public class LatexEditor extends Application {
 					buildAvailableTemplatesList((Template) newItem.getValue().bean);
 				else {
 					userTextArea.setText(newItem.getValue().bean.getText());
-					setEditorZone.accept(textMode);
+					templateChooser.setEditorZone(textMode);
 				}
 				splitPane.setDividerPositions(0.5);
 				splitPane.autosize();
@@ -270,7 +250,7 @@ public class LatexEditor extends Application {
 		borderPane.setCenter(form);
 		BorderPane.setAlignment(form,Pos.CENTER);
 
-		setEditorZone.accept(borderPane);
+		templateChooser.setEditorZone(borderPane);
 	}
 	
 	private Node setEditZone() {
@@ -344,10 +324,8 @@ public class LatexEditor extends Application {
 		userTextArea.setPrefSize(600,550);
 		userTextArea.setPrefHeight(420);
 		userTextArea.textProperty().addListener((ov,oldValue,newValue) -> { 
-			if (newValue != null) { 
+			if (newValue != null) 
 				treeView.getCurrentNode().getValue().bean.setText(newValue);
-				actionManager.handleIrreversibleStateChange();
-			}
 		});
 		
 		VBox textEditor = new VBox(info,userTextArea);
@@ -377,43 +355,12 @@ public class LatexEditor extends Application {
 	}
 
 	private TitledPane setSpecialCharsShortcut() {
-		String[] ops = { 
-			"\\cdot","+","-","\\frac{}{}","\\sqrt[]{}",
-			"\\forall","\\partial","\\exists","\\nexists","\\varnothing",
-			 "\\bigcap","\\bigcup","\\bigint","\\prod","\\sum",
-			 "\\nabla","\\in","\\notin","\\ni","",
-			 "^{}","_{}","\\leq","\\geq","\\neq",
-			"\\mid\\mid.\\mid\\mid"
-		};
-
-		String[] ctes = { 
-			"\\alpha","\\beta","\\gamma","\\delta","\\epsilon","\\mu","\\nu","\\xi","\\pi","\\rho",
-	        "\\omega","\\Omega","\\theta","\\Delta","\\Psi","\\eta","\\lambda","\\sigma","\\tau",
-			"\\chi","\\phi","\\infty"
-	    };
-
-		Image img = getResourceImage(properties.getProperty("operatorsIcon"));
-		IconSelectionView operators = new IconSelectionView(img,6,5,ops,strings.getObservableProperty("operators"));
-		operators.setActionListener(e -> {
+		LateXEditorShortcutsPane res = new LateXEditorShortcutsPane();
+		res.setOnClick(e -> {
 			userTextArea.cut();
 			userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
 		});
-
-		img = getResourceImage(properties.getProperty("alphabetIcon"));
-		IconSelectionView greekAlphabet = new IconSelectionView(img,5,5,ctes,strings.getObservableProperty("greekAlphabet"));
-		greekAlphabet.setActionListener(e -> {
-			userTextArea.cut();
-			userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
-		});
-
-		IconSelectionBox box = new IconSelectionBox();
-		box.addSelectionView(operators);
-		box.addSelectionView(greekAlphabet);
-		box.setPadding(new Insets(5,5,5,20));
-		
-		TitledPane boxPane = new TitledPane("",box);
-		bindProperty(boxPane.textProperty(),"boxTitle");
-		return boxPane;
+		return res;
 	}
 	
 	private void setMenuBar() {
@@ -468,16 +415,20 @@ public class LatexEditor extends Application {
 		generate.setDisable(true);
 
 		// set actions
-		newDoc  .setOnAction(ev -> { 
-			createDocument();
-		    List<LateXElement> lateXElements = new ArrayList<>();
-			lateXElements.add(new PreprocessorCommand(""));
-			lateXElements.add(new Title());
-			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
-			
-			actionManager.handleIrreversibleStateChange();
-			save();
-		});
+		newDoc  .setOnAction(ev -> 
+			actionManager.perform(
+				new NonCancelableAction() {
+					@Override
+					protected void doAction() {
+						createDocument();
+						List<LateXElement> lateXElements = new ArrayList<>();
+						lateXElements.add(new PreprocessorCommand(""));
+						lateXElements.add(new Title());
+						setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
+					}
+				}.before(SaveAction.saveAction(() -> { save(); actionManager.reset(); }))
+			)
+		); 
 		save    .setOnAction(ev -> save());
 		saveAs  .setOnAction(ev -> { createDocument(); save(); });
 		load    .setOnAction(ev -> load());
@@ -511,11 +462,11 @@ public class LatexEditor extends Application {
 		
 		tex.setOnAction(ev -> generate());
 		preview.setOnAction(ev -> {
-			try {
-				preview();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
+//			try {
+//				preview();
+//			} catch (IOException ex) {
+//				ex.printStackTrace();
+//			}
 		});
 		pdf.setOnAction(ev -> toPdf());
 		
@@ -536,88 +487,22 @@ public class LatexEditor extends Application {
 		});
 	}
 
-	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
-		String command = elt.getType();
-		String url     = properties.getProperty(command + "Icon");
-		Node   icon    = new ImageView(getResourceImage(url != null ? url : properties.getProperty("leafIcon")));
-
-		NamedObject<LateXElement> no = new NamedObject<LateXElement>(strings.getObservableProperty(command),elt);
-		return icon == null ? new TreeItem<>(no) : new TreeItem<>(no,icon);
-	}
-
-	private void save() {
-		try {
-			TreeItem<NamedObject<LateXElement>> currentNode = treeView.getCurrentNode();
-			if (!(currentNode.getValue().bean instanceof Template))
-				currentNode.getValue().bean.setText(userTextArea.getText());
-
-			if (currentFile != null) {
-				File                    f             = new File(currentFile.getAbsolutePath());
-				BufferedWriter          fw            = new BufferedWriter(new FileWriter(f));
-				NamedList<LateXElement> elements      = getElements();
-				Iterator<String>        names         = elements.getKey().iterator();
-				List<LateXElement>      lateXElements = elements.getValue();
-
-				fw.write(lm.getParameters().textify(new StringBuilder()).toString());
-				for (LateXElement l : lateXElements) fw.write(String.format("%s %s\n",names.next(),l.textify()));
-				fw.flush();
-				fw.close();
-				actionManager.handleStateSaved();
-			}
-		} catch (IOException e) {
-			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
-					.masthead(strings.getProperty("anErrorOccurredMessage")).message(String.format(strings.getProperty("ioSaveError")))
-					.showError();
-		}
-	}
-
 	private void generate() {
 		try {
-			List<LateXElement> lateXElements
-			if (savedlateXElements.isEmpty()) save();
+			List<LateXElement> lateXElements = getElements().getValue();
+			if (lateXElements.isEmpty()) save();
 			String path = currentFile.getAbsolutePath();
-			JavatexIO.toTex(lm,savedlateXElements,path);
+			JavatexIO.toTex(lm,lateXElements,path);
 
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
 			outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
 		} catch (Exception e) {
-			Dialogs.create().owner(primaryStage).title(strings.getProperty("error"))
-				.masthead(strings.getProperty("anErrorOccurredMessage")).message(strings.getProperty("unfoundFileErrorMessage"))
-				.showError();
+			DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","unfoundFileErrorMessage");
 			e.printStackTrace();
 		}
 	}
 
-	private void createDocument() {
-		File file = chooseFile(primaryStage,true,"javatex",strings.getProperty("javatexFiles"),"*.javatex");
-		if (file != null) {
-			primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
-			generate.setDisable(false);
-			actionManager.reset();
-			resetLateXElements();
-		}
-	}
-	
-	private void resetLateXElements() {
-//		Lat
-	}
-	
-	private File chooseFile(Window window, boolean save, String wantedExtension, String filterName, String... extensions) {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle(strings.getProperty("newDocument"));
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(filterName,extensions));
-        if (currentDir != null) chooser.setInitialDirectory(currentDir);
-			
-		File selectedFile = save ? chooser.showSaveDialog(window) : chooser.showOpenDialog(window);
-		if (selectedFile != null) {
-			currentFile = selectedFile;
-			currentDir  = currentFile.getParentFile();			
-			return JavatexIO.fixExtension(selectedFile,wantedExtension);
-		}
-		return null;
-    }
-
-	private class NamedList<E> extends Pair<List<String>,List<E>> {
+	public class NamedList<E> extends Pair<List<String>,List<E>> {
 		private static final long serialVersionUID = 1L;
 		public NamedList(List<String> a, List<E> b) { super(a,b); }
 	}
@@ -647,6 +532,85 @@ public class LatexEditor extends Application {
 			elts.stream().map(pair -> new Pair<>(pair.getKey(),LateXEditorTreeView.newNamedObject(pair.getValue()))).collect(Collectors.toList()));
 	}
 	
+	private void createDocument() {
+		File file = chooseFile(primaryStage,true,"javatex",strings.getProperty("javatexFiles"),"*.javatex");
+		if (file != null) primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
+	}
+	
+	private void load() {
+		actionManager.perform(new NonCancelableAction() {
+			@Override
+			protected void doAction() {
+				File file = chooseFile(primaryStage,false,"javatex",strings.getProperty("javatexFiles"),"*.javatex");
+				try {
+					loadElements(file);
+				} catch (FileNotFoundException e) {
+					showError(
+						primaryStage,
+						strings.getProperty("error"),
+						strings.getProperty("anErrorOccurredMessage"),
+						String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
+				} catch (IOException e) {
+					showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
+				} catch (WrongFormatException e) {
+					showError(
+						primaryStage,
+						strings.getProperty("error"),
+						strings.getProperty("anErrorOccurredMessage"),
+						String.format(strings.getProperty("malformedJavatexError"),e.getMessage()));
+				}
+			}
+		});
+	}
+	
+	private void loadElements(File file) throws IOException, FileNotFoundException, WrongFormatException {
+		if (file != null) {
+			currentDir  = file.getParentFile();
+			currentFile = file;
+			lm.getParameters().clear();
+			
+			List<Pair<Integer,LateXElement>> elts = JavatexIO.readFromJavatex(file,lm.getParameters());
+			setElements(elts);
+			
+			primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
+			actionManager.isSavedProperty().set(true);
+			actionManager.reset();
+		}
+	}
+	
+	private void save() {
+		actionManager.perform(new SaveAction() {
+			@Override
+			public void save() {
+				try {
+					TreeItem<NamedObject<LateXElement>> currentNode = treeView.getCurrentNode();
+					if (!(currentNode.getValue().bean instanceof Template))
+						currentNode.getValue().bean.setText(userTextArea.getText());
+		
+					if (currentFile != null) 
+						JavatexIO.saveAsJavatex(currentFile,getElements(),lm); 
+				} catch (IOException e) {
+					DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioSaveError");
+				}
+			}
+		});
+	}
+	
+	private File chooseFile(Window window, boolean save, String wantedExtension, String filterName, String... extensions) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(strings.getProperty("newDocument"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(filterName,extensions));
+        if (currentDir != null) chooser.setInitialDirectory(currentDir);
+			
+		File selectedFile = save ? chooser.showSaveDialog(window) : chooser.showOpenDialog(window);
+		if (selectedFile != null) {
+			currentFile = selectedFile;
+			currentDir  = currentFile.getParentFile();			
+			return JavatexIO.fixExtension(selectedFile,wantedExtension);
+		}
+		return null;
+    }
+	
 	public void toPdf() {
 		if (currentFile != null) {
 			generate();
@@ -674,125 +638,20 @@ public class LatexEditor extends Application {
 		}
 	}
 
-	public void preview() throws IOException {
-		if (currentFile != null) {
-			generate();
-
-			String         path = currentFile.getCanonicalPath();
-			ProcessBuilder pb   = new ProcessBuilder("latex","-halt-on-error",String.format("%s.tex",path.substring(0,path.lastIndexOf("."))));
-			pb.directory(currentDir.getAbsoluteFile());
-
-			StringBuilder sb = new StringBuilder();
-			Function<String, Consumer<String>> consumerFactory = s -> str -> {
-				sb.append(str);
-				sb.append("\n");
-			};
-
-			try {
-				Process p = pb.start();
-				StreamPrinter inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply(""));
-				StreamPrinter errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply(""));
-				new Thread(inputStream).start();
-				new Thread(errorStream).start();
-				p.waitFor();
-
-				outputTextArea.clear();
-				outputTextArea.setText(sb.toString());
-
-				pb = new ProcessBuilder("yap",String.format("%s.dvi",path.substring(0,path.lastIndexOf("."))));
-				pb.start();
-			} catch (IOException | InterruptedException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
-
-	private void load() {
-		FileChooser f = new FileChooser();
-		f.setTitle("Charger un document");
-		f.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Fichier JavateX","*.javatex"));
-
-		if (currentDir != null)
-			f.setInitialDirectory(currentDir);
-
-		File file = f.showOpenDialog(primaryStage);
-		try {
-			if (file != null) {
-				currentDir  = file.getParentFile();
-				currentFile = file;
-				lm.getParameters().clear();
-				
-				List<Pair<Integer,LateXElement>> elts = readFromJavatex(file);
-				setElements(elts);
-
-				primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
-				savedlateXElements = elts.stream().map(kv -> kv.getValue()).collect(Collectors.toList());
-				actionManager.handleStateSaved();
-				generate.setDisable(false);
-			}
-			actionManager.reset();
-		} catch (FileNotFoundException e) {
-			showError(
-				primaryStage,
-				strings.getProperty("error"),
-				strings.getProperty("anErrorOccurredMessage"),
-				String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
-		} catch (IOException e) {
-			showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
-		} catch (WrongFormatException e) {
-			showError(
-				primaryStage,
-				strings.getProperty("error"),
-				strings.getProperty("anErrorOccurredMessage"),
-				String.format(strings.getProperty("malformedJavatexError"),e.getMessage()));
-		}
-	}
-	
-	private List<Pair<Integer,LateXElement>> readFromJavatex(File f) 
-			throws IOException, FileNotFoundException, WrongFormatException {
-		TokenReader                      tr   = new TokenReader(new FileReader(f),"##");
-		List<Pair<Integer,LateXElement>> res  = new LinkedList<>();  
-		
-		String s;
-		while ((s = tr.readToNextToken()) != null) {
-			String decl    = s.trim();
-			String content = tr.readToNextToken().trim();
-			
-			switch (decl) {
-				case "packages"        : lm.getParameters().addPackages(content.split("[;\\s+]|;\\s+")); break;
-				case "commands"        : lm.getParameters().include(content.split("[;\\s+]|;\\s+"    )); break;
-				case "documentSettings": lm.getParameters().loadSettings(content);                       break;
-				default:
-					Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
-					Matcher m = p.matcher(decl);
-
-					if (m.matches()) {
-						String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
-						res.add(new Pair<>(m.group(1).length(),LateXElement.newLateXElement(m.group(2) + param,content)));
-					} else
-						throw new WrongFormatException(decl);
-			}
-		}
-		tr.close();
-		return res;
-	}
-	
 	/**
 	 * I have been forced to create it to run it under Eclipse after some strange bug... nevermind
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		launch(args);
-	}
+	public static void main(String[] args) { launch(args); }
 
 	// initializers and utilitary methods/classes
 	static {
 		NODES_TYPES_MAP = new HashMap<>();
-		NODES_TYPES_MAP.put(0,asList("title"));
-		NODES_TYPES_MAP.put(1,asList("chapter"));
-		NODES_TYPES_MAP.put(2,asList("section"));
-		NODES_TYPES_MAP.put(3,asList("subsection"));
-		NODES_TYPES_MAP.put(4,asList("subsubsection"));
+		NODES_TYPES_MAP.put(0,asList("title"                                             ));
+		NODES_TYPES_MAP.put(1,asList("chapter"                                           ));
+		NODES_TYPES_MAP.put(2,asList("section"                                           ));
+		NODES_TYPES_MAP.put(3,asList("subsection"                                        ));
+		NODES_TYPES_MAP.put(4,asList("subsubsection"                                     ));
 		NODES_TYPES_MAP.put(5,asList("paragraph","list","image","code","latex","template"));
 	}
 
@@ -811,18 +670,6 @@ public class LatexEditor extends Application {
 	static {
 		Settings.init();
 		boolean success = Templates.init();
-		if (!success) 
-			Dialogs.create().owner(null)
-				.title(strings.getProperty("error")).masthead(strings.getProperty("anErrorOccurredMessage"))
-				.message(strings.getProperty("undefinedHome")).showError();
-	}
-	
-	private static Image getResourceImage(String path) {
-		return new Image(LatexEditor.class.getResourceAsStream(path));
-	}
-	
-	private class WrongFormatException extends Exception { 
-		private static final long	serialVersionUID	= 1L;
-		public WrongFormatException(String msg) { super(msg); }
+		if (!success) showError(null,"error","anErrorOccurredMessage","undefinedHome");
 	}
 }

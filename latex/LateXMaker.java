@@ -25,13 +25,8 @@ public class LateXMaker {
 	private boolean					preproc;
 	private BufferedWriter			out;
 	
-	public LateXMaker(DocumentParameters dp) {
-		this.parameters = dp;
-	}
-	
-	public LateXMaker() {
-		this(new DocumentParameters());
-	}
+	public LateXMaker() { this(new DocumentParameters()); }
+	public LateXMaker(DocumentParameters dp) { this.parameters = dp; }
 	
 	 private String beginDocument(String preproc) {
 		 StringBuilder sb = new StringBuilder();		
@@ -136,30 +131,30 @@ public class LateXMaker {
 //		else out.write(beginDocument() + "\n");
 //	}
 	
-	public void makeDocument(File f, LateXElement root) throws IOException {
-		chapterCount = 0;
-		figureCount  = 1;
-		preproc      = false;
-		
-		out = null;
-		try {
-			out = new BufferedWriter(new FileWriter(f));
-			
-			String begin;
-			if (root instanceof PreprocessorCommand) {
-				PreprocessorCommand preproc = (PreprocessorCommand) root;
-				begin                       = beginDocument(preproc.latexify(this));
-				List<LateXElement>  elts    = root.getChildren();
-			}
-			else begin = beginDocument();
-			out.write(begin + "\n");
-		} finally {
-			if (out != null) {
-				out.flush();
-				out.close();
-			}
-		}
-	}
+//	public void makeDocument(File f, LateXElement root) throws IOException {
+//		chapterCount = 0;
+//		figureCount  = 1;
+//		preproc      = false;
+//		
+//		out = null;
+//		try {
+//			out = new BufferedWriter(new FileWriter(f));
+//			
+//			String begin;
+//			if (root instanceof PreprocessorCommand) {
+//				PreprocessorCommand preproc = (PreprocessorCommand) root;
+//				begin                       = beginDocument(preproc.latexify(this));
+//				List<LateXElement>  elts    = root.getChildren();
+//			}
+//			else begin = beginDocument();
+//			out.write(begin + "\n");
+//		} finally {
+//			if (out != null) {
+//				out.flush();
+//				out.close();
+//			}
+//		}
+//	}
 	
 	public String includeGraphic(String path, String caption, String scale) {			
 		return includeGraphic(path,caption,Float.parseFloat(scale));		

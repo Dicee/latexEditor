@@ -1,5 +1,6 @@
 package latex.elements;
 
+import static guifx.LatexEditor.LATEX_HOME;
 import guifx.utils.Settings;
 
 import java.io.File;
@@ -14,8 +15,6 @@ import java.util.regex.Pattern;
 
 public class Templates {
 	public static final Map<String, List<Template>>	TEMPLATES  = new HashMap<>();
-	public static final String						LATEX_HOME =
-			System.getenv("LATEX_HOME").replace(System.getProperty("file.separator"),"/");
 	
 	public static boolean init() {
 		if (LATEX_HOME != null) {

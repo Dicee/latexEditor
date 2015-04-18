@@ -1,4 +1,4 @@
-package guifx.components;
+package guifx.components.generics;
 
 import guifx.actions.ActionManager;
 

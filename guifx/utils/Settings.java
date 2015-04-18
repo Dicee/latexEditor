@@ -1,10 +1,9 @@
 package guifx.utils;
 
-import static guifx.utils.Settings.strings;
 import static javafx.application.Application.STYLESHEET_CASPIAN;
 import static javafx.application.Application.STYLESHEET_MODENA;
 import static javafx.application.Application.setUserAgentStylesheet;
-import guifx.components.CodeEditor;
+import guifx.components.generics.CodeEditor;
 import impl.org.controlsfx.i18n.Localization;
 
 import java.io.BufferedReader;

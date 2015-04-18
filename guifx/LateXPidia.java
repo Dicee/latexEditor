@@ -2,7 +2,7 @@ package guifx;
 
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
-import guifx.components.ContextToolBar;
+import guifx.components.generics.ContextToolBar;
 
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -20,6 +20,7 @@ import javafx.stage.Stage;
 import utils.Encyclopedia;
 
 public class LateXPidia extends Stage {
+	@SuppressWarnings("unused")
 	private Encyclopedia<String> encyclopedia;
 	
 	public LateXPidia() {
