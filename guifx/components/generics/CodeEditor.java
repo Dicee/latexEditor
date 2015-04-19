@@ -31,7 +31,7 @@ public class CodeEditor extends BorderPane {
 	static {
 		List<String> res = new ArrayList<>();
 		try {
-			res = Arrays.asList(new File(Settings.class.getResource("../components/codemirror-4.8/theme").toURI()).listFiles()).stream()
+			res = Arrays.asList(new File(CodeEditor.class.getResource("codemirror-4.8/theme").toURI()).listFiles()).stream()
 				.map(f -> f.getName().substring(0,f.getName().lastIndexOf(".")))
 				.collect(Collectors.toList());
 		} catch (Exception e) {

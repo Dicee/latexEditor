@@ -21,9 +21,8 @@ import javafx.util.Callback;
 import latex.elements.Template;
 
 public class TemplateForm extends BorderPane {
-	public TemplateForm(Template t) {
-		final Map<String,String> params = t.getParameters();
-		
+	public TemplateForm(Template template) {
+		final Map<String,String>      params      = template.getParameters();
 		ListView<NamedObject<String>> listView    = new ListView<>();
 		TextArea                      textArea    = new TextArea();
 		Label                         pickerLabel = new Label();
@@ -49,8 +48,8 @@ public class TemplateForm extends BorderPane {
 		setCenter(textArea);
 		
 		listView.getItems().addAll(params.keySet().stream()
-			.filter(s -> strings.containsKey(String.format("%s.%s",t,s)))
-			.map(s -> new NamedObject<>(strings.getObservableProperty(String.format("%s.%s",t,s)),s))
+			.filter(s -> strings.containsKey(String.format("%s.%s",template,s)))
+			.map(s -> new NamedObject<>(strings.getObservableProperty(String.format("%s.%s",template,s)),s))
 			.collect(Collectors.toList()));
 		listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 		listView.getSelectionModel().selectedItemProperty().addListener((observable,oldValue,newValue) -> textArea.setText(params.get(newValue.bean)));

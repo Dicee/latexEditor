@@ -1,7 +1,5 @@
 package guifx.utils;
 
-import guifx.LatexEditor.NamedList;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;

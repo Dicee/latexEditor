@@ -159,6 +159,7 @@ public class Settings {
 				selectedMenu = themeMenu;
 			chooseTheme.getItems().add(themeMenu);
 		}
+
 		selectedMenu.setGraphic(checkedIcon);
 		preferences.put(PREF_THEME,selectedMenu);
 		return chooseTheme;

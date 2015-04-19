@@ -1,10 +1,12 @@
 package guifx.components.generics;
 
 import guifx.actions.ActionManager;
+import guifx.utils.NamedList;
 
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
 import javafx.geometry.Point2D;
 import javafx.scene.control.ContextMenu;
@@ -15,22 +17,24 @@ import javafx.scene.input.MouseEvent;
 import javafx.util.Pair;
 
 public abstract class ControlledTreeView<T> extends TreeView<T> {
-	protected static final int	INSERT_HEAD	= 0;
-	protected static final int	INSERT_TAIL	= 1;
+	protected static final int			INSERT_HEAD	= 0;
+	protected static final int			INSERT_TAIL	= 1;
 
-	protected ActionManager		actionManager;
+	protected ActionManager				actionManager;
 
-	protected TreeItem<T>		treeRoot;
-	protected TreeItem<T>		currentNode	= null;
-	protected TreeItem<T>		clipBoard	= null;
+	protected TreeItem<T>				treeRoot;
+	protected TreeItem<T>				currentNode;
+	protected TreeItem<T>				clipBoard;
 
-	protected ContextMenu		addMenu		= new ContextMenu();
+	protected ContextMenu				addMenu		= new ContextMenu();
+	protected Function<T,TreeItem<T>>	factory;
 
-	public ControlledTreeView(TreeItem<T> root, ActionManager actionManager) {
+	public ControlledTreeView(TreeItem<T> root, ActionManager actionManager, Function<T,TreeItem<T>> factory) {
 		super(root);
 		this.treeRoot      = root;
 		this.actionManager = actionManager;
 		this.currentNode   = root;
+		this.factory       = factory;
 		
 		setOnMouseClicked(this::handleMouseClickOnTree);
 		getSelectionModel().selectedItemProperty().addListener((ov,formerItem,newItem) -> currentNode = newItem);
@@ -51,7 +55,6 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 	public abstract void cutSelectedNode(boolean saveToClipboard);
 	public abstract void copySelectedNode();
 	public abstract void pasteFromClipboardToSelectedNode();
-	public abstract TreeItem<T> newTreeItem(T elt);
 	
 	public void setElements(TreeItem<T> root, List<Pair<Integer,T>> elts) {
 		getSelectionModel().clearSelection();
@@ -62,7 +65,7 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 			stack.push(new Pair<>(elts.get(0).getKey(),treeRoot));
 
 			for (Pair<Integer,T> elt : elts.subList(1,elts.size())) {
-				TreeItem<T> node = newTreeItem(elt.getValue());
+				TreeItem<T> node = factory.apply(elt.getValue());
 
 				while (stack.peek().getKey() >= elt.getKey())
 					stack.pop();
@@ -76,5 +79,21 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 		getSelectionModel().select(treeRoot);
 	}
 	
+	private NamedList<T> getElements(TreeItem<T> node, String level) {
+		List<T>      elements = new LinkedList<>();
+		List<String> names    = new LinkedList<>();
+		elements.add(node.getValue());
+		names   .add(level);
+		if (!node.isLeaf()) {
+			for (TreeItem<T> elt : node.getChildren()) {
+				NamedList<T> childResult = getElements(elt,level + ">");
+				names   .addAll(childResult.getKey());
+				elements.addAll(childResult.getValue());
+			}
+		}
+		return new NamedList<>(names,elements);
+	}
+
+	public NamedList<T> getElements() { return getElements(getRoot(),""); }	
 	public TreeItem<T> getCurrentNode() { return currentNode; }
 }
