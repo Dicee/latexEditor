@@ -2,7 +2,7 @@ package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
-import guifx.LatexEditor;
+import guifx.LateXEditor;
 import guifx.components.generics.IconSelectionBox;
 import guifx.components.generics.IconSelectionView;
 import guifx.utils.Settings;
@@ -41,7 +41,7 @@ public class LateXEditorShortcutsPane extends TitledPane {
 				"^{}","_{}","\\leq","\\geq","\\neq",
 				"\\mid\\mid.\\mid\\mid"
 		};
-		Image img = LatexEditor.getResourceImage(properties.getProperty("operatorsIcon"));
+		Image img = LateXEditor.getResourceImage(properties.getProperty("operatorsIcon"));
 		return new IconSelectionView(img,6,5,ops,strings.getObservableProperty("operators"));
 	}
 
@@ -51,7 +51,7 @@ public class LateXEditorShortcutsPane extends TitledPane {
 				"\\omega","\\Omega","\\theta","\\Delta","\\Psi","\\eta","\\lambda","\\sigma","\\tau",
 				"\\chi","\\phi","\\infty"
 		};
-		Image img = LatexEditor.getResourceImage(properties.getProperty("alphabetIcon"));
+		Image img = LateXEditor.getResourceImage(properties.getProperty("alphabetIcon"));
 		return new IconSelectionView(img,5,5,ctes,strings.getObservableProperty("greekAlphabet"));
 	}
 
@@ -60,4 +60,3 @@ public class LateXEditorShortcutsPane extends TitledPane {
 		greekAlphabet.setActionListener(onClick);
 	}
 }
-

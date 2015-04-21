@@ -1,4 +1,4 @@
-package guifx;
+package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;

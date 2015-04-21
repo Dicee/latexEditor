@@ -1,7 +1,8 @@
-package guifx;
+package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.strings;
+import guifx.LateXEditor;
 import guifx.utils.NamedObject;
 
 import java.util.Map;
@@ -31,7 +32,7 @@ public class TemplateForm extends BorderPane {
 		
 		BorderPane.setMargin(header,new Insets(0,0,5,0));
 		bindProperty(pickerLabel.textProperty(),"pickColor");
-		pickerLabel.setFont(LatexEditor.subtitlesFont);
+		pickerLabel.setFont(LateXEditor.subtitlesFont);
 		
 		colPicker.setOnAction(ev -> {
 			Color color = colPicker.getValue();

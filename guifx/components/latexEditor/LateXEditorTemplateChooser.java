@@ -2,7 +2,6 @@ package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.bindProperty;
 import static latex.elements.Templates.TEMPLATES;
-import guifx.TemplateForm;
 
 import java.util.List;
 import java.util.Map;
@@ -18,14 +17,18 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
 import latex.elements.Template;
 
-public class LateXEditorTemplateChooser {
-	private static final ContextMenu	templatesList = new ContextMenu();
+public class LateXEditorTemplateChooser extends BorderPane {
+	private final ContextMenu	templatesList = new ContextMenu();
 	
-	private LateXEditorTemplateChooser() { }
-	
-	public static final BorderPane buildAvailableTemplatesList(Template template) {
-		templatesList.getItems().clear();
-		// creation of the UI elements
+	public LateXEditorTemplateChooser(Template template) {
+		super();
+		
+		buildShowMenu    (        );
+		buildPopupMenu   (template);
+		buildTemplateForm(template);
+	}
+
+	private void buildShowMenu() {
 		Button showMenu = new Button();
 		bindProperty(showMenu.textProperty(),"showAvailableTemplates");
 		showMenu.setOnAction(ev -> {
@@ -35,41 +38,37 @@ public class LateXEditorTemplateChooser {
 				templatesList.hide();
 		});
 
-		BorderPane borderPane = new BorderPane();
-		borderPane.setTop(showMenu);
-		borderPane.setPadding(new Insets(15));
-		borderPane.setPrefHeight(300);
-		BorderPane.setAlignment(showMenu,Pos.CENTER);
-		BorderPane.setMargin(showMenu,new Insets(10,10,30,10));
-
-		// creation of the popup menu
-		buildPopupMenu(template,borderPane);
-
-		TemplateForm form = new TemplateForm(template);
-		borderPane.setCenter(form);
-		BorderPane.setAlignment(form,Pos.CENTER);
-		
-		return borderPane;
+		setTop(showMenu);
+		setPadding(new Insets(15));
+		setPrefHeight(300);
+		setAlignment(showMenu,Pos.CENTER);
+		setMargin(showMenu,new Insets(10,10,30,10));
 	}
 
-	private static void buildPopupMenu(Template template, BorderPane borderPane) {
+	private final void buildPopupMenu(Template template) {
 		Map<String,List<Template>> templatesToShow = 
 			TEMPLATES.entrySet().stream()
-				.filter(entry-> template.getType().equals("title") ? entry.getKey().equals("titlePage") : !entry.getKey().equals("titlePage"))
+				.filter(entry-> template.getType().equals("title") ^ !entry.getKey().equals("titlePage"))
 				.collect(Collectors.toMap(entry -> entry.getKey(),entry -> entry.getValue()));
 				
 		for (Map.Entry<String,List<Template>> entry : templatesToShow.entrySet())
-			createMenuBuilderFromTemplateTitle(entry.getKey(),template,entry.getValue(),borderPane);
+			createMenuBuilderFromTemplateTitle(entry.getKey(),template,entry.getValue());
 	}
 	
-	private static void createMenuBuilderFromTemplateTitle(String title, Template template, List<Template> availableTemplates, BorderPane borderPane) {
+	private void buildTemplateForm(Template template) {
+		TemplateForm form = new TemplateForm(template);
+		setCenter(form);
+		setAlignment(form,Pos.CENTER);
+	}
+	
+	private final void createMenuBuilderFromTemplateTitle(String title, Template template, List<Template> availableTemplates) {
 		Menu menu = new Menu(title);
 		availableTemplates.stream().forEach(availableTemplate -> {
 			MenuItem item = new MenuItem(availableTemplate.getTemplateName());
 			item.setOnAction(ev -> {
 				template.copyFrom(availableTemplate);
 				TemplateForm form = new TemplateForm(template);
-				borderPane.setCenter(form);
+				setCenter(form);
 				BorderPane.setAlignment(form,Pos.CENTER);
 			});
 			menu.getItems().add(item);

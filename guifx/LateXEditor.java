@@ -2,7 +2,6 @@ package guifx;
 
 import static guifx.actions.NonCancelableAction.nonCancelableAction;
 import static guifx.actions.SaveAction.saveAction;
-import static guifx.components.latexEditor.LateXEditorTemplateChooser.buildAvailableTemplatesList;
 import static guifx.utils.DialogsFactory.showError;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.Settings.bindProperty;
@@ -16,9 +15,11 @@ import guifx.actions.ActionManagerImpl;
 import guifx.actions.NonCancelableAction;
 import guifx.actions.SaveAction;
 import guifx.components.generics.CodeEditor;
-import guifx.components.generics.ControlledTreeView;
 import guifx.components.latexEditor.LateXEditorShortcutsPane;
+import guifx.components.latexEditor.LateXEditorTemplateChooser;
 import guifx.components.latexEditor.LateXEditorTreeView;
+import guifx.components.latexEditor.LateXPidia;
+import guifx.components.latexEditor.PreferencesPane;
 import guifx.utils.DialogsFactory;
 import guifx.utils.JavatexIO;
 import guifx.utils.NamedObject;
@@ -86,7 +87,7 @@ import scala.io.Codec;
 import scala.io.Source;
 import utils.StreamPrinter;
 
-public class LatexEditor extends Application {
+public class LateXEditor extends Application {
 	private static final Map<Integer, List<String>>			NODES_TYPES_MAP;
 	private static final Map<String, String>				LANGUAGES;
 	public static final String								LATEX_HOME		= System.getenv("LATEX_HOME").replace(System.getProperty("file.separator"),"/");
@@ -115,7 +116,7 @@ public class LatexEditor extends Application {
 	private final LateXPidia								encyclopedia	= new LateXPidia();
 	private final ActionManager								actionManager	= new ActionManagerImpl();
 
-	public static final Image getResourceImage(String path) { return new Image(LatexEditor.class.getResourceAsStream(path)); }
+	public static final Image getResourceImage(String path) { return new Image(LateXEditor.class.getResourceAsStream(path)); }
 	
 	@Override
 	public void start(Stage primaryStage) {
@@ -150,7 +151,7 @@ public class LatexEditor extends Application {
 	}
 	
 	private void setTree() {
-		treeView = new LateXEditorTreeView(newTreeItem(new PreprocessorCommand("")),actionManager,LatexEditor::newTreeItem);
+		treeView = new LateXEditorTreeView(newTreeItem(new PreprocessorCommand("")),actionManager,LateXEditor::newTreeItem);
 		treeView.setMinSize(200,50);
 		treeView.getRoot().setExpanded(true);
 		treeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
@@ -177,7 +178,7 @@ public class LatexEditor extends Application {
 			
 			if (newItem != null && newItem.getValue() != null) {
 				if (newItem.getValue().bean instanceof Template)
-					setEditorZone.accept(buildAvailableTemplatesList((Template) newItem.getValue().bean));
+					setEditorZone.accept(new LateXEditorTemplateChooser((Template) newItem.getValue().bean));
 				else {
 					userTextArea.setText(newItem.getValue().bean.getText());
 					setEditorZone.accept(textMode);

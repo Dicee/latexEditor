@@ -1,6 +1,7 @@
-package guifx;
+package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.bindProperty;
+import guifx.LateXEditor;
 
 import java.util.Arrays;
 import java.util.List;
@@ -83,7 +84,7 @@ public class PreferencesPane {
 		
 		IntStream.range(0,options.size()).forEach(i -> { 
 			Label     label = new Label();
-			label.setFont(LatexEditor.subtitlesFont);
+			label.setFont(LateXEditor.subtitlesFont);
 			bindProperty(label.textProperty(),options.get(i));
 			
 			TextField field = new TextField(getSetters.get(i).get());
