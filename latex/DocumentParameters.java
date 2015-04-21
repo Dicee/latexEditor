@@ -1,7 +1,7 @@
 package latex;
 
 import static java.lang.String.format;
-import guifx.LatexEditor;
+import guifx.LateXEditor;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -107,7 +107,7 @@ public class DocumentParameters {
 	public StringBuilder latexify(StringBuilder sb, LateXMaker lm) {
 		return mkString("","","",
 			p -> p.latexify(lm),
-			name -> Source.fromFile(LatexEditor.LATEX_HOME + "/includes/" + name,Codec.UTF8()).addString(sb),
+			name -> Source.fromFile(LateXEditor.LATEX_HOME + "/includes/" + name,Codec.UTF8()).addString(sb),
 			sb);
 	}
 	

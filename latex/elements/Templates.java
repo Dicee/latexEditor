@@ -1,6 +1,6 @@
 package latex.elements;
 
-import static guifx.LatexEditor.LATEX_HOME;
+import static guifx.LateXEditor.LATEX_HOME;
 import guifx.utils.Settings;
 
 import java.io.File;

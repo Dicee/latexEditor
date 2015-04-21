@@ -88,35 +88,47 @@ import scala.io.Source;
 import utils.StreamPrinter;
 
 public class LateXEditor extends Application {
-	private static final Map<Integer, List<String>>			NODES_TYPES_MAP;
-	private static final Map<String, String>				LANGUAGES;
-	public static final String								LATEX_HOME		= System.getenv("LATEX_HOME").replace(System.getProperty("file.separator"),"/");
+	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
+	public static final Map<String, String>			LANGUAGES;
+	public static final String						LATEX_HOME		= System.getenv("LATEX_HOME").replace(
+																			System.getProperty("file.separator"),"/");
 
-	public static final Font								subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
+	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
 
-	private File											currentDir		= new File(LATEX_HOME);
-	private File											currentFile		= null;
+	private File									currentDir		= new File(LATEX_HOME);
+	private File									currentFile		= null;
 
-	private final LateXMaker								lm				= new LateXMaker();
-	private Stage											primaryStage;
+	private final LateXMaker						lm				= new LateXMaker();
+	private Stage									primaryStage;
 
-	private LateXEditorTreeView								treeView;
+	private LateXEditorTreeView						treeView;
 
-	private MenuBar											menuBar;
+	private MenuBar									menuBar;
 
-	private TextArea										userTextArea;
-	private TextArea										outputTextArea;
-	private CodeEditor										outputCode;
-	private Label											info;
+	private TextArea								userTextArea;
+	private CodeEditor								outputCode;
+	private Label									info;
+	private Node									textMode;
 
-	private Consumer<Node>									setEditorZone;
-	private Node											textMode;
-	private SplitPane										splitPane;
+	private TextArea								outputTextArea;
 
-	private final LateXPidia								encyclopedia	= new LateXPidia();
-	private final ActionManager								actionManager	= new ActionManagerImpl();
+	private Consumer<Node>							setEditorZone;
+	private SplitPane								splitPane;
+
+	private final LateXPidia						encyclopedia	= new LateXPidia();
+	private final ActionManager						actionManager	= new ActionManagerImpl();
 
 	public static final Image getResourceImage(String path) { return new Image(LateXEditor.class.getResourceAsStream(path)); }
+	
+	private static final TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) { 
+		return newTreeItem(new NamedObject<>(strings.getObservableProperty(elt.getType()),elt));
+	}
+
+	private static final TreeItem<NamedObject<LateXElement>> newTreeItem(NamedObject<LateXElement> elt) {
+		String url  = properties.getProperty(elt.bean.getType() + "Icon");
+		Node   icon = new ImageView(new Image(LateXEditorTreeView.class.getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
+		return icon == null ? new TreeItem<>(elt) : new TreeItem<>(elt,icon);
+	}
 	
 	@Override
 	public void start(Stage primaryStage) {
@@ -156,16 +168,6 @@ public class LateXEditor extends Application {
 		treeView.getRoot().setExpanded(true);
 		treeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
 		treeView.getRoot().getChildren().add(newTreeItem(new Title()));
-	}
-	
-	private static TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) { 
-		return newTreeItem(new NamedObject<>(strings.getObservableProperty(elt.getType()),elt));
-	}
-
-	private static TreeItem<NamedObject<LateXElement>> newTreeItem(NamedObject<LateXElement> elt) {
-		String url  = properties.getProperty(elt.bean.getType() + "Icon");
-		Node   icon = new ImageView(new Image(LateXEditorTreeView.class.getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
-		return icon == null ? new TreeItem<>(elt) : new TreeItem<>(elt,icon);
 	}
 	
 	private ChangeListener<TreeItem<NamedObject<LateXElement>>> updateTreeOnChange() {
@@ -418,21 +420,6 @@ public class LateXEditor extends Application {
 		});
 	}
 
-	private void generate() {
-		try {
-			List<LateXElement> lateXElements = treeView.getLateXElements().getValue();
-			if (lateXElements.isEmpty()) save();
-			String path = currentFile.getAbsolutePath();
-			JavatexIO.toTex(lm,lateXElements,path);
-
-			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
-			outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
-		} catch (Exception e) {
-			DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","unfoundFileErrorMessage");
-			e.printStackTrace();
-		}
-	}
-
 	private void setElements(List<Pair<Integer,LateXElement>> elts) {
 		treeView.setElements(
 			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
@@ -554,6 +541,21 @@ public class LateXEditor extends Application {
 			}
 		}
 	}
+	
+	private void generate() {
+		try {
+			List<LateXElement> lateXElements = treeView.getLateXElements().getValue();
+			if (lateXElements.isEmpty()) save();
+			String path = currentFile.getAbsolutePath();
+			JavatexIO.toTex(lm,lateXElements,path);
+
+			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
+			outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
+		} catch (Exception e) {
+			DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","unfoundFileErrorMessage");
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * I have been forced to create it to run it under Eclipse after some strange bug... nevermind
@@ -561,7 +563,6 @@ public class LateXEditor extends Application {
 	 */
 	public static void main(String[] args) { launch(args); }
 
-	// initializers and utilitary methods/classes
 	static {
 		NODES_TYPES_MAP = new HashMap<>();
 		NODES_TYPES_MAP.put(0,asList("title"                                             ));
