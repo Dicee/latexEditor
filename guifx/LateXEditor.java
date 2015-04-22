@@ -98,9 +98,10 @@ public class LateXEditor extends Application {
 	private File									currentDir		= new File(LATEX_HOME);
 	private File									currentFile		= null;
 
-	private final LateXMaker						lm				= new LateXMaker();
 	private Stage									primaryStage;
+	private Rectangle2D 							screenBounds;
 
+	private final LateXMaker						lm				= new LateXMaker();
 	private LateXEditorTreeView						treeView;
 
 	private MenuBar									menuBar;
@@ -134,6 +135,8 @@ public class LateXEditor extends Application {
 	public void start(Stage primaryStage) {
 		setTree();
 
+		Screen screen     = Screen.getPrimary();
+		this.screenBounds = screen.getVisualBounds();
 		this.primaryStage = primaryStage;
 		VBox root         = new VBox(10);
 		Node editZone     = setEditZone();
@@ -152,19 +155,16 @@ public class LateXEditor extends Application {
 				String.format(newValue ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath()))
 		);
 
-		Screen      screen = Screen.getPrimary();
-		Rectangle2D bounds = screen.getVisualBounds();
-
-		primaryStage.setX(bounds.getMinX());
-		primaryStage.setY(bounds.getMinY());
-		primaryStage.setWidth(bounds.getWidth());
-		primaryStage.setHeight(bounds.getHeight());
+		primaryStage.setX     (screenBounds.getMinX  ());
+		primaryStage.setY     (screenBounds.getMinY  ());
+		primaryStage.setWidth (screenBounds.getWidth ());
+		primaryStage.setHeight(screenBounds.getHeight());
 		primaryStage.show();
 	}
 	
 	private void setTree() {
 		treeView = new LateXEditorTreeView(newTreeItem(new PreprocessorCommand("")),actionManager,LateXEditor::newTreeItem);
-		treeView.setMinSize(200,50);
+		treeView.setMinWidth(300);
 		treeView.getRoot().setExpanded(true);
 		treeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
 		treeView.getRoot().getChildren().add(newTreeItem(new Title()));
@@ -185,7 +185,7 @@ public class LateXEditor extends Application {
 					userTextArea.setText(newItem.getValue().bean.getText());
 					setEditorZone.accept(textMode);
 				}
-				splitPane.setDividerPositions(0.5);
+				splitPane.setDividerPositions(0.40);
 				splitPane.autosize();
 				bindProperty(info.textProperty(),newItem.getValue().bean.getType() + "Tip");
 				currentNode = newItem;
@@ -206,7 +206,6 @@ public class LateXEditor extends Application {
 		HBox.setHgrow(textEditor,Priority.ALWAYS);
 		HBox.setHgrow(treeView  ,Priority.NEVER);
 		treeView.setMinWidth (210);
-		treeView.setMinHeight(500);
 
 		return borderPane;
 	}
@@ -215,12 +214,12 @@ public class LateXEditor extends Application {
 		outputTextArea = new TextArea();
 		outputTextArea.setMinHeight(50);
 		outputTextArea.setEditable(false);
-		outputTextArea.setPrefHeight(100);
+		outputTextArea.setPrefHeight(screenBounds.getHeight()/2);
 
 		splitPane = new SplitPane();
 		splitPane.setOrientation(Orientation.VERTICAL);
 		splitPane.getItems().addAll(textMode = new HBox(textEditor,setOutputCode()),outputTextArea);
-		splitPane.setDividerPositions(0.5);
+		splitPane.setDividerPositions(0.40);
 		splitPane.autosize();
 
 		this.setEditorZone = nodes -> splitPane.getItems().set(0,nodes);
@@ -261,8 +260,7 @@ public class LateXEditor extends Application {
 		info.setFont(subtitlesFont);
 		
 		userTextArea = new TextArea();
-		userTextArea.setPrefSize(600,550);
-		userTextArea.setPrefHeight(420);
+		userTextArea.setPrefSize(screenBounds.getWidth()/6,screenBounds.getHeight()/3);
 		userTextArea.textProperty().addListener((ov,oldValue,newValue) -> { 
 			if (newValue != null) 
 				treeView.getCurrentNode().getValue().bean.setText(newValue);
@@ -283,7 +281,8 @@ public class LateXEditor extends Application {
 		accordion.getPanes().addAll(treePane,shortcutsPane);
 		accordion.setExpandedPane(treePane);
 		accordion.setPadding(new Insets(10));
-		
+		accordion.setPrefHeight(screenBounds.getHeight()*0.90);
+		accordion.setMinWidth(250);
 		return accordion;
 	}
 	

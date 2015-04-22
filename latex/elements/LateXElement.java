@@ -9,8 +9,8 @@ import latex.LateXMaker;
 import latex.Textifiable;
 
 public interface LateXElement extends Textifiable {
-	public static int DEPTH_MIN = 0;
-	public static int DEPTH_MAX = 5;
+	public static int DEPTH_MIN = -1;
+	public static int DEPTH_MAX =  5;
 	
 	public String latexify(LateXMaker lm);
 	public int getDepth();

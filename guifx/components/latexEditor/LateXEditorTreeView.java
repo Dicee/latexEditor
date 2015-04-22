@@ -47,13 +47,15 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		LateXElement elt = currentNode.getValue().bean;
 
 		buildAddMenus(elt);
-		buildClipboardMenus(elt);
-		buildDeleteMenu();
-
+		if (!(elt instanceof Title)) {
+			buildClipboardMenus(elt);
+			buildDeleteMenu();
+		}
 		addMenu.show(this,pt.getX() + 10,pt.getY() + 10);
 	}
 	
 	private void buildAddMenus(LateXElement elt) {
+		System.out.println("build add menus");
 		Map<Menu,Integer> addChildMenus  = createAddChildMenus (elt);
 		Optional<Menu>    addSiblingMenu = createAddSiblingMenu(elt); 
 		
@@ -65,6 +67,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 
 	private Map<Menu,Integer> createAddChildMenus(LateXElement elt) {
+		System.out.println("create add child menus");
 		Map<Menu,Integer> map = new HashMap<>();
 		if (elt.getDepth() != LateXElement.DEPTH_MAX) {
 			Menu addChildHead = new Menu();
@@ -74,11 +77,14 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 			
 			map.put(addChildHead,INSERT_HEAD);
 			map.put(addChildTail,INSERT_TAIL);
+			
+			addMenu.getItems().addAll(addChildHead,addChildTail);
 		}
 		return map;
 	}
 	
 	private Optional<Menu> createAddSiblingMenu(LateXElement elt) {
+		System.out.println("create add sibling menus");
 		if (elt.getDepth() != LateXElement.DEPTH_MIN) {
 			Menu addSibling = new Menu();
 			addMenu.getItems().add(addSibling);
@@ -88,28 +94,32 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		return Optional.empty();
 	}
 
-	private void buildChildrenElements(Map<Menu, Integer> addChildMenus, int eltDepth, int childrenDepth) {
-		addChildMenus.entrySet().stream().forEach(entry -> {
-			Menu addChild = entry.getKey();
-			if (childrenDepth > eltDepth) {
+	private void buildChildrenElements(Map<Menu,Integer> addChildMenus, int eltDepth, int childrenDepth) {
+		if (childrenDepth > eltDepth) {
+			System.out.println("build children " + childrenDepth);
+			addChildMenus.entrySet().stream().forEach(entry -> {
+				Menu addChild = entry.getKey();
 				if (!addChild.getItems().isEmpty())
 					addChild.getItems().add(new SeparatorMenuItem());
-
+				
 				for (String type : NODES_TYPES_MAP.get(childrenDepth)) {
 					MenuItem item = new MenuItem();
 					item.textProperty().bind(strings.getObservableProperty(type));
 					addChild.getItems().add(item);
+					System.out.println("build children of type " + type + ". Currently " + addChild.getItems().size() + " items in " + addChild.getText());
+					System.out.println("Items : " + addChild.getItems().stream().map(menu -> menu.getText()).collect(Collectors.toList()));
 					item.setOnAction(ev -> {
 						addChildToSelectedNode(type,entry.getValue());
 						addMenu.hide();
 					});
 				}
-			}
-		});
+			});
+		}
 	}
 
 	private void buildSiblingElements(Menu addSiblingMenu, int eltDepth, int depth) {
-		if (eltDepth == depth) {
+		if (eltDepth == depth) { 
+			System.out.println("build sibling");
 			for (String type : NODES_TYPES_MAP.get(eltDepth)) {
 				MenuItem item = new MenuItem();
 				item.textProperty().bind(strings.getObservableProperty(type));
@@ -120,20 +130,18 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 
 	private void buildClipboardMenus(LateXElement elt) {
-		if (!(elt instanceof Title)) {
-			MenuItem copy  = new MenuItem();
-			MenuItem cut   = new MenuItem();
-			MenuItem paste = new MenuItem();
+		MenuItem copy  = new MenuItem();
+		MenuItem cut   = new MenuItem();
+		MenuItem paste = new MenuItem();
 			
-			copy .textProperty().bind(strings.getObservableProperty("copy" ));
-			cut  .textProperty().bind(strings.getObservableProperty("cut"  ));
-			paste.textProperty().bind(strings.getObservableProperty("paste"));
-
-			copy .setOnAction(ev -> copySelectedNode());
-			cut  .setOnAction(ev -> cutSelectedNode(true));
-			paste.setOnAction(ev -> pasteFromClipboardToSelectedNode());
-			addMenu.getItems().addAll(copy,cut,paste);
-		}
+		copy .textProperty().bind(strings.getObservableProperty("copy" ));
+		cut  .textProperty().bind(strings.getObservableProperty("cut"  ));
+		paste.textProperty().bind(strings.getObservableProperty("paste"));
+		
+		copy .setOnAction(ev -> copySelectedNode());
+		cut  .setOnAction(ev -> cutSelectedNode(true));
+		paste.setOnAction(ev -> pasteFromClipboardToSelectedNode());
+		addMenu.getItems().addAll(copy,cut,paste);
 	}
 	
 	private void buildDeleteMenu() {
@@ -185,11 +193,8 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 			}
 			
 			@Override
-			public void cancel() {
-				parent.getChildren().remove(newElt);
-			}
+			public void cancel() { parent.getChildren().remove(newElt); }
 		});
-		
 	}
 	
 	private void addSibling(String command) { 
