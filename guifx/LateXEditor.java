@@ -85,6 +85,7 @@ import latex.elements.Title;
 import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
+import utils.FileUtils;
 import utils.StreamPrinter;
 
 public class LateXEditor extends Application {
@@ -549,7 +550,7 @@ public class LateXEditor extends Application {
 			JavatexIO.toTex(lm,lateXElements,path);
 
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
-			outputCode.setCode(Source.fromFile(new File(path),Codec.UTF8()).mkString());
+			outputCode.setCode(Source.fromFile(FileUtils.toExtension(path,".tex"),Codec.UTF8()).mkString());
 		} catch (Exception e) {
 			DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","unfoundFileErrorMessage");
 			e.printStackTrace();

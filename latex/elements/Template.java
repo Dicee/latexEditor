@@ -3,6 +3,7 @@ package latex.elements;
 import java.io.File;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -14,8 +15,8 @@ import scala.io.Codec;
 import scala.io.Source;
 
 public class Template extends AbstractLateXElement {
-	protected Map<String, String>		parameters		= new HashMap<>();
-	protected final Map<String, String>	cache			= new HashMap<>();
+	protected Map<String,String>		parameters		= new LinkedHashMap<>();
+	protected final Map<String,String>	cache			= new LinkedHashMap<>();
 	protected String					templateName	= "";
 	
 	public Template() { super("","template",5); }

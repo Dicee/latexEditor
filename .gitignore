@@ -1,3 +1,5 @@
+latex/.gitignore
+latex/elements/.gitignore
 .metadata
 bin/
 .classpath
