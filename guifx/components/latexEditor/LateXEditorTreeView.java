@@ -55,7 +55,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 	
 	private void buildAddMenus(LateXElement elt) {
-		System.out.println("build add menus");
 		Map<Menu,Integer> addChildMenus  = createAddChildMenus (elt);
 		Optional<Menu>    addSiblingMenu = createAddSiblingMenu(elt); 
 		
@@ -67,7 +66,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 
 	private Map<Menu,Integer> createAddChildMenus(LateXElement elt) {
-		System.out.println("create add child menus");
 		Map<Menu,Integer> map = new HashMap<>();
 		if (elt.getDepth() != LateXElement.DEPTH_MAX) {
 			Menu addChildHead = new Menu();
@@ -84,7 +82,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 	
 	private Optional<Menu> createAddSiblingMenu(LateXElement elt) {
-		System.out.println("create add sibling menus");
 		if (elt.getDepth() != LateXElement.DEPTH_MIN) {
 			Menu addSibling = new Menu();
 			addMenu.getItems().add(addSibling);
@@ -96,7 +93,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 
 	private void buildChildrenElements(Map<Menu,Integer> addChildMenus, int eltDepth, int childrenDepth) {
 		if (childrenDepth > eltDepth) {
-			System.out.println("build children " + childrenDepth);
 			addChildMenus.entrySet().stream().forEach(entry -> {
 				Menu addChild = entry.getKey();
 				if (!addChild.getItems().isEmpty())
@@ -106,8 +102,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 					MenuItem item = new MenuItem();
 					item.textProperty().bind(strings.getObservableProperty(type));
 					addChild.getItems().add(item);
-					System.out.println("build children of type " + type + ". Currently " + addChild.getItems().size() + " items in " + addChild.getText());
-					System.out.println("Items : " + addChild.getItems().stream().map(menu -> menu.getText()).collect(Collectors.toList()));
 					item.setOnAction(ev -> {
 						addChildToSelectedNode(type,entry.getValue());
 						addMenu.hide();
@@ -119,7 +113,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 
 	private void buildSiblingElements(Menu addSiblingMenu, int eltDepth, int depth) {
 		if (eltDepth == depth) { 
-			System.out.println("build sibling");
 			for (String type : NODES_TYPES_MAP.get(eltDepth)) {
 				MenuItem item = new MenuItem();
 				item.textProperty().bind(strings.getObservableProperty(type));
@@ -166,10 +159,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 			}
 			
 			@Override
-			public void cancel() {
-				parent.getChildren().remove(newElt);
-				System.out.println("hey");
-			}
+			public void cancel() { parent.getChildren().remove(newElt); }
 		});
 	}
 	
