@@ -2,7 +2,6 @@ package guifx.components.generics;
 
 import static guifx.utils.Settings.PREF_THEME;
 import static guifx.utils.Settings.properties;
-import guifx.utils.Settings;
 
 import java.io.File;
 import java.util.ArrayList;

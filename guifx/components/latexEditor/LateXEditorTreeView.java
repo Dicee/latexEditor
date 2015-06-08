@@ -6,7 +6,6 @@ import static java.util.Arrays.asList;
 import guifx.actions.ActionManager;
 import guifx.actions.CancelableAction;
 import guifx.components.generics.ControlledTreeView;
-import guifx.utils.NamedList;
 import guifx.utils.NamedObject;
 
 import java.util.HashMap;

@@ -33,9 +33,6 @@ public class IconSelectionView extends ImageView {
     private int pixToVect(Point p) { return matToVect(mouseToBlock(p)); }
     private int matToVect(Point coord) { return cols * coord.x + coord.y; }
     
-    /**
-     * Conversion des coordonnees pixelliques de la souris en coordonnees de bloc.
-     */
     private Point mouseToBlock(Point p) {
         int blockHeight = ((int) height) / rows;
         int blockWidth  = ((int) width)  / cols;

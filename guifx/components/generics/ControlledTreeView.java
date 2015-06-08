@@ -1,7 +1,6 @@
 package guifx.components.generics;
 
 import guifx.actions.ActionManager;
-import guifx.utils.NamedList;
 
 import java.util.Deque;
 import java.util.LinkedList;
@@ -96,4 +95,9 @@ public abstract class ControlledTreeView<T> extends TreeView<T> {
 
 	public NamedList<T> getElements() { return getElements(getRoot(),""); }	
 	public TreeItem<T> getCurrentNode() { return currentNode; }
+	
+	public static class NamedList<E> extends Pair<List<String>, List<E>> {
+		private static final long	serialVersionUID	= 1L;
+		public NamedList(List<String> a, List<E> b) { super(a,b); }
+	}
 }

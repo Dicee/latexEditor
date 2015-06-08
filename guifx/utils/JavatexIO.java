@@ -1,5 +1,7 @@
 package guifx.utils;
 
+import guifx.components.generics.ControlledTreeView.NamedList;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
