@@ -76,8 +76,8 @@ public class PreferencesPane {
 		grid.setVgap(12);
 		grid.setHgap(5);
 		
-		List<String>               options    = Arrays.asList("documentClass","alineaLength","chapterName");
-		List<GetterSetter<String>> getSetters = Arrays.asList(
+		List<String>               options       = Arrays.asList("documentClass","alineaLength","chapterName");
+		List<GetterSetter<String>> getterSetters = Arrays.asList(
 			new GetterSetter<>(params::getDocumentClass,params::setDocumentClass),
 			new GetterSetter<>(params::getAlinea       ,params::setAlinea       ),
 			new GetterSetter<>(params::getChapterName  ,params::setChapterName  ));
@@ -87,8 +87,8 @@ public class PreferencesPane {
 			label.setFont(LateXEditor.subtitlesFont);
 			bindProperty(label.textProperty(),options.get(i));
 			
-			TextField field = new TextField(getSetters.get(i).get());
-			field.textProperty().addListener((obs,oldValue,newValue) -> getSetters.get(i).set(newValue));
+			TextField field = new TextField(getterSetters.get(i).get());
+			field.textProperty().addListener((obs,oldValue,newValue) -> getterSetters.get(i).set(newValue));
 			
 			grid.add(label,0,i);
 			grid.add(field,1,i);

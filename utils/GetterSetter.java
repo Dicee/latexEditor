@@ -1,10 +1,13 @@
 package utils;
 
-public class GetterSetter<T> implements Getter<T>, Setter<T> {
-	private final Getter<T>	getter;
-	private final Setter<T>	setter;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-	public GetterSetter(Getter<T> getter, Setter<T> setter) {
+public class GetterSetter<T> {
+	private final Supplier<T>	getter;
+	private final Consumer<T>	setter;
+
+	public GetterSetter(Supplier<T> getter, Consumer<T> setter) {
 		this.getter = getter;
 		this.setter = setter;
 	}
@@ -14,6 +17,6 @@ public class GetterSetter<T> implements Getter<T>, Setter<T> {
 	}
 
 	public void set(T t) {
-		setter.set(t);
+		setter.accept(t);
 	}
 }

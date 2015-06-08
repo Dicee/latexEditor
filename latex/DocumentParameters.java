@@ -17,7 +17,6 @@ import javafx.collections.ObservableList;
 import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
-import utils.Setter;
 
 public class DocumentParameters {
 	private String					documentClass, alinea, chapterName;
@@ -147,7 +146,7 @@ public class DocumentParameters {
 		// Temporary fix... those fields may be replaced by an HashMap later if
 		// the application requires to add some more. For the moment, it would change
 		// too much code for no real benefit
-		Map<String,Setter<String>> setters = new HashMap<>();
+		Map<String,Consumer<String>> setters = new HashMap<>();
 		setters.put("documentClass",this::setDocumentClass);
 		setters.put("alinea"       ,this::setAlinea       );
 		setters.put("chapterName"  ,this::setChapterName  );
@@ -157,7 +156,7 @@ public class DocumentParameters {
 		
 		while (m.find()) 
 			if (setters.containsKey(m.group(1))) 
-				setters.get(m.group(1)).set(m.group(2));
+				setters.get(m.group(1)).accept(m.group(2));
 	}
 
 	/**
