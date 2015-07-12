@@ -42,7 +42,7 @@ public class ActionManagerImpl implements StateObserver, ActionManager {
 	}
 
 	@Override
-	public void handleStateSaved() { isSaved.set(true); System.out.println("handleSt"); }
+	public void handleStateSaved() { isSaved.set(true); }
 	
 	@Override
 	public void handleReversibleStateChange(CancelableAction action) { 

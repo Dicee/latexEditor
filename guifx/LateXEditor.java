@@ -536,6 +536,7 @@ public class LateXEditor extends Application {
 
 				outputTextArea.clear();
 				outputTextArea.setText(sb.toString());
+				outputTextArea.positionCaret(outputTextArea.getLength());
 			} catch (IOException | InterruptedException ex) {
 				ex.printStackTrace();
 			}
