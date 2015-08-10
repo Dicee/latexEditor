@@ -7,27 +7,69 @@
 \pagestyle{fancy}
 \renewcommand{\headrulewidth}{1pt}
 \fancyhead[L]{${date}}
-\fancyhead[R]{\textbf{\thesection}}
+\fancyhead[R]{\rightmark}
 \renewcommand{\footrulewidth}{1pt}
 \fancyfoot[C]{\thepage}
 \fancyfoot[L]{\includegraphics[scale=${footer_logo_scale}]{${footer_logo}}}
-\fancyfoot[R]{\includegraphics[scale=0.25]{data/amazon-footer.png}}
+\fancyfoot[R]{\includegraphics[scale=0.18]{data/amazon-footer.png}}
 
 % Redefine the plain page style
-\fancypagestyle{plain}{%
-  \fancyhf{}%
+\fancypagestyle{plain}{
   \renewcommand{\headrulewidth}{1pt}
   \fancyhead[L]{${date}}
-  \fancyhead[R]{\textbf{\thesection}}
+  \fancyhead[R]{\leftmark}
    \renewcommand{\footrulewidth}{1pt}
   \fancyfoot[C]{\thepage}
   \fancyfoot[L]{\includegraphics[scale=${footer_logo_scale}]{${footer_logo}}}
-  \fancyfoot[R]{\includegraphics[scale=0.25]{data/amazon-footer.png}}
+  \fancyfoot[R]{\includegraphics[scale=0.18]{data/amazon-footer.png}}
 }
 
 % title page
-\definecolor{sup_strip_color}{rgb}{${sup_strip_color}}
-\definecolor{inf_strip_color}{rgb}{${inf_strip_color}}
+\definecolor{orange_amazon}{rgb}{1.00,0.60,0.00}
+\definecolor{titlepagecolor}{cmyk}{1,.60,0,.40}
+
+\newcommand\titlepagedecoration{%
+\begin{tikzpicture}[remember picture,overlay,shorten >= -10pt]
+
+\coordinate (aux1) at ([yshift=-15pt]current page.north east);
+\coordinate (aux2) at ([yshift=-410pt]current page.north east);
+\coordinate (aux3) at ([xshift=-4.5cm]current page.north east);
+\coordinate (aux4) at ([yshift=-150pt]current page.north east);
+
+\begin{scope}[orange_amazon!60,line width=12pt,rounded corners=12pt]
+\draw
+  (aux1) -- coordinate (a)
+  ++(225:5) --
+  ++(-45:5.1) coordinate (b);
+\draw[shorten <= -10pt]
+  (aux3) --
+  (a) --
+  (aux1);
+\draw[opacity=0.6,orange_amazon,shorten <= -10pt]
+  (b) --
+  ++(225:2.2) --
+  ++(-45:2.2);
+\end{scope}
+\draw[orange_amazon,line width=8pt,rounded corners=8pt,shorten <= -10pt]
+  (aux4) --
+  ++(225:0.8) --
+  ++(-45:0.8);
+\begin{scope}[orange_amazon!80,line width=6pt,rounded corners=8pt]
+\draw[shorten <= -10pt]
+  (aux2) --
+  ++(225:3) coordinate[pos=0.45] (c) --
+  ++(-45:3.1);
+\draw
+  (aux2) --
+  (c) --
+  ++(135:2.5) --
+  ++(45:2.5) --
+  ++(-45:2.5) coordinate[pos=0.3] (d);   
+\draw 
+  (d) -- +(45:1);
+\end{scope}
+\end{tikzpicture}%
+}
 
 \DeclareFixedFont{\bigsf}{T1}{phv}{b}{n}{${title_size}cm}
 
@@ -48,18 +90,18 @@
 \begin{tikzpicture}[overlay,remember picture]
 % the black stripe with the title
 \node[
-  fill=inf_strip_color,
+  fill=black,
   anchor=north west,
   text width=\paperwidth,
   text height=2cm,
   text depth=2cm,
-  inner xsep=1cm,
-  font=\color{black}\bigsf 
+  inner xsep=1.3cm,
+  font=\color{orange_amazon}\bigsf 
   ] 
- at ([yshift=-2.5cm]current page.north west) (blackrect) {${title}};
+ at ([yshift=-3.4cm]current page.north west) (blackrect) {${title}};
 % the khaki stripe
-\path[fill=sup_strip_color] 
-  (blackrect.north west) rectangle ++(\paperwidth,2.5cm);
+\path[fill=black] 
+  (blackrect.north west) rectangle ++(\paperwidth,6.5cm);
 \end{tikzpicture}
 
 \vspace*{4.5cm}
@@ -88,12 +130,11 @@
 \begin{minipage}{0.20\linewidth}
     \begin{flushright}
 		\includegraphics[scale=0.4]{data/amazon.png}
-%        \begin{tabular}{ll}
-%	 \textit{Signatures} & \\
-%			& \textbf{Project manager - Zohour \textsc{Abouakil} :} \\
-%            & \textbf{Quality responsible - David \textsc{Courtinot} :} \\
-%            & \textbf{Customers - David \textsc{Doose} - Julien \textsc{Brunel} :} \\
-%        \end{tabular}
+    \end{flushright}
+\end{minipage}
+\begin{minipage}{0.9\linewidth}
+    \begin{flushright}
+		\includegraphics[scale=0.7]{data/da-logo.png}
     \end{flushright}
 \end{minipage}
 
