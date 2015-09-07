@@ -1,5 +1,6 @@
 ### Important
 
+- short way to refresh document 
 - enable copy-paste of raw content or Javatex content
 - debug resize of main text area
 - make the code view optional
