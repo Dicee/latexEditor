@@ -1,5 +1,9 @@
-\newcommand\JSONnumbervaluestyle{\color{blue}}
-\newcommand\JSONstringvaluestyle{\color{red}}
+\definecolor{JSONstringvalue}{rgb}{1.0,0.6,0.0}
+\definecolor{JSONnumbervalue}{rgb}{0.8,0.6,1.0}
+\definecolor{JSONkeys}{rgb}{0.85,0.2,0.0}
+\definecolor{JSONbackground}{rgb}{0.1,0.15,0.08}
+\definecolor{delim}{RGB}{170,80,170}
+\definecolor{punct}{RGB}{200,200,110}
 
 % switch used as state variable
 \newif\ifcolonfoundonthisline
@@ -12,11 +16,22 @@
   keywords            = {false,true},
   alsoletter          = 0123456789.,
   morestring          = [s]{"}{"},
-  stringstyle         = \ifcolonfoundonthisline\JSONstringvaluestyle\fi,
+  stringstyle         = \ifcolonfoundonthisline\color{JSONstringvalue}\fi,
   MoreSelectCharTable =%
     \lst@DefSaveDef{`:}\colon@json{\processColon@json},
-  basicstyle          = \ttfamily,
+  basicstyle          = \ttfamily\color{JSONkeys},
   keywordstyle        = \ttfamily\bfseries,
+  backgroundcolor=\color{JSONbackground},
+  frame=trbl, 
+  frameround=ffff,
+  numbers=left,
+  literate=
+     *{:}{{{\color{punct}{:}}}}{1}
+      {,}{{{\color{punct}{,}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
 }
 
 % flip the switch if a colon is found in Pmode
@@ -30,7 +45,7 @@
 \lst@AddToHook{Output}{%
   \ifcolonfoundonthisline%
     \ifnum\lst@mode=\lst@Pmode%
-      \def\lst@thestyle{\JSONnumbervaluestyle}%
+      \def\lst@thestyle{\color{JSONnumbervalue}}%
     \fi
   \fi
   %override by keyword style if a keyword is detected!
