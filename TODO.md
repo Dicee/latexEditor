@@ -8,5 +8,6 @@
 
 ### Optional
 
-- add shortcuts for italic and bold
+- autocompletion
+- add shortcuts for italic and bold (both buttons and keyboard shortcuts)
 - reload templates dynamically (possibly indexing them to make it faster)
