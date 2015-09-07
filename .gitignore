@@ -2,8 +2,6 @@ latex/.gitignore
 latex/elements/.gitignore
 .metadata
 bin/
-.classpath
-.project
 *.class
 .cache
 update.ini
