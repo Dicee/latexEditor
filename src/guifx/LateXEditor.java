@@ -85,14 +85,14 @@ import latex.elements.Title;
 import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
-import utils.FileUtils;
 import utils.StreamPrinter;
+
+import com.dici.files.FileUtils;
 
 public class LateXEditor extends Application {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 	public static final Map<String, String>			LANGUAGES;
-	public static final String						LATEX_HOME		= System.getenv("LATEX_HOME").replace(
-																			System.getProperty("file.separator"),"/");
+	public static final String						LATEX_HOME		= FileUtils.toCanonicalPath(System.getenv("LATEX_HOME"));
 
 	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
 
