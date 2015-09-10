@@ -31,7 +31,7 @@ public class Templates {
 					TEMPLATES.put(d.getName(),list);
 				}));
 		} else
-			System.out.println("Warning : LATEX_INCLUDE is not set in your environment, cannot load the templates and includes");
+			System.out.println("Warning : LATEX_INCLUDES is not set in your environment, cannot load the templates and includes");
 		return LATEX_INCLUDES != null;
 	}
 	
@@ -44,7 +44,7 @@ public class Templates {
 			List<Template> list = TEMPLATES.getOrDefault(m.group(1),new LinkedList<>(Arrays.asList(res = new Template(f))));
 			TEMPLATES.put(m.group(1),list);
 		} else 
-			System.out.println(String.format("Warning : template %s was not found in LATEX_INCLUDE/includes/templates",templateName));
+			System.out.println(String.format("Warning : template %s was not found in %s/includes/templates", templateName, LATEX_INCLUDES));
 		return res;
 	}
 }
