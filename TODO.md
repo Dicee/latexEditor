@@ -8,6 +8,7 @@
 
 ### Optional
 
+- better CX on error handling
 - visual hint for the selected template
 - autocompletion
 - add shortcuts for italic and bold (both buttons and keyboard shortcuts)
