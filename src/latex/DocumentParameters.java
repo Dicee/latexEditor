@@ -106,7 +106,7 @@ public class DocumentParameters {
 	public StringBuilder latexify(StringBuilder sb, LateXMaker lm) {
 		return mkString("","","",
 			p -> p.latexify(lm),
-			name -> Source.fromFile(Templates.LATEX_INCLUDES + name,Codec.UTF8()).addString(sb),
+			name -> Source.fromFile(Templates.LATEX_INCLUDES + "/" + name,Codec.UTF8()).addString(sb),
 			sb);
 	}
 	
