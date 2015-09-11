@@ -16,7 +16,7 @@ import com.dici.files.FileUtils;
 
 public class Templates {
 	public static final Map<String, List<Template>>	TEMPLATES  = new HashMap<>();
-	private static final String LATEX_INCLUDES = FileUtils.toCanonicalPath(System.getenv("LATEX_INCLUDES"));
+	public static final String LATEX_INCLUDES = FileUtils.toCanonicalPath(System.getenv("LATEX_INCLUDES"));
 	
 	public static boolean init() {
 		if (LATEX_INCLUDES != null) {

@@ -1,7 +1,6 @@
 package latex;
 
 import static java.lang.String.format;
-import guifx.LateXEditor;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +13,7 @@ import java.util.regex.Pattern;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import latex.elements.Templates;
 import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
@@ -106,7 +106,7 @@ public class DocumentParameters {
 	public StringBuilder latexify(StringBuilder sb, LateXMaker lm) {
 		return mkString("","","",
 			p -> p.latexify(lm),
-			name -> Source.fromFile(LateXEditor.LATEX_HOME + "/includes/" + name,Codec.UTF8()).addString(sb),
+			name -> Source.fromFile(Templates.LATEX_INCLUDES + name,Codec.UTF8()).addString(sb),
 			sb);
 	}
 	
