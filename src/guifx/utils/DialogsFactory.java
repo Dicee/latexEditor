@@ -7,7 +7,7 @@ import org.controlsfx.control.action.Action;
 import org.controlsfx.dialog.Dialogs;
 
 public class DialogsFactory {
-	public static final Action showPreFormattedError(Stage owner, String titlePropertyName, String mastheadPropertyName, String msgPropertyName) {
+	public static Action showPreFormattedError(Stage owner, String titlePropertyName, String mastheadPropertyName, String msgPropertyName) {
 		return Dialogs.create().owner(owner)
 				.title(strings.getProperty(titlePropertyName))
 				.masthead(strings.getProperty(mastheadPropertyName))
@@ -15,7 +15,7 @@ public class DialogsFactory {
 				.showError();
 	}
 	
-	public static final Action showError(Stage owner, String title, String masthead, String msg) {
+	public static Action showError(Stage owner, String title, String masthead, String msg) {
 		return Dialogs.create().owner(owner)
 				.title(title)
 				.masthead(masthead)
