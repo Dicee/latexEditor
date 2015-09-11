@@ -313,12 +313,13 @@ public class LateXEditor extends Application {
 
 		// set submenu File
 		MenuItem newDoc   = new MenuItem();
+		MenuItem load     = new MenuItem();
+		MenuItem refresh  = new MenuItem();
 		MenuItem save     = new MenuItem();
 		MenuItem saveAs   = new MenuItem();
-		MenuItem load     = new MenuItem();
-		MenuItem quit     = new MenuItem();
 		MenuItem generate = new MenuItem();
-		menuFile.getItems().addAll(newDoc,load,save,saveAs,generate,quit);
+		MenuItem quit     = new MenuItem();
+		menuFile.getItems().addAll(newDoc,load,refresh,save,saveAs,generate,quit);
 		
 		// set submenu Edit
 		MenuItem undo = new MenuItem();
@@ -337,19 +338,20 @@ public class LateXEditor extends Application {
 		MenuItem doc = new MenuItem();
 		menuHelp.getItems().add(doc);
 
-		setMenusAccelerator(newDoc,save,saveAs,load,quit,generate,undo,redo,settings,doc);
-		setMenusAction     (newDoc,save,saveAs,load,quit,generate,undo,redo,settings,doc);
-		setMenusText       (menuFile,menuEdit,menuOptions,menuHelp,newDoc,save,saveAs,load,quit,generate,undo,redo,settings,doc);
+		setMenusAccelerator(newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
+		setMenusAction     (newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
+		setMenusText       (menuFile,menuEdit,menuOptions,menuHelp,newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
 		
 		menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions,menuHelp);
 	}
 
-	private void setMenusAccelerator(MenuItem newDoc, MenuItem save, MenuItem saveAs, MenuItem load, MenuItem quit, MenuItem generate,
+	private void setMenusAccelerator(MenuItem newDoc, MenuItem load, MenuItem refresh, MenuItem save, MenuItem saveAs, MenuItem generate, MenuItem quit,
 			MenuItem undo, MenuItem redo, MenuItem settings, MenuItem doc) {
 		newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
 		save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
 		saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
 		load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
+		refresh .setAccelerator(new KeyCharacterCombination("R",CONTROL_DOWN         ));
 		generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
 		quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
 		undo    .setAccelerator(new KeyCharacterCombination("Z",CONTROL_DOWN         ));
@@ -358,13 +360,14 @@ public class LateXEditor extends Application {
 		doc     .setAccelerator(new KeyCharacterCombination("H",CONTROL_DOWN         ));
 	}
 
-	private void setMenusAction(MenuItem newDoc, MenuItem save, MenuItem saveAs, MenuItem load, MenuItem quit, MenuItem generate,
+	private void setMenusAction(MenuItem newDoc, MenuItem load, MenuItem refresh, MenuItem save, MenuItem saveAs, MenuItem generate, MenuItem quit,
 			MenuItem undo, MenuItem redo, MenuItem settings, MenuItem doc) {
 		doc     .setOnAction(ev -> { if (!encyclopedia.isShowing()) encyclopedia.show(); });
 		newDoc  .setOnAction(ev -> newDocument()); 
 		save    .setOnAction(ev -> save());
 		saveAs  .setOnAction(ev -> { createDocument(); save(); });
 		load    .setOnAction(ev -> load());
+		refresh .setOnAction(ev -> loadFile(currentFile));
 		generate.setOnAction(ev -> generate());
 		quit    .setOnAction(ev -> System.exit(0));
 		undo    .setOnAction(ev -> actionManager.undo());
@@ -372,11 +375,11 @@ public class LateXEditor extends Application {
 		settings.setOnAction(ev -> new PreferencesPane(lm.getParameters()));
 	}
 
-	private void setMenusText(Menu menuFile, Menu menuEdit, Menu menuOptions, Menu menuHelp, MenuItem newDoc, MenuItem save,
-			MenuItem saveAs, MenuItem load, MenuItem quit, MenuItem generate, MenuItem undo, MenuItem redo, MenuItem settings, MenuItem doc) {
-		List<String> properties = Arrays.asList("file","edit","options","help","documentation","newDocument","save","saveAs","load",
-				"generate","quit","undo","redo","settings");
-		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,doc,newDoc,save,saveAs,load,generate,quit,undo,redo,settings);
+	private void setMenusText(Menu menuFile, Menu menuEdit, Menu menuOptions, Menu menuHelp, MenuItem newDoc, MenuItem load, MenuItem refresh, MenuItem save,
+			MenuItem saveAs, MenuItem generate, MenuItem quit, MenuItem undo, MenuItem redo, MenuItem settings, MenuItem doc) {
+		List<String> properties = Arrays.asList("file","edit","options","help","newDocument","load","refresh","save","saveAs",
+				"generate","quit","undo","redo","settings","documentation");
+		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
 		IntStream.range(0,menus.size()).forEach(i -> bindProperty(menus.get(i).textProperty(),properties.get(i)));
 	}
 
@@ -446,25 +449,29 @@ public class LateXEditor extends Application {
 			@Override
 			protected void doAction() {
 				File file = chooseFile(primaryStage,false,"javatex",strings.getProperty("javatexFiles"),"*.javatex");
-				try {
-					loadElements(file);
-				} catch (FileNotFoundException e) {
-					showError(
-						primaryStage,
-						strings.getProperty("error"),
-						strings.getProperty("anErrorOccurredMessage"),
-						String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
-				} catch (IOException e) {
-					showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
-				} catch (WrongFormatException e) {
-					showError(
-						primaryStage,
-						strings.getProperty("error"),
-						strings.getProperty("anErrorOccurredMessage"),
-						String.format(strings.getProperty("malformedJavatexError"),e.getMessage()));
-				}
+				loadFile(file);
 			}
 		});
+	}
+
+	private void loadFile(File file) {
+		try {
+			loadElements(file);
+		} catch (FileNotFoundException e) {
+			showError(
+					primaryStage,
+					strings.getProperty("error"),
+					strings.getProperty("anErrorOccurredMessage"),
+					String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
+		} catch (IOException e) {
+			showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
+		} catch (WrongFormatException e) {
+			showError(
+					primaryStage,
+					strings.getProperty("error"),
+					strings.getProperty("anErrorOccurredMessage"),
+					String.format(strings.getProperty("malformedJavatexError"),e.getMessage()));
+		}
 	}
 	
 	private void loadElements(File file) throws IOException, FileNotFoundException, WrongFormatException {
