@@ -26,6 +26,7 @@ import static properties.LanguageProperties.HELP;
 import static properties.LanguageProperties.IO_LOAD_ERROR;
 import static properties.LanguageProperties.IO_SAVE_ERROR;
 import static properties.LanguageProperties.JAVATEX_FILES;
+import static properties.LanguageProperties.LATEX_VIEW;
 import static properties.LanguageProperties.LOAD;
 import static properties.LanguageProperties.MALFORMED_JAVATEX_ERROR;
 import static properties.LanguageProperties.NEW_DOCUMENT;
@@ -39,6 +40,7 @@ import static properties.LanguageProperties.SAVE;
 import static properties.LanguageProperties.SAVE_AS;
 import static properties.LanguageProperties.SELECT_LANGUAGE;
 import static properties.LanguageProperties.SETTINGS;
+import static properties.LanguageProperties.TEXT_EDITOR;
 import static properties.LanguageProperties.TREE_TITLE;
 import static properties.LanguageProperties.UNDEFINED_HOME;
 import static properties.LanguageProperties.UNDO;
@@ -249,9 +251,17 @@ public class LateXEditor extends Application {
 		outputTextArea.setEditable(false);
 		outputTextArea.setPrefHeight(screenBounds.getHeight()/2);
 
+		TitledPane textEditorPane = new TitledPane("",textEditor);
+		TitledPane outputCodePane = new TitledPane("",setOutputCode());
+		bindProperty(textEditorPane.textProperty(),TEXT_EDITOR);
+		bindProperty(outputCodePane.textProperty(),LATEX_VIEW);
+		
+		Accordion accordion = new Accordion(textEditorPane,outputCodePane);
+		accordion.setExpandedPane(textEditorPane);
+
 		splitPane = new SplitPane();
 		splitPane.setOrientation(Orientation.VERTICAL);
-		splitPane.getItems().addAll(textMode = new HBox(textEditor,setOutputCode()),outputTextArea);
+		splitPane.getItems().addAll(textMode = accordion,outputTextArea);
 		splitPane.setDividerPositions(0.40);
 		splitPane.autosize();
 
@@ -293,7 +303,7 @@ public class LateXEditor extends Application {
 		info.setFont(subtitlesFont);
 		
 		userTextArea = new TextArea();
-		userTextArea.setPrefSize(screenBounds.getWidth()/6,screenBounds.getHeight()/3);
+		userTextArea.setPrefSize(screenBounds.getWidth()/6,screenBounds.getHeight()/2);
 		userTextArea.textProperty().addListener((ov,oldValue,newValue) -> { 
 			if (newValue != null) 
 				treeView.getCurrentNode().getValue().bean.setText(newValue);

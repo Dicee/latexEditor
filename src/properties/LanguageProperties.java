@@ -62,6 +62,8 @@ public class LanguageProperties {
 	public static final String	CLEAR						= "clear";
 	public static final String	SELECT_LANGUAGE				= "selectLanguage";
 	public static final String	SHOW_AVAILABLE_TEMPLATES	= "showAvailableTemplates";
+	public static final String	TEXT_EDITOR 				= "textEditor";
+	public static final String	LATEX_VIEW					= "latexView";
 	
 	// Options
 	public static final String	DELETE						= "delete";
