@@ -1,9 +1,16 @@
 package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.bindProperty;
-import static properties.LanguageProperties.*;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
+import static properties.LanguageProperties.ADD_CHILD_HEAD;
+import static properties.LanguageProperties.ADD_CHILD_TAIL;
+import static properties.LanguageProperties.ADD_SIBLING;
+import static properties.LanguageProperties.COPY;
+import static properties.LanguageProperties.CUT;
+import static properties.LanguageProperties.DELETE;
+import static properties.LanguageProperties.PASTE;
+import static properties.LanguageProperties.TITLE;
 import guifx.actions.ActionManager;
 import guifx.actions.CancelableAction;
 import guifx.components.generics.ControlledTreeView;
@@ -22,17 +29,20 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TreeItem;
+import javafx.util.Pair;
 import latex.elements.LateXElement;
 import latex.elements.Title;
+
+import com.dici.check.Check;
 
 public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXElement>> {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 	
 	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
-		return factory.apply(new NamedObject<>(strings.getObservableProperty(elt.getType()),elt));
+		return factory.apply(newNamedObject(elt));
 	}
 	
-	public static final NamedObject<LateXElement> newNamedObject(LateXElement elt) {
+	public static NamedObject<LateXElement> newNamedObject(LateXElement elt) {
 		return new NamedObject<>(strings.getObservableProperty(elt.getType()),elt);
 	}
 	
@@ -143,6 +153,14 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		delete.textProperty().bind(strings.getObservableProperty(DELETE));
 		delete.setOnAction(ev -> cutSelectedNode(false));
 		if (currentNode.getParent() == null) delete.setDisable(true);
+	}
+	
+	public void updateElements(List<Pair<Integer,LateXElement>> elts) {
+		TreeItem<NamedObject<LateXElement>> node = getRoot();
+		Pair<Integer, LateXElement> pair = elts.get(0);
+		Check.isTrue(pair.getKey() == 0 && pair.getValue().getType().equals(TITLE));
+		
+		
 	}
 	
 	@Override

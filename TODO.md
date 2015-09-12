@@ -1,6 +1,6 @@
 ### Important
 
-- enable copy-paste of raw content or Javatex content
+- enable paste of raw content or Javatex content
 - investigate a better way to launch pdflatex externally (not halting on error, or strictly reproducing the command-line interaction in the interface)
 
 ### Optional
