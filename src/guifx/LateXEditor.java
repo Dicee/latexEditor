@@ -1,17 +1,48 @@
 package guifx;
 
 import static guifx.actions.NonCancelableAction.nonCancelableAction;
-import static properties.ConfigProperties.*;
-import static properties.LanguageProperties.*;
 import static guifx.actions.SaveAction.saveAction;
 import static guifx.utils.DialogsFactory.showError;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
-import static java.util.Arrays.asList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
+import static properties.ConfigProperties.CHECKED_ICON;
+import static properties.ConfigProperties.LEAF_ICON;
+import static properties.LanguageProperties.AN_ERROR_OCCURRED_MESSAGE;
+import static properties.LanguageProperties.CLEAR;
+import static properties.LanguageProperties.DOCUMENTATION;
+import static properties.LanguageProperties.EDIT;
+import static properties.LanguageProperties.EDIT_ZONE_TIP;
+import static properties.LanguageProperties.ERROR;
+import static properties.LanguageProperties.FILE;
+import static properties.LanguageProperties.FRAME_TITLE;
+import static properties.LanguageProperties.GENERATE;
+import static properties.LanguageProperties.GENERATE_LATEX;
+import static properties.LanguageProperties.GENERATE_PDF;
+import static properties.LanguageProperties.HELP;
+import static properties.LanguageProperties.IO_LOAD_ERROR;
+import static properties.LanguageProperties.IO_SAVE_ERROR;
+import static properties.LanguageProperties.JAVATEX_FILES;
+import static properties.LanguageProperties.LOAD;
+import static properties.LanguageProperties.MALFORMED_JAVATEX_ERROR;
+import static properties.LanguageProperties.NEW_DOCUMENT;
+import static properties.LanguageProperties.OPTIONS;
+import static properties.LanguageProperties.PASTE_TO_EDITOR;
+import static properties.LanguageProperties.PREVIEW;
+import static properties.LanguageProperties.QUIT;
+import static properties.LanguageProperties.REDO;
+import static properties.LanguageProperties.REFRESH;
+import static properties.LanguageProperties.SAVE;
+import static properties.LanguageProperties.SAVE_AS;
+import static properties.LanguageProperties.SELECT_LANGUAGE;
+import static properties.LanguageProperties.SETTINGS;
+import static properties.LanguageProperties.TREE_TITLE;
+import static properties.LanguageProperties.UNDEFINED_HOME;
+import static properties.LanguageProperties.UNDO;
+import static properties.LanguageProperties.UNFOUND_FILE_ERROR;
 import guifx.actions.ActionManager;
 import guifx.actions.ActionManagerImpl;
 import guifx.actions.NonCancelableAction;
@@ -92,7 +123,6 @@ import utils.StreamPrinter;
 import com.dici.files.FileUtils;
 
 public class LateXEditor extends Application {
-	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 	public static final Map<String, String>			LANGUAGES;
 	public static final String						LATEX_HOME		= FileUtils.toCanonicalPath(System.getenv("LATEX_HOME"));
 
@@ -571,16 +601,6 @@ public class LateXEditor extends Application {
 	 * @param args
 	 */
 	public static void main(String[] args) { launch(args); }
-
-	static {
-		NODES_TYPES_MAP = new HashMap<>();
-		NODES_TYPES_MAP.put(0,asList(TITLE                                   ));
-		NODES_TYPES_MAP.put(1,asList(CHAPTER                                 ));
-		NODES_TYPES_MAP.put(2,asList(SECTION                                 ));
-		NODES_TYPES_MAP.put(3,asList(SUBSECTION                              ));
-		NODES_TYPES_MAP.put(4,asList(SUBSUBSECTION                           ));
-		NODES_TYPES_MAP.put(5,asList(PARAGRAPH,LIST,IMAGE,CODE,LATEX,TEMPLATE));
-	}
 
 	static {
 		LANGUAGES = new HashMap<>();
