@@ -1,6 +1,8 @@
 package guifx;
 
 import static guifx.actions.NonCancelableAction.nonCancelableAction;
+import static properties.ConfigProperties.*;
+import static properties.LanguageProperties.*;
 import static guifx.actions.SaveAction.saveAction;
 import static guifx.utils.DialogsFactory.showError;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
@@ -128,7 +130,7 @@ public class LateXEditor extends Application {
 
 	private static final TreeItem<NamedObject<LateXElement>> newTreeItem(NamedObject<LateXElement> elt) {
 		String url  = properties.getProperty(elt.bean.getType() + "Icon");
-		Node   icon = new ImageView(new Image(LateXEditorTreeView.class.getResourceAsStream(url != null ? url : properties.getProperty("leafIcon"))));
+		Node   icon = new ImageView(new Image(LateXEditorTreeView.class.getResourceAsStream(url != null ? url : properties.getProperty(LEAF_ICON))));
 		return icon == null ? new TreeItem<>(elt) : new TreeItem<>(elt,icon);
 	}
 	
@@ -149,7 +151,7 @@ public class LateXEditor extends Application {
 
 		Scene scene = new Scene(root,0,0);
 		primaryStage.setScene(scene);
-		primaryStage.setTitle(strings.getProperty("frameTitle")); 
+		primaryStage.setTitle(strings.getProperty(FRAME_TITLE)); 
 		actionManager.isSavedProperty().addListener((ov,oldValue,newValue) -> 
 			primaryStage.setTitle(currentFile == null ? 
 				"LateXEditor 4.0" : 
@@ -238,9 +240,9 @@ public class LateXEditor extends Application {
 		languages.getItems().addAll(LANGUAGES.keySet());
 		languages.setOnAction(ev -> outputCode.setLanguage(LANGUAGES.get(languages.getSelectionModel().getSelectedItem())));
 
-		bindProperty(label.textProperty(),"selectLanguage");
-		bindProperty(clear.textProperty(),"clear");
-		bindProperty(paste.textProperty(),"pasteToEditor");
+		bindProperty(label.textProperty(),SELECT_LANGUAGE);
+		bindProperty(clear.textProperty(),CLEAR);
+		bindProperty(paste.textProperty(),PASTE_TO_EDITOR);
 
 		clear.setOnAction(ev -> outputCode.setCode(""));
 		paste.setOnAction(ev -> {
@@ -257,7 +259,7 @@ public class LateXEditor extends Application {
 
 	private VBox setTextEditor() {
 		info = new Label();
-		bindProperty(info.textProperty(),"editZoneTip");
+		bindProperty(info.textProperty(),EDIT_ZONE_TIP);
 		info.setFont(subtitlesFont);
 		
 		userTextArea = new TextArea();
@@ -289,7 +291,7 @@ public class LateXEditor extends Application {
 	
 	private TitledPane setTreePane() {
 		TitledPane treePane = new TitledPane("",treeView);
-		bindProperty(treePane.textProperty(),"treeTitle");
+		bindProperty(treePane.textProperty(),TREE_TITLE);
 		treeView.setPadding(new Insets(50,5,5,5));
 		return treePane;
 	}
@@ -330,7 +332,7 @@ public class LateXEditor extends Application {
 
 		// set submenu Options
 		MenuItem  settings    = new MenuItem();
-		ImageView checkedIcon = new ImageView(getResourceImage(properties.getProperty("checkedIcon")));
+		ImageView checkedIcon = new ImageView(getResourceImage(properties.getProperty(CHECKED_ICON)));
 		menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
 				Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
 
@@ -377,8 +379,7 @@ public class LateXEditor extends Application {
 
 	private void setMenusText(Menu menuFile, Menu menuEdit, Menu menuOptions, Menu menuHelp, MenuItem newDoc, MenuItem load, MenuItem refresh, MenuItem save,
 			MenuItem saveAs, MenuItem generate, MenuItem quit, MenuItem undo, MenuItem redo, MenuItem settings, MenuItem doc) {
-		List<String> properties = Arrays.asList("file","edit","options","help","newDocument","load","refresh","save","saveAs",
-				"generate","quit","undo","redo","settings","documentation");
+		List<String> properties = Arrays.asList(FILE,EDIT,OPTIONS,HELP,NEW_DOCUMENT,LOAD,REFRESH,SAVE,SAVE_AS,GENERATE,QUIT,UNDO,REDO,SETTINGS,DOCUMENTATION);
 		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
 		IntStream.range(0,menus.size()).forEach(i -> bindProperty(menus.get(i).textProperty(),properties.get(i)));
 	}
@@ -392,9 +393,9 @@ public class LateXEditor extends Application {
 		Button tex     = new Button("",texIcon);
 		Button preview = new Button("",previewIcon);
 		Button pdf     = new Button("",pdfIcon);
-		bindProperty(tex    .textProperty(),"generateLatex");
-		bindProperty(pdf    .textProperty(),"generatePdf");
-		bindProperty(preview.textProperty(),"preview");
+		bindProperty(tex    .textProperty(),GENERATE_LATEX);
+		bindProperty(pdf    .textProperty(),GENERATE_PDF);
+		bindProperty(preview.textProperty(),PREVIEW);
 		
 		tex.setOnAction(ev -> generate());
 //		preview.setOnAction(ev -> {
@@ -440,7 +441,7 @@ public class LateXEditor extends Application {
 	}
 	
 	private void createDocument() {
-		File file = chooseFile(primaryStage,true,"javatex",strings.getProperty("javatexFiles"),"*.javatex");
+		File file = chooseFile(primaryStage,true,"javatex",strings.getProperty(JAVATEX_FILES),"*.javatex");
 		if (file != null) primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
 	}
 	
@@ -448,7 +449,7 @@ public class LateXEditor extends Application {
 		actionManager.perform(new NonCancelableAction() {
 			@Override
 			protected void doAction() {
-				File file = chooseFile(primaryStage,false,"javatex",strings.getProperty("javatexFiles"),"*.javatex");
+				File file = chooseFile(primaryStage,false,"javatex",strings.getProperty(JAVATEX_FILES),"*.javatex");
 				loadFile(file);
 			}
 		});
@@ -464,13 +465,13 @@ public class LateXEditor extends Application {
 					strings.getProperty("anErrorOccurredMessage"),
 					String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
 		} catch (IOException e) {
-			showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioLoadError");
+			showPreFormattedError(primaryStage,ERROR,AN_ERROR_OCCURRED_MESSAGE,IO_LOAD_ERROR);
 		} catch (WrongFormatException e) {
 			showError(
 					primaryStage,
-					strings.getProperty("error"),
-					strings.getProperty("anErrorOccurredMessage"),
-					String.format(strings.getProperty("malformedJavatexError"),e.getMessage()));
+					strings.getProperty(ERROR),
+					strings.getProperty(AN_ERROR_OCCURRED_MESSAGE),
+					String.format(strings.getProperty(MALFORMED_JAVATEX_ERROR),e.getMessage()));
 		}
 	}
 	
@@ -501,7 +502,7 @@ public class LateXEditor extends Application {
 					if (currentFile != null) 
 						JavatexIO.saveAsJavatex(currentFile,treeView.getLateXElements(),lm); 
 				} catch (IOException e) {
-					DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","ioSaveError");
+					DialogsFactory.showPreFormattedError(primaryStage,ERROR,AN_ERROR_OCCURRED_MESSAGE,IO_SAVE_ERROR);
 				}
 			}
 		});
@@ -509,7 +510,7 @@ public class LateXEditor extends Application {
 	
 	private File chooseFile(Window window, boolean save, String wantedExtension, String filterName, String... extensions) {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle(strings.getProperty("newDocument"));
+        chooser.setTitle(strings.getProperty(NEW_DOCUMENT));
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(filterName,extensions));
         if (currentDir != null) chooser.setInitialDirectory(currentDir);
 			
@@ -560,7 +561,7 @@ public class LateXEditor extends Application {
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
 			outputCode.setCode(Source.fromFile(FileUtils.toExtension(path,".tex"),Codec.UTF8()).mkString());
 		} catch (Exception e) {
-			DialogsFactory.showPreFormattedError(primaryStage,"error","anErrorOccurredMessage","unfoundFileErrorMessage");
+			DialogsFactory.showPreFormattedError(primaryStage,ERROR,AN_ERROR_OCCURRED_MESSAGE,UNFOUND_FILE_ERROR);
 			e.printStackTrace();
 		}
 	}
@@ -573,12 +574,12 @@ public class LateXEditor extends Application {
 
 	static {
 		NODES_TYPES_MAP = new HashMap<>();
-		NODES_TYPES_MAP.put(0,asList("title"                                             ));
-		NODES_TYPES_MAP.put(1,asList("chapter"                                           ));
-		NODES_TYPES_MAP.put(2,asList("section"                                           ));
-		NODES_TYPES_MAP.put(3,asList("subsection"                                        ));
-		NODES_TYPES_MAP.put(4,asList("subsubsection"                                     ));
-		NODES_TYPES_MAP.put(5,asList("paragraph","list","image","code","latex","template"));
+		NODES_TYPES_MAP.put(0,asList(TITLE                                   ));
+		NODES_TYPES_MAP.put(1,asList(CHAPTER                                 ));
+		NODES_TYPES_MAP.put(2,asList(SECTION                                 ));
+		NODES_TYPES_MAP.put(3,asList(SUBSECTION                              ));
+		NODES_TYPES_MAP.put(4,asList(SUBSUBSECTION                           ));
+		NODES_TYPES_MAP.put(5,asList(PARAGRAPH,LIST,IMAGE,CODE,LATEX,TEMPLATE));
 	}
 
 	static {
@@ -596,6 +597,6 @@ public class LateXEditor extends Application {
 	static {
 		Settings.init();
 		boolean success = Templates.init();
-		if (!success) showError(null,"error","anErrorOccurredMessage","undefinedHome");
+		if (!success) showError(null,ERROR,AN_ERROR_OCCURRED_MESSAGE,UNDEFINED_HOME);
 	}
 }

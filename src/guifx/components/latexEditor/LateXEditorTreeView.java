@@ -1,6 +1,7 @@
 package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.bindProperty;
+import static properties.LanguageProperties.*;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
 import guifx.actions.ActionManager;
@@ -69,8 +70,8 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		if (elt.getDepth() != LateXElement.DEPTH_MAX) {
 			Menu addChildHead = new Menu();
 			Menu addChildTail = new Menu();
-			bindProperty(addChildHead.textProperty(),"addChildHead");
-			bindProperty(addChildTail.textProperty(),"addChildTail");
+			bindProperty(addChildHead.textProperty(),ADD_CHILD_HEAD);
+			bindProperty(addChildTail.textProperty(),ADD_CHILD_TAIL);
 			
 			map.put(addChildHead,INSERT_HEAD);
 			map.put(addChildTail,INSERT_TAIL);
@@ -84,7 +85,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		if (elt.getDepth() != LateXElement.DEPTH_MIN) {
 			Menu addSibling = new Menu();
 			addMenu.getItems().add(addSibling);
-			addSibling.textProperty().bind(strings.getObservableProperty("addSibling"));
+			addSibling.textProperty().bind(strings.getObservableProperty(ADD_SIBLING));
 			return Optional.of(addSibling);
 		}
 		return Optional.empty();
@@ -126,9 +127,9 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		MenuItem cut   = new MenuItem();
 		MenuItem paste = new MenuItem();
 			
-		copy .textProperty().bind(strings.getObservableProperty("copy" ));
-		cut  .textProperty().bind(strings.getObservableProperty("cut"  ));
-		paste.textProperty().bind(strings.getObservableProperty("paste"));
+		copy .textProperty().bind(strings.getObservableProperty(COPY ));
+		cut  .textProperty().bind(strings.getObservableProperty(CUT  ));
+		paste.textProperty().bind(strings.getObservableProperty(PASTE));
 		
 		copy .setOnAction(ev -> copySelectedNode());
 		cut  .setOnAction(ev -> cutSelectedNode(true));
@@ -139,7 +140,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	private void buildDeleteMenu() {
 		MenuItem delete = new MenuItem();
 		addMenu.getItems().add(delete);
-		delete.textProperty().bind(strings.getObservableProperty("delete"));
+		delete.textProperty().bind(strings.getObservableProperty(DELETE));
 		delete.setOnAction(ev -> cutSelectedNode(false));
 		if (currentNode.getParent() == null) delete.setDisable(true);
 	}

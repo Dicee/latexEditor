@@ -1,6 +1,7 @@
 package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.bindProperty;
+import static properties.LanguageProperties.*;
 import static guifx.utils.Settings.strings;
 import guifx.LateXEditor;
 import guifx.utils.NamedObject;
@@ -31,7 +32,7 @@ public class TemplateForm extends BorderPane {
 		HBox                          header      = new HBox(10,pickerLabel,colPicker);
 		
 		BorderPane.setMargin(header,new Insets(0,0,5,0));
-		bindProperty(pickerLabel.textProperty(),"pickColor");
+		bindProperty(pickerLabel.textProperty(),PICK_COLOR);
 		pickerLabel.setFont(LateXEditor.subtitlesFont);
 		
 		colPicker.setOnAction(ev -> {
