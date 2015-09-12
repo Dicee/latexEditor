@@ -1,5 +1,7 @@
 package latex.elements;
 
+import static properties.LanguageProperties.LIST;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,7 +11,7 @@ public class List extends AbstractLateXElement {
 	private static Pattern newlineReg = Pattern.compile("newline=(.+)");
 	
 	public List(String content) {
-		super(content,"list",5);
+		super(content,LIST,5);
 	}
 
 	public String latexify(LateXMaker lm) {

@@ -1,11 +1,12 @@
 package latex.elements;
 
+import static properties.LanguageProperties.SUBSECTION;
 import latex.LateXMaker;
 
 public class Subsection extends AbstractLateXElement {
 
 	public Subsection(String content) {
-		super(content,"subsection",3);
+		super(content,SUBSECTION,3);
 	}
 
 	public String latexify(LateXMaker lm) {

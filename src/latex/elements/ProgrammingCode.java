@@ -1,11 +1,12 @@
 package latex.elements;
 
+import static properties.LanguageProperties.CODE;
 import latex.LateXMaker;
 
 public class ProgrammingCode extends AbstractLateXElement {
 	
 	public ProgrammingCode(String content) {
-		super(content,"code",5);
+		super(content,CODE,5);
 	}
 
 	public String latexify(LateXMaker lm) {

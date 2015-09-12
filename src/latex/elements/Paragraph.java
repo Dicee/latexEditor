@@ -1,5 +1,7 @@
 package latex.elements;
 
+import static properties.LanguageProperties.PARAGRAPH;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,7 +11,7 @@ public class Paragraph extends AbstractLateXElement {
 	private static Pattern titleReg = Pattern.compile("title=(.+)");
 
 	public Paragraph(String content) {
-		super(content,"paragraph",5);
+		super(content,PARAGRAPH,5);
 	}
 
 	public String latexify(LateXMaker lm) {

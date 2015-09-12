@@ -1,8 +1,10 @@
 package latex.elements;
 
+import static properties.LanguageProperties.TITLE;
+
 public class Title extends Template {
 	public Title() {
-		super("title",0);
+		super(TITLE,0);
 	}
 
 	@Override

@@ -1,11 +1,12 @@
 package latex.elements;
 
+import static properties.LanguageProperties.IMAGE;
 import latex.LateXMaker;
 
 public class Inclusion extends AbstractLateXElement {
 
 	public Inclusion(String content) {
-		super(content,"image",5);
+		super(content,IMAGE,5);
 	}
 
 	public String latexify(LateXMaker lm) {

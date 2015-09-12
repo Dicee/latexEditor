@@ -1,5 +1,7 @@
 package latex.elements;
 
+import static properties.LanguageProperties.TEMPLATE;
+
 import java.io.File;
 import java.net.URL;
 import java.util.HashMap;
@@ -19,7 +21,7 @@ public class Template extends AbstractLateXElement {
 	protected final Map<String,String>	cache			= new LinkedHashMap<>();
 	protected String					templateName	= "";
 	
-	public Template() { super("","template",5); }
+	public Template() { super("",TEMPLATE,5); }
 	
 	protected Template(String name, int depth) {
 		super("",name,depth);

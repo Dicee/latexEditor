@@ -1,10 +1,11 @@
 package latex.elements;
 
+import static properties.LanguageProperties.PREPROCESSOR;
 import latex.LateXMaker;
 
 public class PreprocessorCommand extends AbstractLateXElement {
 	public PreprocessorCommand(String content) {
-		super(content,"preprocessor",-1);
+		super(content,PREPROCESSOR,-1);
 	}
 
 	@Override
