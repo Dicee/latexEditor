@@ -14,9 +14,9 @@ import java.util.regex.Pattern;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import latex.elements.Templates;
-import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
+import scala.collection.mutable.StringBuilder;
 
 public class DocumentParameters {
 	private String					documentClass, alinea, chapterName;

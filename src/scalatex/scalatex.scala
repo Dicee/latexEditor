@@ -4,11 +4,12 @@ import java.io.File
 import java.io.FileReader
 import latex.LateXMaker
 import latex.elements.LateXElement
-import utils.TokenReader
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 import scala.collection.JavaConversions._
 import latex.elements.Templates
+import com.dici.collection.richIterator.RichIterators
+import scala.collection.JavaConversions
 
 object scalatex extends App {
     val lm            = new LateXMaker
@@ -49,8 +50,8 @@ object scalatex extends App {
         lm.getParameters.clear
         latexElements   .clear
         
-        val tr      = new TokenReader(new FileReader(in),"##")
-        val buffer  = for (x <- tr) yield x.trim
+        val tokens  = JavaConversions.asScalaIterator(RichIterators.tokens(in, "##"))
+        val buffer  = for (x <- tokens) yield x.trim
         val decl    = buffer.zipWithIndex.filter(_._2 % 2 == 0).map(_._1)
         val content = buffer.zipWithIndex.filter(_._2 % 2 == 1).map(_._1)
         decl.zip(content).foreach { case (a,b) => newLateXElement(a,b) }
@@ -72,16 +73,4 @@ object scalatex extends App {
 	}
 	
 	def printUsage(msg: String="") = println("%s\nUsage : scalatex [-tex|-pdf] input_path output_path".format(msg))
-	
-	implicit class ScalaTokenReader(tr: TokenReader) extends Iterable[String] {
-	    override def iterator = new Iterator[String]() {
-	        var _next = tr.readToNextToken
-	    	override def next = {
-	            val res = _next
-	            _next = tr.readToNextToken
-	            res
-	        }
-	        override def hasNext = _next == null
-	    }
-	}
 }

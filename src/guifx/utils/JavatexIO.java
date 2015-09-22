@@ -5,7 +5,6 @@ import guifx.components.generics.ControlledTreeView.NamedList;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Iterator;
@@ -18,8 +17,10 @@ import javafx.util.Pair;
 import latex.DocumentParameters;
 import latex.LateXMaker;
 import latex.elements.LateXElement;
+
+import com.dici.collection.richIterator.RichIterator;
+import com.dici.collection.richIterator.RichIterators;
 import scala.collection.mutable.StringBuilder;
-import utils.TokenReader;
 
 public class JavatexIO {
 	public static final ProcessBuilder toPdfProcessBuilder(File dir, File file) throws IOException {
@@ -57,30 +58,28 @@ public class JavatexIO {
 	
 	public static final List<Pair<Integer,LateXElement>> readFromJavatex(File f, DocumentParameters params) 
 			throws IOException, FileNotFoundException, WrongFormatException {
-		TokenReader                      tr   = new TokenReader(new FileReader(f),"##");
-		List<Pair<Integer,LateXElement>> res  = new LinkedList<>();  
-		
-		String s;
-		while ((s = tr.readToNextToken()) != null) {
-			String decl    = s.trim();
-			String content = tr.readToNextToken().trim();
-			
-			switch (decl) {
-				case "packages"        : params.addPackages(content.split("[;\\s+]|;\\s+")); break;
-				case "commands"        : params.include(content.split("[;\\s+]|;\\s+"    )); break;
-				case "documentSettings": params.loadSettings(content);                       break;
-				default:
-					Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
-					Matcher m = p.matcher(decl);
-
-					if (m.matches()) {
-						String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
-						res.add(new Pair<>(m.group(1).length(),LateXElement.newLateXElement(m.group(2) + param,content)));
-					} else
-						throw new WrongFormatException(decl);
-			}
+		try (RichIterator<String> tokens = RichIterators.tokens(f, "##")) {
+		    List<Pair<Integer,LateXElement>> res = new LinkedList<>();  
+    		while (tokens.hasNext()) {
+    			String decl    = tokens.next().trim();
+    			String content = tokens.next().trim();
+    			
+    			switch (decl) {
+    				case "packages"        : params.addPackages(content.split("[;\\s+]|;\\s+")); break;
+    				case "commands"        : params.include(content.split("[;\\s+]|;\\s+"    )); break;
+    				case "documentSettings": params.loadSettings(content);                       break;
+    				default:
+    					Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
+    					Matcher m = p.matcher(decl);
+    
+    					if (m.matches()) {
+    						String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
+    						res.add(new Pair<>(m.group(1).length(),LateXElement.newLateXElement(m.group(2) + param,content)));
+    					} else
+    						throw new WrongFormatException(decl);
+    			}
+    		}
+    		return res;
 		}
-		tr.close();
-		return res;
 	}
 }
