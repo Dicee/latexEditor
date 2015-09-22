@@ -1,5 +1,6 @@
 package guifx.components.latexEditor;
 
+import static com.dici.check.Check.notNull;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
@@ -7,9 +8,11 @@ import static properties.LanguageProperties.ADD_CHILD_HEAD;
 import static properties.LanguageProperties.ADD_CHILD_TAIL;
 import static properties.LanguageProperties.ADD_SIBLING;
 import static properties.LanguageProperties.COPY;
+import static properties.LanguageProperties.COPY_RAW;
 import static properties.LanguageProperties.CUT;
 import static properties.LanguageProperties.DELETE;
 import static properties.LanguageProperties.PASTE;
+import static properties.LanguageProperties.PASTE_RAW;
 import static properties.LanguageProperties.TITLE;
 import guifx.actions.ActionManager;
 import guifx.actions.CancelableAction;
@@ -29,7 +32,10 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TreeItem;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.util.Pair;
+import latex.LateXMaker;
 import latex.elements.LateXElement;
 import latex.elements.Title;
 
@@ -37,7 +43,7 @@ import com.dici.check.Check;
 
 public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXElement>> {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
-	
+
 	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
 		return factory.apply(newNamedObject(elt));
 	}
@@ -133,18 +139,25 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 
 	private void buildClipboardMenus(LateXElement elt) {
-		MenuItem copy  = new MenuItem();
-		MenuItem cut   = new MenuItem();
-		MenuItem paste = new MenuItem();
+		MenuItem copy     = new MenuItem();
+		MenuItem cut      = new MenuItem();
+		MenuItem paste    = new MenuItem();
+		MenuItem copyRaw  = new MenuItem();
+		MenuItem pasteRaw = new MenuItem();
 			
-		copy .textProperty().bind(strings.getObservableProperty(COPY ));
-		cut  .textProperty().bind(strings.getObservableProperty(CUT  ));
-		paste.textProperty().bind(strings.getObservableProperty(PASTE));
+		bindProperty(copy    .textProperty(),COPY     );
+		bindProperty(cut     .textProperty(),CUT      );
+		bindProperty(paste   .textProperty(),PASTE    );
+		bindProperty(copyRaw .textProperty(),COPY_RAW );
+		bindProperty(pasteRaw.textProperty(),PASTE_RAW);
 		
-		copy .setOnAction(ev -> copySelectedNode());
-		cut  .setOnAction(ev -> cutSelectedNode(true));
-		paste.setOnAction(ev -> pasteFromClipboardToSelectedNode());
-		addMenu.getItems().addAll(copy,cut,paste);
+		copy    .setOnAction(ev -> copySelectedNode());
+		cut     .setOnAction(ev -> cutSelectedNode(true));
+		paste   .setOnAction(ev -> pasteFromClipboardToSelectedNode());
+		copyRaw .setOnAction(ev -> copySelectedNodeRawContent());
+		pasteRaw.setOnAction(ev -> pasteRawContentToSelectedNode());
+		
+		addMenu.getItems().addAll(copy,cut,paste,copyRaw,pasteRaw);
 	}
 	
 	private void buildDeleteMenu() {
@@ -184,6 +197,16 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	private void addChildToSelectedNode(String command, int option) {
 		LateXElement elt = LateXElement.newLateXElement(command,"");
 		addChildToSelectedNode(new NamedObject<>(strings.getObservableProperty(command),elt),option);
+	}
+	
+	public void pasteRawContentToSelectedNode() {
+		
+	}
+		
+	public void copySelectedNodeRawContent() {
+		ClipboardContent clipboardContent = new ClipboardContent();
+		clipboardContent.putString(currentNode.getValue().bean.textify());
+		Clipboard.getSystemClipboard().setContent(clipboardContent);
 	}
 	
 	@Override
