@@ -2,7 +2,6 @@ package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
-import guifx.components.generics.ContextToolBar;
 
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -18,6 +17,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import utils.Encyclopedia;
+
+import com.dici.javafx.components.ContextToolBar;
 
 public class LateXPidia extends Stage {
 	@SuppressWarnings("unused")

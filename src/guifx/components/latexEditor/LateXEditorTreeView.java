@@ -13,9 +13,6 @@ import static properties.LanguageProperties.DELETE;
 import static properties.LanguageProperties.PASTE;
 import static properties.LanguageProperties.PASTE_RAW;
 import static properties.LanguageProperties.TITLE;
-import guifx.actions.ActionManager;
-import guifx.actions.CancelableAction;
-import guifx.components.generics.ControlledTreeView;
 import guifx.utils.NamedObject;
 
 import java.util.HashMap;
@@ -35,9 +32,11 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.util.Pair;
 import latex.elements.LateXElement;
-import latex.elements.Title;
 
 import com.dici.check.Check;
+import com.dici.javafx.actions.ActionManager;
+import com.dici.javafx.actions.CancelableAction;
+import com.dici.javafx.components.ControlledTreeView;
 
 public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXElement>> {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;

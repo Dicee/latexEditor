@@ -1,7 +1,5 @@
 package guifx.utils;
 
-import guifx.components.generics.ControlledTreeView.NamedList;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,7 +18,7 @@ import latex.elements.LateXElement;
 
 import com.dici.collection.richIterator.RichIterator;
 import com.dici.collection.richIterator.RichIterators;
-import scala.collection.mutable.StringBuilder;
+import com.dici.javafx.components.ControlledTreeView.NamedList;
 
 public class JavatexIO {
 	public static final ProcessBuilder toPdfProcessBuilder(File dir, File file) throws IOException {

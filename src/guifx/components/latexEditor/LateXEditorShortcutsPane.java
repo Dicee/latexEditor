@@ -3,8 +3,6 @@ package guifx.components.latexEditor;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
 import guifx.LateXEditor;
-import guifx.components.generics.IconSelectionBox;
-import guifx.components.generics.IconSelectionView;
 import guifx.utils.Settings;
 
 import java.awt.event.ActionEvent;
@@ -13,6 +11,9 @@ import java.awt.event.ActionListener;
 import javafx.geometry.Insets;
 import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
+
+import com.dici.javafx.components.IconSelectionBox;
+import com.dici.javafx.components.IconSelectionView;
 
 public class LateXEditorShortcutsPane extends TitledPane {
 	private static final ActionListener NO_OP = new ActionListener() { @Override public void actionPerformed(ActionEvent e) { } };

@@ -1,7 +1,7 @@
 package guifx;
 
-import static guifx.actions.NonCancelableAction.nonCancelableAction;
-import static guifx.actions.SaveAction.saveAction;
+import static com.dici.javafx.actions.NonCancelableAction.nonCancelableAction;
+import static com.dici.javafx.actions.SaveAction.saveAction;
 import static guifx.utils.DialogsFactory.showError;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.Settings.bindProperty;
@@ -45,10 +45,6 @@ import static properties.LanguageProperties.TREE_TITLE;
 import static properties.LanguageProperties.UNDEFINED_HOME;
 import static properties.LanguageProperties.UNDO;
 import static properties.LanguageProperties.UNFOUND_FILE_ERROR;
-import guifx.actions.ActionManager;
-import guifx.actions.ActionManagerImpl;
-import guifx.actions.NonCancelableAction;
-import guifx.actions.SaveAction;
 import guifx.components.generics.CodeEditor;
 import guifx.components.latexEditor.LateXEditorShortcutsPane;
 import guifx.components.latexEditor.LateXEditorTemplateChooser;
@@ -116,12 +112,15 @@ import latex.elements.PreprocessorCommand;
 import latex.elements.Template;
 import latex.elements.Templates;
 import latex.elements.Title;
-import scala.collection.mutable.StringBuilder;
 import scala.io.Codec;
 import scala.io.Source;
 import utils.StreamPrinter;
 
 import com.dici.files.FileUtils;
+import com.dici.javafx.actions.ActionManager;
+import com.dici.javafx.actions.ActionManagerImpl;
+import com.dici.javafx.actions.NonCancelableAction;
+import com.dici.javafx.actions.SaveAction;
 
 public class LateXEditor extends Application {
 	public static final Map<String, String>			LANGUAGES;
