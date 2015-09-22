@@ -453,17 +453,17 @@ public class LateXEditor extends Application {
 	}
 	
 	private void setGlobalEventHandler(Node root) {
-		root.addEventHandler(KeyEvent.KEY_PRESSED,new EventHandler<KeyEvent>() {
-			@Override
-			public void handle(KeyEvent ev) {
-				if      (ev.getCode() == KeyCode.DELETE && treeView.getCurrentNode() != null) { treeView.cutSelectedNode                 (false); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("X") && ev.isControlDown())            { treeView.cutSelectedNode                 (true ); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("C") && ev.isControlDown())            { treeView.copySelectedNode                (     ); ev.consume(); }
-				else if (ev.getText().equalsIgnoreCase("V") && ev.isControlDown())            { treeView.pasteFromClipboardToSelectedNode(     ); ev.consume(); }
-			}
+		root.addEventHandler(KeyEvent.KEY_PRESSED, ev -> {
+			if      (ev.getCode() == KeyCode.DELETE && treeView.getCurrentNode() != null) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode(false)); }
+			else if (isControlShortcut(ev, "X")) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode                 (true)); }
+			else if (isControlShortcut(ev, "C")) { consumeEventAfterAction(ev, () -> treeView.copySelectedNode                (    )); }
+			else if (isControlShortcut(ev, "V")) { consumeEventAfterAction(ev, () -> treeView.pasteFromClipboardToSelectedNode(    )); }
 		});
 	}
 
+	private boolean isControlShortcut   (KeyEvent ev, String   symbol) { return ev.getText().equalsIgnoreCase(symbol) && ev.isControlDown(); }
+	private void consumeEventAfterAction(KeyEvent ev, Runnable action) { action.run(); ev.consume(); }
+	
 	private void setElements(List<Pair<Integer,LateXElement>> elts) {
 		treeView.setElements(
 			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
