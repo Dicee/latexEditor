@@ -1,17 +1,25 @@
 package guifx.components.latexEditor;
 
+import static com.dici.collection.CollectionUtils.setOf;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
 import static properties.LanguageProperties.ADD_CHILD_HEAD;
 import static properties.LanguageProperties.ADD_CHILD_TAIL;
 import static properties.LanguageProperties.ADD_SIBLING;
+import static properties.LanguageProperties.CHAPTER;
+import static properties.LanguageProperties.CODE;
 import static properties.LanguageProperties.COPY;
 import static properties.LanguageProperties.COPY_RAW;
 import static properties.LanguageProperties.CUT;
 import static properties.LanguageProperties.DELETE;
+import static properties.LanguageProperties.IMAGE;
+import static properties.LanguageProperties.PARAGRAPH;
 import static properties.LanguageProperties.PASTE;
 import static properties.LanguageProperties.PASTE_RAW;
+import static properties.LanguageProperties.SECTION;
+import static properties.LanguageProperties.SUBSECTION;
+import static properties.LanguageProperties.SUBSUBSECTION;
 import static properties.LanguageProperties.TITLE;
 import guifx.utils.NamedObject;
 
@@ -19,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -41,6 +50,9 @@ import com.dici.javafx.components.ControlledTreeView;
 public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXElement>> {
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 
+	private static final Set<String> RAW_CONTENT_COPY_ELIGIBLES = setOf(CHAPTER, SECTION, SUBSECTION, SUBSUBSECTION, 
+	        PARAGRAPH, IMAGE, CODE);
+	
 	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
 		return factory.apply(newNamedObject(elt));
 	}
@@ -136,25 +148,34 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 
 	private void buildClipboardMenus(LateXElement elt) {
-		MenuItem copy     = new MenuItem();
-		MenuItem cut      = new MenuItem();
-		MenuItem paste    = new MenuItem();
-		MenuItem copyRaw  = new MenuItem();
-		MenuItem pasteRaw = new MenuItem();
+		MenuItem copy  = new MenuItem();
+		MenuItem cut   = new MenuItem();
+		MenuItem paste = new MenuItem();
 			
-		bindProperty(copy    .textProperty(),COPY     );
-		bindProperty(cut     .textProperty(),CUT      );
-		bindProperty(paste   .textProperty(),PASTE    );
-		bindProperty(copyRaw .textProperty(),COPY_RAW );
-		bindProperty(pasteRaw.textProperty(),PASTE_RAW);
+		bindProperty(copy .textProperty(),COPY );
+		bindProperty(cut  .textProperty(),CUT  );
+		bindProperty(paste.textProperty(),PASTE);
 		
-		copy    .setOnAction(ev -> copySelectedNode());
-		cut     .setOnAction(ev -> cutSelectedNode(true));
-		paste   .setOnAction(ev -> pasteFromClipboardToSelectedNode());
-		copyRaw .setOnAction(ev -> copySelectedNodeRawContent());
-		pasteRaw.setOnAction(ev -> pasteRawContentToSelectedNode());
+		copy .setOnAction(ev -> copySelectedNode());
+		cut  .setOnAction(ev -> cutSelectedNode(true));
+		paste.setOnAction(ev -> pasteFromClipboardToSelectedNode());
 		
-		addMenu.getItems().addAll(copy,cut,paste,copyRaw,pasteRaw);
+		addMenu.getItems().addAll(copy, cut, paste);
+		
+		if (RAW_CONTENT_COPY_ELIGIBLES.contains(elt.getType())) buildRawContentClipboardMenus();
+	}
+	
+	private void buildRawContentClipboardMenus() {
+	    MenuItem copyRaw  = new MenuItem();
+	    MenuItem pasteRaw = new MenuItem();
+	    
+	    bindProperty(copyRaw .textProperty(),COPY_RAW );
+	    bindProperty(pasteRaw.textProperty(),PASTE_RAW);
+
+	    copyRaw .setOnAction(ev -> copySelectedNodeRawContent());
+	    pasteRaw.setOnAction(ev -> pasteRawContentToSelectedNode());
+	    
+	    addMenu.getItems().addAll(copyRaw, pasteRaw);
 	}
 	
 	private void buildDeleteMenu() {
@@ -296,6 +317,9 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 				}
 			});
 	}
+	
+	public boolean      isSelectedItemRawContentCopiable() { return RAW_CONTENT_COPY_ELIGIBLES.contains(getSelectedItem().getType()); }
+	public LateXElement getSelectedItem                 () { return getSelectionModel().getSelectedItem().getValue().bean           ; }
 	
 	public NamedList<LateXElement> getLateXElements() {
 		NamedList<NamedObject<LateXElement>> elts = super.getElements();

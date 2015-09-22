@@ -110,6 +110,7 @@ public class LanguageProperties {
 	
 	// Dialogs
 	public static final String	AN_ERROR_OCCURRED_MESSAGE	= "anErrorOccurredMessage";
+	public static final String  READ_THIS_MESSAGE           = "readThisMessage";
 	public static final String	ERROR						= "error";
 	public static final String	WARNING						= "warning";
 	public static final String	NUMBER_FORMAT_EXCEPTION		= "numberFormatException";
@@ -123,4 +124,8 @@ public class LanguageProperties {
 	public static final String	UNFOUND_FILE_ERROR			= "unfoundFileError";
 	public static final String	UNDEFINED_HOME				= "undefinedHome";
 	public static final String	MALFORMED_JAVATEX_ERROR		= "malformedJavatexError";
+	
+	// Warning messages
+	public static final String	NOT_RAW_CONTENT_COPIABLE	= "notRawContentCopiable";
+	
 }

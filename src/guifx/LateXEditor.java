@@ -34,6 +34,7 @@ import static properties.LanguageProperties.OPTIONS;
 import static properties.LanguageProperties.PASTE_TO_EDITOR;
 import static properties.LanguageProperties.PREVIEW;
 import static properties.LanguageProperties.QUIT;
+import static properties.LanguageProperties.READ_THIS_MESSAGE;
 import static properties.LanguageProperties.REDO;
 import static properties.LanguageProperties.REFRESH;
 import static properties.LanguageProperties.SAVE;
@@ -45,6 +46,7 @@ import static properties.LanguageProperties.TREE_TITLE;
 import static properties.LanguageProperties.UNDEFINED_HOME;
 import static properties.LanguageProperties.UNDO;
 import static properties.LanguageProperties.UNFOUND_FILE_ERROR;
+import static properties.LanguageProperties.WARNING;
 import guifx.components.generics.CodeEditor;
 import guifx.components.latexEditor.LateXEditorShortcutsPane;
 import guifx.components.latexEditor.LateXEditorTemplateChooser;
@@ -453,15 +455,20 @@ public class LateXEditor extends Application {
 	private void setGlobalEventHandler(Node root) {
 		root.addEventHandler(KeyEvent.KEY_PRESSED, ev -> {
 			if      (ev.getCode() == KeyCode.DELETE && treeView.getCurrentNode() != null) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode(false)); }
-			else if (isControlShortcut(ev, "C") && ev.isShiftDown()) { consumeEventAfterAction(ev, () -> treeView.copySelectedNodeRawContent      (    )); }
+			else if (isControlShortcut(ev, "C") && ev.isShiftDown()) { 
+			    consumeEventAfterAction(ev, () -> {
+			        if (treeView.isSelectedItemRawContentCopiable()) treeView.copySelectedNodeRawContent();
+			        else DialogsFactory.showPreFormattedWarning(primaryStage, WARNING, READ_THIS_MESSAGE, "");
+			    }); 
+			}
 			else if (isControlShortcut(ev, "X"))                     { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode                 (true)); }
 			else if (isControlShortcut(ev, "C"))                     { consumeEventAfterAction(ev, () -> treeView.copySelectedNode                (    )); }
 			else if (isControlShortcut(ev, "V"))                     { consumeEventAfterAction(ev, () -> treeView.pasteFromClipboardToSelectedNode(    )); }
 		});
 	}
 
-	private boolean isControlShortcut   (KeyEvent ev, String   symbol) { return ev.getText().equalsIgnoreCase(symbol) && ev.isControlDown(); }
-	private void consumeEventAfterAction(KeyEvent ev, Runnable action) { action.run(); ev.consume(); }
+	private static boolean isControlShortcut   (KeyEvent ev, String   symbol) { return ev.getText().equalsIgnoreCase(symbol) && ev.isControlDown(); }
+	private static void consumeEventAfterAction(KeyEvent ev, Runnable action) { action.run(); ev.consume(); }
 	
 	private void setElements(List<Pair<Integer,LateXElement>> elts) {
 		treeView.setElements(
