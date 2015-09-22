@@ -1,6 +1,5 @@
 package guifx.components.latexEditor;
 
-import static com.dici.check.Check.notNull;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
@@ -35,7 +34,6 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.util.Pair;
-import latex.LateXMaker;
 import latex.elements.LateXElement;
 import latex.elements.Title;
 
@@ -63,7 +61,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		LateXElement elt = currentNode.getValue().bean;
 
 		buildAddMenus(elt);
-		if (!(elt instanceof Title)) {
+		if (!elt.getType().equals(TITLE)) {
 			buildClipboardMenus(elt);
 			buildDeleteMenu();
 		}
