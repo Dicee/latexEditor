@@ -76,6 +76,8 @@ public class LanguageProperties {
 	public static final String	COPY						= "copy";
 	public static final String	CUT							= "cut";
 	public static final String	PASTE						= "paste";
+	public static final String	COPY_RAW					= "copyRaw";
+	public static final String	PASTE_RAW					= "pasteRaw";
 	
 	// Tips
 	public static final String	EDIT_ZONE_TIP				= "editZoneTip";
