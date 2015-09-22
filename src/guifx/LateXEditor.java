@@ -455,9 +455,10 @@ public class LateXEditor extends Application {
 	private void setGlobalEventHandler(Node root) {
 		root.addEventHandler(KeyEvent.KEY_PRESSED, ev -> {
 			if      (ev.getCode() == KeyCode.DELETE && treeView.getCurrentNode() != null) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode(false)); }
-			else if (isControlShortcut(ev, "X")) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode                 (true)); }
-			else if (isControlShortcut(ev, "C")) { consumeEventAfterAction(ev, () -> treeView.copySelectedNode                (    )); }
-			else if (isControlShortcut(ev, "V")) { consumeEventAfterAction(ev, () -> treeView.pasteFromClipboardToSelectedNode(    )); }
+			else if (isControlShortcut(ev, "C") && ev.isShiftDown()) { consumeEventAfterAction(ev, () -> treeView.copySelectedNodeRawContent      (    )); }
+			else if (isControlShortcut(ev, "X"))                     { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode                 (true)); }
+			else if (isControlShortcut(ev, "C"))                     { consumeEventAfterAction(ev, () -> treeView.copySelectedNode                (    )); }
+			else if (isControlShortcut(ev, "V"))                     { consumeEventAfterAction(ev, () -> treeView.pasteFromClipboardToSelectedNode(    )); }
 		});
 	}
 
