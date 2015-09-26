@@ -15,12 +15,15 @@ import javafx.util.Pair;
 import latex.DocumentParameters;
 import latex.LateXMaker;
 import latex.elements.LateXElement;
+import scala.collection.mutable.StringBuilder;
 
 import com.dici.collection.richIterator.RichIterator;
-import com.dici.collection.richIterator.RichIterators;
+import com.dici.files.TokenParser;
 import com.dici.javafx.components.ControlledTreeView.NamedList;
 
 public class JavatexIO {
+    public static final TokenParser JAVATEX_PARSER = new TokenParser("##"); 
+    
 	public static final ProcessBuilder toPdfProcessBuilder(File dir, File file) throws IOException {
 		String path = file.getCanonicalPath();
 		ProcessBuilder pb = new ProcessBuilder("pdflatex","-halt-on-error",String.format("%s.tex",
@@ -56,7 +59,7 @@ public class JavatexIO {
 	
 	public static final List<Pair<Integer,LateXElement>> readFromJavatex(File f, DocumentParameters params) 
 			throws IOException, FileNotFoundException, WrongFormatException {
-		try (RichIterator<String> tokens = RichIterators.tokens(f, "##")) {
+		try (RichIterator<String> tokens = JAVATEX_PARSER.parse(f)) {
 		    List<Pair<Integer,LateXElement>> res = new LinkedList<>();  
     		while (tokens.hasNext()) {
     			String decl    = tokens.next().trim();
