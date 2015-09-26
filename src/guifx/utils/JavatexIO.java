@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,6 +20,7 @@ import scala.collection.mutable.StringBuilder;
 
 import com.dici.collection.richIterator.RichIterator;
 import com.dici.files.TokenParser;
+import com.dici.files.TokenParser.TokenIterator;
 import com.dici.javafx.components.ControlledTreeView.NamedList;
 
 public class JavatexIO {
@@ -58,29 +60,38 @@ public class JavatexIO {
 	}
 	
 	public static final List<Pair<Integer,LateXElement>> readFromJavatex(File f, DocumentParameters params) 
-			throws IOException, FileNotFoundException, WrongFormatException {
-		try (RichIterator<String> tokens = JAVATEX_PARSER.parse(f)) {
-		    List<Pair<Integer,LateXElement>> res = new LinkedList<>();  
-    		while (tokens.hasNext()) {
-    			String decl    = tokens.next().trim();
-    			String content = tokens.next().trim();
-    			
-    			switch (decl) {
-    				case "packages"        : params.addPackages(content.split("[;\\s+]|;\\s+")); break;
-    				case "commands"        : params.include(content.split("[;\\s+]|;\\s+"    )); break;
-    				case "documentSettings": params.loadSettings(content);                       break;
-    				default:
-    					Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
-    					Matcher m = p.matcher(decl);
-    
-    					if (m.matches()) {
-    						String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
-    						res.add(new Pair<>(m.group(1).length(),LateXElement.newLateXElement(m.group(2) + param,content)));
-    					} else
-    						throw new WrongFormatException(decl);
-    			}
-    		}
-    		return res;
-		}
+	        throws IOException, FileNotFoundException, WrongFormatException {
+		return readFromJavatex(JAVATEX_PARSER.parse(f), params);
 	}
+
+	public static final List<Pair<Integer,LateXElement>> readFromJavatex(String content, DocumentParameters params) 
+	        throws IOException, FileNotFoundException, WrongFormatException {
+	    return readFromJavatex(JAVATEX_PARSER.parse(content), params);
+	}
+
+	private static final List<Pair<Integer,LateXElement>> readFromJavatex(TokenIterator tokens, DocumentParameters params) 
+	        throws WrongFormatException, IOException {
+        List<Pair<Integer,LateXElement>> res = new LinkedList<>();  
+        while (tokens.hasNext()) {
+            String decl    = tokens.next().trim();
+            String content = tokens.next().trim();
+            
+            switch (decl) {
+                case "packages"        : params.addPackages(content.split("[;\\s+]|;\\s+")); break;
+                case "commands"        : params.include(content.split("[;\\s+]|;\\s+"    )); break;
+                case "documentSettings": params.loadSettings(content);                       break;
+                default:
+                    Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
+                    Matcher m = p.matcher(decl);
+
+                    if (m.matches()) {
+                        String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
+                        res.add(new Pair<>(m.group(1).length(),LateXElement.newLateXElement(m.group(2) + param,content)));
+                    } else
+                        throw new WrongFormatException(decl);
+            }
+            tokens.close();
+        }
+        return res;
+    }
 }
