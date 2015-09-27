@@ -2,6 +2,9 @@ package latex.elements;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
+
+import latex.Textifiable;
 
 public abstract class AbstractLateXElement implements LateXElement {
 	protected String						content;
@@ -16,47 +19,28 @@ public abstract class AbstractLateXElement implements LateXElement {
 	}
 	
 	public abstract LateXElement clone();
-	
-	@Override
-	public String textify() {
-		return getType() + " ##\n" + getText() + "\n##"; 
-	}
-	
-	public java.util.List<LateXElement> getChildren() {
-		return children;
-	}
-	
-	@Override
-	public String getType() {
-		return name;
+	public java.util.List<LateXElement> getChildren() { return children; }
+
+	@Override public       String  textify()               { return getType() + " ##\n" + getText() + "\n##"; }
+	@Override public       String  getType()               { return name                                    ; }
+	@Override public       String  getText()               { return content                                 ; }
+	@Override public       void    setText(String content) { this.content = content                         ; }
+	@Override public       String  toString()              { return name                                    ; }
+	@Override public       int     getDepth()              { return depth                                   ; }
+	@Override public final int     hashCode()              { return Objects.hash(name, content)             ; }
+	@Override public final boolean equals(Object o)        {
+	    if (this == o) return true;
+	    if (!(o instanceof Textifiable)) return false;
+	    Textifiable that = (Textifiable) o;
+	    return Objects.equals(getType(), that.getType()) && Objects.equals(getText(), that.getText());
 	}
 
-	@Override
-	public String getText() {
-		return content;
-	}
-
-	@Override
-	public void setText(String content) {
-		this.content = content;
-	}
-	
-	@Override
-	public String toString() {
-		return name;
-	}
-	
-	@Override
-	public int getDepth() {
-		return depth;
-	}
-	
 	private class ChildrenList extends ArrayList<LateXElement> {
-		private static final long	serialVersionUID	= 1L;
+		private static final long serialVersionUID = 1L;
 		
 		private void checkArgDepth(LateXElement elt) {
-			if (elt.getDepth() <= depth) throw new IllegalArgumentException(
-					String.format("%s cannot be a child of %s",elt,AbstractLateXElement.this));
+			if (elt.getDepth() <= depth) 
+			    throw new IllegalArgumentException(String.format("%s cannot be a child of %s",elt,AbstractLateXElement.this));
 		}
 		
 		private void checkArgsDepth(Collection<? extends LateXElement> elts) {
