@@ -1,9 +1,12 @@
 package guifx.components.latexEditor;
 
 import static com.dici.collection.CollectionUtils.setOf;
-import static com.dici.collection.richIterator.PairRichIterator.pairIterator;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.JavatexIO.readFromJavatex;
+import static guifx.utils.LateXEditorTreeUtils.getValue;
+import static guifx.utils.LateXEditorTreeUtils.namedLateXElement;
+import static guifx.utils.LateXEditorTreeUtils.namedLateXElements;
+import static guifx.utils.LateXEditorTreeUtils.newTreeItem;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
@@ -30,6 +33,7 @@ import static properties.LanguageProperties.SUBSECTION;
 import static properties.LanguageProperties.SUBSUBSECTION;
 import static properties.LanguageProperties.TEMPLATE;
 import static properties.LanguageProperties.TITLE;
+import guifx.utils.LateXEditorTreeUtils;
 import guifx.utils.NamedObject;
 import guifx.utils.WrongFormatException;
 
@@ -38,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javafx.geometry.Point2D;
@@ -65,13 +68,8 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	private static final Set<String> RAW_CONTENT_COPY_ELIGIBLES = setOf(CHAPTER, SECTION, SUBSECTION, SUBSUBSECTION, 
 	        PARAGRAPH, IMAGE, CODE, LIST, LATEX);
 	
-	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
-		return factory.apply(namedLateXElement(elt));
-	}
-	
-	public LateXEditorTreeView(TreeItem<NamedObject<LateXElement>> root, ActionManager actionManager, 
-			Function<NamedObject<LateXElement>, TreeItem<NamedObject<LateXElement>>> factory) {
-		super(root, actionManager, factory);
+	public LateXEditorTreeView(LateXElement rootElement, ActionManager actionManager) {
+		super(newTreeItem(rootElement), actionManager, LateXEditorTreeUtils::newTreeItem);
 		getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 	}
 
@@ -273,16 +271,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
         } catch (WrongFormatException e) {
             showPreFormattedError(this, ERROR, AN_ERROR_OCCURRED_MESSAGE, MALFORMED_JAVATEX_ERROR);
         }
-	}
-	
-	private static LateXElement getValue(TreeItem<NamedObject<LateXElement>> treeItem) { return treeItem.getValue().bean; }
-	
-	private static NamedObject<LateXElement> namedLateXElement(LateXElement elt) {
-        return new NamedObject<>(strings.getObservableProperty(elt.getType()), elt);
-    }
-	
-	public static List<Pair<Integer,NamedObject<LateXElement>>> namedLateXElements(List<Pair<Integer, LateXElement>> elts) {
-	    return pairIterator(elts.iterator(), Pair::getKey, pair -> namedLateXElement(pair.getValue())).toList();
 	}
 	
 	public void copySelectedNodeRawContent() {

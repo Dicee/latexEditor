@@ -2,9 +2,10 @@ package guifx;
 
 import static com.dici.javafx.actions.NonCancelableAction.nonCancelableAction;
 import static com.dici.javafx.actions.SaveAction.saveAction;
-import static guifx.components.latexEditor.LateXEditorTreeView.namedLateXElements;
 import static guifx.utils.DialogsFactory.showError;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
+import static guifx.utils.LateXEditorTreeUtils.namedLateXElements;
+import static guifx.utils.LateXEditorTreeUtils.newTreeItem;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
@@ -12,7 +13,6 @@ import static java.util.stream.Collectors.toList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import static properties.ConfigProperties.CHECKED_ICON;
-import static properties.ConfigProperties.LEAF_ICON;
 import static properties.LanguageProperties.AN_ERROR_OCCURRED_MESSAGE;
 import static properties.LanguageProperties.CLEAR;
 import static properties.LanguageProperties.DOCUMENTATION;
@@ -157,16 +157,6 @@ public class LateXEditor extends Application {
 
 	public static final Image getResourceImage(String path) { return new Image(LateXEditor.class.getResourceAsStream(path)); }
 	
-	private static final TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) { 
-		return newTreeItem(new NamedObject<>(strings.getObservableProperty(elt.getType()),elt));
-	}
-
-	private static final TreeItem<NamedObject<LateXElement>> newTreeItem(NamedObject<LateXElement> elt) {
-		String url  = properties.getProperty(elt.bean.getType() + "Icon");
-		Node   icon = new ImageView(new Image(LateXEditorTreeView.class.getResourceAsStream(url != null ? url : properties.getProperty(LEAF_ICON))));
-		return icon == null ? new TreeItem<>(elt) : new TreeItem<>(elt,icon);
-	}
-	
 	@Override
 	public void start(Stage primaryStage) {
 		setTree();
@@ -199,7 +189,7 @@ public class LateXEditor extends Application {
 	}
 	
 	private void setTree() {
-		treeView = new LateXEditorTreeView(newTreeItem(new PreprocessorCommand("")),actionManager,LateXEditor::newTreeItem);
+		treeView = new LateXEditorTreeView(new PreprocessorCommand(""), actionManager);
 		treeView.setMinWidth(300);
 		treeView.getRoot().setExpanded(true);
 		treeView.getSelectionModel().selectedItemProperty().addListener(updateTreeOnChange());
@@ -455,16 +445,16 @@ public class LateXEditor extends Application {
 	
 	private void setGlobalEventHandler(Node root) {
 		root.addEventHandler(KeyEvent.KEY_PRESSED, ev -> {
-			if      (ev.getCode() == KeyCode.DELETE && treeView.getCurrentNode() != null) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode(false)); }
+			if (ev.getCode() == KeyCode.DELETE && treeView.getCurrentNode() != null) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode(false)); }
 			else if (isControlShortcut(ev, "C") && ev.isShiftDown()) { 
 			    consumeEventAfterAction(ev, () -> {
 			        if (treeView.isSelectedItemRawContentCopiable()) treeView.copySelectedNodeRawContent();
 			        else DialogsFactory.showPreFormattedWarning(primaryStage, WARNING, READ_THIS_MESSAGE, "");
 			    }); 
 			}
-			else if (isControlShortcut(ev, "X"))                     { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode                 (true)); }
-			else if (isControlShortcut(ev, "C"))                     { consumeEventAfterAction(ev, () -> treeView.copySelectedNode                (    )); }
-			else if (isControlShortcut(ev, "V"))                     { consumeEventAfterAction(ev, () -> treeView.pasteFromClipboardToSelectedNode(    )); }
+			else if (isControlShortcut(ev, "X")) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode                 (true)); }
+			else if (isControlShortcut(ev, "C")) { consumeEventAfterAction(ev, () -> treeView.copySelectedNode                (    )); }
+			else if (isControlShortcut(ev, "V")) { consumeEventAfterAction(ev, () -> treeView.pasteFromClipboardToSelectedNode(    )); }
 		});
 	}
 
