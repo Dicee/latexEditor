@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,7 +17,6 @@ import latex.LateXMaker;
 import latex.elements.LateXElement;
 import scala.collection.mutable.StringBuilder;
 
-import com.dici.collection.richIterator.RichIterator;
 import com.dici.files.TokenParser;
 import com.dici.files.TokenParser.TokenIterator;
 import com.dici.javafx.components.ControlledTreeView.NamedList;
@@ -82,7 +80,7 @@ public class JavatexIO {
         while (tokens.hasNext()) {
             String decl    = tokens.next().trim();
             String content = tokens.next().trim();
-            
+
             switch (decl) {
                 case "packages"        : params.addPackages(content.split("[;\\s+]|;\\s+")); break;
                 case "commands"        : params.include(content.split("[;\\s+]|;\\s+"    )); break;
@@ -97,8 +95,8 @@ public class JavatexIO {
                     } else
                         throw new WrongFormatException(decl);
             }
-            tokens.close();
         }
+        tokens.close();
         return res;
     }
 }
