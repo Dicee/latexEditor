@@ -221,7 +221,7 @@ public class LateXEditor extends Application {
 			
 			if (newItem != null && newItem.getValue() != null) {
 				LateXElement newElement = newItem.getValue().bean;
-                if (newElement.isOfType(TEMPLATE)) setEditorZone.accept(new LateXEditorTemplateChooser((Template) newElement));
+                if (newElement instanceof Template) setEditorZone.accept(new LateXEditorTemplateChooser((Template) newElement));
 				else {
 					userTextArea.setText(newElement.getText());
 					setEditorZone.accept(textMode);
