@@ -23,7 +23,7 @@ LaTeXEditor provides the following features :
 
 ### Compilation
 
-- Scala 2.1 or later
+- Scala 2.11 or later
 - JDK 8 or later
 
 ### Use
