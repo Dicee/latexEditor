@@ -437,8 +437,8 @@ public class LateXEditor extends Application {
 //		});
 		pdf.setOnAction(ev -> toPdf());
 		
-		ToolBar tb = new ToolBar(tex,preview,pdf);
-		header.getChildren().addAll(menuBar,tb);
+		ToolBar tb = new ToolBar(tex, preview, pdf);
+		header.getChildren().addAll(menuBar, tb);
 		return header;
 	}
 	
@@ -464,7 +464,7 @@ public class LateXEditor extends Application {
 	private void setElements(List<Pair<Integer, LateXElement>> elts) {
 		treeView.setElements(
 			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
-			namedLateXElements(elts.isEmpty() ? elts : elts.subList(0, elts.size())));
+			namedLateXElements(elts.isEmpty() ? elts : elts.subList(1, elts.size())));
 	}
 	
 	private void newDocument() {
