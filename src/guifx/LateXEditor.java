@@ -7,10 +7,19 @@ import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.LateXEditorTreeUtils.namedLateXElements;
 import static guifx.utils.LateXEditorTreeUtils.newTreeItem;
 import static guifx.utils.Settings.bindProperty;
+import static guifx.utils.Settings.getChooseLanguageMenu;
+import static guifx.utils.Settings.getChooseStyleMenu;
+import static guifx.utils.Settings.getChooseThemeMenu;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
+import static java.util.Arrays.asList;
+import static javafx.scene.input.KeyCode.B;
+import static javafx.scene.input.KeyCode.I;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
+import static javafx.scene.text.Font.font;
+import static javafx.scene.text.FontPosture.ITALIC;
+import static javafx.scene.text.FontWeight.BOLD;
 import static properties.ConfigProperties.CHECKED_ICON;
 import static properties.LanguageProperties.AN_ERROR_OCCURRED_MESSAGE;
 import static properties.LanguageProperties.CLEAR;
@@ -56,14 +65,12 @@ import guifx.components.latexEditor.LateXPidia;
 import guifx.components.latexEditor.PreferencesPane;
 import guifx.utils.DialogsFactory;
 import guifx.utils.JavatexIO;
-import com.dici.javafx.NamedObject;
 import guifx.utils.Settings;
 import guifx.utils.WrongFormatException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,13 +102,13 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCharacterCombination;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -119,40 +126,42 @@ import utils.StreamPrinter;
 
 import com.dici.collection.richIterator.RichIterators;
 import com.dici.files.FileUtils;
+import com.dici.javafx.NamedObject;
 import com.dici.javafx.actions.ActionManager;
 import com.dici.javafx.actions.ActionManagerImpl;
 import com.dici.javafx.actions.NonCancelableAction;
 import com.dici.javafx.actions.SaveAction;
 
 public class LateXEditor extends Application {
-	public static final Map<String, String>			LANGUAGES;
-	public static final String						LATEX_HOME		= FileUtils.toCanonicalPath(System.getenv("LATEX_HOME"));
+    public static final Map<String, String> LANGUAGES;
+    public static final String              LATEX_HOME        = FileUtils.toCanonicalPath(System.getenv("LATEX_HOME"));
 
-	public static final Font						subtitlesFont	= Font.font(null,FontWeight.BOLD,13);
+    public static final int                 DEFAULT_FONT_SIZE = 13;
+    public static final Font                subtitlesFont     = Font.font(null,BOLD,DEFAULT_FONT_SIZE);
 
-	private File									currentDir		= new File(LATEX_HOME);
-	private File									currentFile		= null;
+    private File                            currentDir        = new File(LATEX_HOME);
+    private File                            currentFile       = null;
 
-	private Stage									primaryStage;
-	private Rectangle2D 							screenBounds;
+    private Stage                           primaryStage;
+    private Rectangle2D                     screenBounds;
 
-	private final LateXMaker						lm				= new LateXMaker();
-	private LateXEditorTreeView						treeView;
+    private final LateXMaker                lm                = new LateXMaker();
+    private LateXEditorTreeView             treeView;
 
-	private MenuBar									menuBar;
+    private MenuBar                         menuBar;
 
-	private TextArea								userTextArea;
-	private CodeEditor								outputCode;
-	private Label									info;
-	private Node									textMode;
+    private TextArea                        userTextArea;
+    private CodeEditor                      outputCode;
+    private Label                           info;
+    private Node                            textMode;
 
-	private TextArea								outputTextArea;
+    private TextArea                        outputTextArea;
 
-	private Consumer<Node>							setEditorZone;
-	private SplitPane								splitPane;
+    private Consumer<Node>                  setEditorZone;
+    private SplitPane                       splitPane;
 
-	private final LateXPidia						encyclopedia	= new LateXPidia();
-	private final ActionManager						actionManager	= new ActionManagerImpl();
+    private final LateXPidia                encyclopedia      = new LateXPidia();
+    private final ActionManager             actionManager     = new ActionManagerImpl();
 
 	public static final Image getResourceImage(String path) { return new Image(LateXEditor.class.getResourceAsStream(path)); }
 	
@@ -164,22 +173,21 @@ public class LateXEditor extends Application {
 		this.screenBounds = screen.getVisualBounds();
 		this.primaryStage = primaryStage;
 		VBox root         = new VBox(10);
-		Node editZone     = setEditZone();
-		setMenuBar();
 
+		Scene scene = new Scene(root,0,0);
+		primaryStage.setScene(scene);
+
+		Node editZone = setEditZone();
+		setMenuBar();
+		
 		VBox header = setHeader();
 		root.getChildren().addAll(header,editZone);
 		setGlobalEventHandler(root);
 
-		Scene scene = new Scene(root,0,0);
-		primaryStage.setScene(scene);
 		primaryStage.setTitle(strings.getProperty(FRAME_TITLE)); 
 		actionManager.isSavedProperty().addListener((ov,oldValue,newValue) -> 
-			primaryStage.setTitle(currentFile == null ? 
-				"LateXEditor 4.0" : 
-				String.format(newValue ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath()))
-		);
-
+		primaryStage.setTitle(currentFile == null ? "LateXEditor 4.0" : 
+		                                             String.format(newValue ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath())));
 		primaryStage.setX     (screenBounds.getMinX  ());
 		primaryStage.setY     (screenBounds.getMinY  ());
 		primaryStage.setWidth (screenBounds.getWidth ());
@@ -289,23 +297,34 @@ public class LateXEditor extends Application {
 
 	private VBox setTextEditor() {
 		info = new Label();
-		bindProperty(info.textProperty(),EDIT_ZONE_TIP);
+		bindProperty(info.textProperty(), EDIT_ZONE_TIP);
 		info.setFont(subtitlesFont);
+		info.setPadding(new Insets(4, 0, 0, 0));
 		
 		userTextArea = new TextArea();
-		userTextArea.setPrefSize(screenBounds.getWidth()/6,screenBounds.getHeight()/2);
-		userTextArea.textProperty().addListener((ov,oldValue,newValue) -> { 
+		userTextArea.setPrefSize(screenBounds.getWidth()/6, screenBounds.getHeight()/2);
+		userTextArea.textProperty().addListener((ov, oldValue, newValue) -> { 
 			if (newValue != null) 
 				treeView.getCurrentNode().getValue().bean.setText(newValue);
 		});
 		
-		VBox textEditor = new VBox(info,userTextArea);
+        Button bold       = setLateXCommandWrapperButton("B", "textbf", font(null, BOLD  , DEFAULT_FONT_SIZE), B);
+        Button italic     = setLateXCommandWrapperButton("I", "textit", font(null, ITALIC, DEFAULT_FONT_SIZE), I);
+        VBox   textEditor = new VBox(new HBox(5, new HBox(bold, italic), info), userTextArea);
 		textEditor.setPadding(new Insets(5));
 		textEditor.setSpacing(5);
 		textEditor.setMinWidth(420);
 		return textEditor;
 	}
-
+	
+	private Button setLateXCommandWrapperButton(String text, String command, Font font, KeyCode shortcutCode) {
+	    Button button = new Button(text);
+	    button.setFont(font);
+	    button.setOnAction(ev -> userTextArea.replaceSelection(String.format("\\%s{%s}", command, userTextArea.getSelectedText())));
+	    primaryStage.getScene().getAccelerators().put(new KeyCodeCombination(shortcutCode, CONTROL_DOWN), button::fire);
+	    return button;
+	}
+	
 	private Accordion setLeftToolbar() {
 		TitledPane shortcutsPane = setSpecialCharsShortcut();
 		TitledPane treePane      = setTreePane();
@@ -314,15 +333,15 @@ public class LateXEditor extends Application {
 		accordion.getPanes().addAll(treePane,shortcutsPane);
 		accordion.setExpandedPane(treePane);
 		accordion.setPadding(new Insets(10));
-		accordion.setPrefHeight(screenBounds.getHeight()*0.90);
+		accordion.setPrefHeight(screenBounds.getHeight() * 0.90);
 		accordion.setMinWidth(250);
 		return accordion;
 	}
 	
 	private TitledPane setTreePane() {
-		TitledPane treePane = new TitledPane("",treeView);
+		TitledPane treePane = new TitledPane("", treeView);
 		bindProperty(treePane.textProperty(),TREE_TITLE);
-		treeView.setPadding(new Insets(50,5,5,5));
+		treeView.setPadding(new Insets(50, 5, 5, 5));
 		return treePane;
 	}
 
@@ -330,7 +349,7 @@ public class LateXEditor extends Application {
 		LateXEditorShortcutsPane res = new LateXEditorShortcutsPane();
 		res.setOnClick(e -> {
 			userTextArea.cut();
-			userTextArea.insertText(userTextArea.getCaretPosition(),e.getActionCommand());
+			userTextArea.insertText(userTextArea.getCaretPosition(), e.getActionCommand());
 		});
 		return res;
 	}
@@ -351,45 +370,44 @@ public class LateXEditor extends Application {
 		MenuItem saveAs   = new MenuItem();
 		MenuItem generate = new MenuItem();
 		MenuItem quit     = new MenuItem();
-		menuFile.getItems().addAll(newDoc,load,refresh,save,saveAs,generate,quit);
+		menuFile.getItems().addAll(newDoc, load, refresh, save, saveAs, generate, quit);
 		
 		// set submenu Edit
 		MenuItem undo = new MenuItem();
 		MenuItem redo = new MenuItem();
 		undo.disableProperty().bind(actionManager.hasPreviousProperty().not());
-		redo.disableProperty().bind(actionManager.hasNextProperty().not());
-		menuEdit.getItems().addAll(undo,redo);
+		redo.disableProperty().bind(actionManager.hasNextProperty    ().not());
+		menuEdit.getItems().addAll(undo, redo);
 
 		// set submenu Options
 		MenuItem  settings    = new MenuItem();
 		ImageView checkedIcon = new ImageView(getResourceImage(properties.getProperty(CHECKED_ICON)));
-		menuOptions.getItems().addAll(settings,Settings.getChooseLanguageMenu(checkedIcon),Settings.getChooseStyleMenu(checkedIcon),
-				Settings.getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
+		menuOptions.getItems().addAll(settings, getChooseLanguageMenu(checkedIcon), getChooseStyleMenu(checkedIcon), getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
 
 		// set submenu Help
 		MenuItem doc = new MenuItem();
 		menuHelp.getItems().add(doc);
 
-		setMenusAccelerator(newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
-		setMenusAction     (newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
-		setMenusText       (menuFile,menuEdit,menuOptions,menuHelp,newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
-		
-		menuBar.getMenus().addAll(menuFile,menuEdit,menuOptions,menuHelp);
+        setMenusAccelerator(newDoc, load, refresh, save, saveAs, generate, quit, undo, redo, settings, doc);
+        setMenusAction     (newDoc, load, refresh, save, saveAs, generate, quit, undo, redo, settings, doc);
+        setMenusText       (menuFile, menuEdit, menuOptions, menuHelp, newDoc, load, refresh, save, saveAs, generate, quit, undo, redo, settings, doc);
+        
+        menuBar.getMenus().addAll(menuFile, menuEdit, menuOptions, menuHelp);
 	}
 
 	private void setMenusAccelerator(MenuItem newDoc, MenuItem load, MenuItem refresh, MenuItem save, MenuItem saveAs, MenuItem generate, MenuItem quit,
 			MenuItem undo, MenuItem redo, MenuItem settings, MenuItem doc) {
-		newDoc  .setAccelerator(new KeyCharacterCombination("N",CONTROL_DOWN         ));
-		save    .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN         ));
-		saveAs  .setAccelerator(new KeyCharacterCombination("S",CONTROL_DOWN,ALT_DOWN));
-		load    .setAccelerator(new KeyCharacterCombination("L",CONTROL_DOWN         ));
-		refresh .setAccelerator(new KeyCharacterCombination("R",CONTROL_DOWN         ));
-		generate.setAccelerator(new KeyCharacterCombination("G",CONTROL_DOWN         ));
-		quit    .setAccelerator(new KeyCharacterCombination("Q",CONTROL_DOWN         ));
-		undo    .setAccelerator(new KeyCharacterCombination("Z",CONTROL_DOWN         ));
-		redo    .setAccelerator(new KeyCharacterCombination("Y",CONTROL_DOWN         ));
-		settings.setAccelerator(new KeyCharacterCombination("O",CONTROL_DOWN         ));
-		doc     .setAccelerator(new KeyCharacterCombination("H",CONTROL_DOWN         ));
+        newDoc  .setAccelerator(new KeyCharacterCombination("N", CONTROL_DOWN          ));
+        save    .setAccelerator(new KeyCharacterCombination("S", CONTROL_DOWN          ));
+        saveAs  .setAccelerator(new KeyCharacterCombination("S", CONTROL_DOWN, ALT_DOWN));
+        load    .setAccelerator(new KeyCharacterCombination("L", CONTROL_DOWN          ));
+        refresh .setAccelerator(new KeyCharacterCombination("R", CONTROL_DOWN          ));
+        generate.setAccelerator(new KeyCharacterCombination("G", CONTROL_DOWN          ));
+        quit    .setAccelerator(new KeyCharacterCombination("Q", CONTROL_DOWN          ));
+        undo    .setAccelerator(new KeyCharacterCombination("Z", CONTROL_DOWN          ));
+        redo    .setAccelerator(new KeyCharacterCombination("Y", CONTROL_DOWN          ));
+        settings.setAccelerator(new KeyCharacterCombination("O", CONTROL_DOWN          ));
+        doc     .setAccelerator(new KeyCharacterCombination("H", CONTROL_DOWN          ));
 	}
 
 	private void setMenusAction(MenuItem newDoc, MenuItem load, MenuItem refresh, MenuItem save, MenuItem saveAs, MenuItem generate, MenuItem quit,
@@ -409,8 +427,8 @@ public class LateXEditor extends Application {
 
 	private void setMenusText(Menu menuFile, Menu menuEdit, Menu menuOptions, Menu menuHelp, MenuItem newDoc, MenuItem load, MenuItem refresh, MenuItem save,
 			MenuItem saveAs, MenuItem generate, MenuItem quit, MenuItem undo, MenuItem redo, MenuItem settings, MenuItem doc) {
-		List<String> properties = Arrays.asList(FILE,EDIT,OPTIONS,HELP,NEW_DOCUMENT,LOAD,REFRESH,SAVE,SAVE_AS,GENERATE,QUIT,UNDO,REDO,SETTINGS,DOCUMENTATION);
-		List<MenuItem> menus = Arrays.asList(menuFile,menuEdit,menuOptions,menuHelp,newDoc,load,refresh,save,saveAs,generate,quit,undo,redo,settings,doc);
+        List<String>   properties = asList(FILE, EDIT, OPTIONS, HELP, NEW_DOCUMENT, LOAD, REFRESH, SAVE, SAVE_AS, GENERATE, QUIT, UNDO, REDO, SETTINGS, DOCUMENTATION);
+        List<MenuItem> menus      = asList(menuFile, menuEdit, menuOptions, menuHelp, newDoc, load, refresh, save, saveAs, generate, quit, undo, redo, settings, doc);
 		IntStream.range(0,menus.size()).forEach(i -> bindProperty(menus.get(i).textProperty(),properties.get(i)));
 	}
 
@@ -420,12 +438,12 @@ public class LateXEditor extends Application {
 		ImageView texIcon     = new ImageView(getResourceImage(properties.getProperty("texIcon"    )));
 		ImageView previewIcon = new ImageView(getResourceImage(properties.getProperty("previewIcon")));
 		
-		Button tex     = new Button("",texIcon);
-		Button preview = new Button("",previewIcon);
-		Button pdf     = new Button("",pdfIcon);
-		bindProperty(tex    .textProperty(),GENERATE_LATEX);
-		bindProperty(pdf    .textProperty(),GENERATE_PDF);
-		bindProperty(preview.textProperty(),PREVIEW);
+		Button tex     = new Button("", texIcon);
+		Button preview = new Button("", previewIcon);
+		Button pdf     = new Button("", pdfIcon);
+		bindProperty(tex    .textProperty(), GENERATE_LATEX);
+		bindProperty(pdf    .textProperty(), GENERATE_PDF);
+		bindProperty(preview.textProperty(), PREVIEW);
 		
 		tex.setOnAction(ev -> generate());
 //		preview.setOnAction(ev -> {
