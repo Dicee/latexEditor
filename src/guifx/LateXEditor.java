@@ -4,6 +4,8 @@ import static com.dici.javafx.actions.NonCancelableAction.nonCancelableAction;
 import static com.dici.javafx.actions.SaveAction.saveAction;
 import static guifx.utils.DialogsFactory.showError;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
+import static guifx.utils.JavatexIO.saveAsJavatex;
+import static guifx.utils.LateXEditorTreeUtils.getValue;
 import static guifx.utils.LateXEditorTreeUtils.namedLateXElements;
 import static guifx.utils.LateXEditorTreeUtils.newTreeItem;
 import static guifx.utils.Settings.bindProperty;
@@ -52,6 +54,7 @@ import static properties.LanguageProperties.SAVE;
 import static properties.LanguageProperties.SAVE_AS;
 import static properties.LanguageProperties.SELECT_LANGUAGE;
 import static properties.LanguageProperties.SETTINGS;
+import static properties.LanguageProperties.TEMPLATE;
 import static properties.LanguageProperties.TEXT_EDITOR;
 import static properties.LanguageProperties.TREE_TITLE;
 import static properties.LanguageProperties.UNDEFINED_HOME;
@@ -203,23 +206,22 @@ public class LateXEditor extends Application {
 	}
 	
 	private ChangeListener<TreeItem<NamedObject<LateXElement>>> updateTreeOnChange() {
-		return (ObservableValue<? extends TreeItem<NamedObject<LateXElement>>> ov, TreeItem<NamedObject<LateXElement>> formerItem,
-			TreeItem<NamedObject<LateXElement>> newItem) -> {
+		return (ObservableValue<? extends TreeItem<NamedObject<LateXElement>>> ov, TreeItem<NamedObject<LateXElement>> formerItem, TreeItem<NamedObject<LateXElement>> newItem) -> {
 			TreeItem<NamedObject<LateXElement>> currentNode = treeView.getCurrentNode();
 			if (formerItem != null &&  currentNode != null) 
-				if (!(formerItem.getValue().bean instanceof Template))
-					formerItem.getValue().bean.setText(userTextArea.getText());
+				if (!getValue(formerItem).isOfType(TEMPLATE))
+				    getValue(formerItem).setText(userTextArea.getText());
 			
 			if (newItem != null && newItem.getValue() != null) {
-				if (newItem.getValue().bean instanceof Template)
-					setEditorZone.accept(new LateXEditorTemplateChooser((Template) newItem.getValue().bean));
+				LateXElement newElement = newItem.getValue().bean;
+                if (newElement.isOfType(TEMPLATE)) setEditorZone.accept(new LateXEditorTemplateChooser((Template) newElement));
 				else {
-					userTextArea.setText(newItem.getValue().bean.getText());
+					userTextArea.setText(newElement.getText());
 					setEditorZone.accept(textMode);
 				}
 				splitPane.setDividerPositions(0.40);
 				splitPane.autosize();
-				bindProperty(info.textProperty(), newItem.getValue().bean.getType() + "Tip");
+				bindProperty(info.textProperty(), newElement.getType() + "Tip");
 				currentNode = newItem;
 			}
 		};
@@ -547,11 +549,8 @@ public class LateXEditor extends Application {
 			public void save() {
 				try {
 					TreeItem<NamedObject<LateXElement>> currentNode = treeView.getCurrentNode();
-					if (!(currentNode.getValue().bean instanceof Template))
-						currentNode.getValue().bean.setText(userTextArea.getText());
-		
-					if (currentFile != null) 
-						JavatexIO.saveAsJavatex(currentFile,treeView.getLateXElements(), lm); 
+					if (!getValue(currentNode).isOfType(TEMPLATE)) getValue(currentNode).setText(userTextArea.getText());
+					if (currentFile != null) 					   saveAsJavatex(currentFile, treeView.getLateXElements(), lm); 
 				} catch (IOException e) {
 					DialogsFactory.showPreFormattedError(primaryStage, ERROR,AN_ERROR_OCCURRED_MESSAGE, IO_SAVE_ERROR);
 				}
@@ -562,7 +561,7 @@ public class LateXEditor extends Application {
 	private File chooseFile(Window window, boolean save, String wantedExtension, String filterName, String... extensions) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(strings.getProperty(NEW_DOCUMENT));
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(filterName,extensions));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(filterName, extensions));
         if (currentDir != null) chooser.setInitialDirectory(currentDir);
 			
 		File selectedFile = save ? chooser.showSaveDialog(window) : chooser.showOpenDialog(window);
@@ -610,7 +609,7 @@ public class LateXEditor extends Application {
 			JavatexIO.toTex(lm, lateXElements, path);
 
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
-			outputCode.setCode(Source.fromFile(FileUtils.toExtension(path, ".tex"),Codec.UTF8()).mkString());
+			outputCode.setCode(Source.fromFile(FileUtils.toExtension(path, ".tex"), Codec.UTF8()).mkString());
 		} catch (Exception e) {
 			DialogsFactory.showPreFormattedError(primaryStage, ERROR, AN_ERROR_OCCURRED_MESSAGE, UNFOUND_FILE_ERROR);
 			e.printStackTrace();
@@ -625,13 +624,13 @@ public class LateXEditor extends Application {
 
 	static {
 		LANGUAGES = new HashMap<>();
-		LANGUAGES.put("Java"      ,"text/x-java"    );
-		LANGUAGES.put("C++"       ,"text/x-c++src"  );
-		LANGUAGES.put("C"         ,"text/x-csrc"    );
-		LANGUAGES.put("Scala"     ,"text/x-scala"   );
-		LANGUAGES.put("LaTeX"     ,"text/x-stex"    );
-		LANGUAGES.put("Javascript","text/javascript");
-		LANGUAGES.put("Python"    ,"text/x-python"  );
+		LANGUAGES.put("Java"      , "text/x-java"    );
+		LANGUAGES.put("C++"       , "text/x-c++src"  );
+		LANGUAGES.put("C"         , "text/x-csrc"    );
+		LANGUAGES.put("Scala"     , "text/x-scala"   );
+		LANGUAGES.put("LaTeX"     , "text/x-stex"    );
+		LANGUAGES.put("Javascript", "text/javascript");
+		LANGUAGES.put("Python"    , "text/x-python"  );
 	}
 
 	// load the templates and all associated localized texts
