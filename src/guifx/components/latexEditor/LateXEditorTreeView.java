@@ -19,6 +19,8 @@ import static properties.LanguageProperties.CUT;
 import static properties.LanguageProperties.DELETE;
 import static properties.LanguageProperties.ERROR;
 import static properties.LanguageProperties.IMAGE;
+import static properties.LanguageProperties.LATEX;
+import static properties.LanguageProperties.LIST;
 import static properties.LanguageProperties.MALFORMED_JAVATEX_ERROR;
 import static properties.LanguageProperties.PARAGRAPH;
 import static properties.LanguageProperties.PASTE;
@@ -26,6 +28,7 @@ import static properties.LanguageProperties.PASTE_RAW;
 import static properties.LanguageProperties.SECTION;
 import static properties.LanguageProperties.SUBSECTION;
 import static properties.LanguageProperties.SUBSUBSECTION;
+import static properties.LanguageProperties.TEMPLATE;
 import static properties.LanguageProperties.TITLE;
 import guifx.utils.NamedObject;
 import guifx.utils.WrongFormatException;
@@ -50,6 +53,7 @@ import javafx.scene.input.DataFormat;
 import javafx.util.Pair;
 import latex.DocumentParameters;
 import latex.elements.LateXElement;
+import properties.LanguageProperties;
 
 import com.dici.check.Check;
 import com.dici.javafx.actions.ActionManager;
@@ -390,12 +394,12 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 	
 	static {
-		NODES_TYPES_MAP = new HashMap<>();
-		NODES_TYPES_MAP.put(0,asList("title"));
-		NODES_TYPES_MAP.put(1,asList("chapter"));
-		NODES_TYPES_MAP.put(2,asList("section"));
-		NODES_TYPES_MAP.put(3,asList("subsection"));
-		NODES_TYPES_MAP.put(4,asList("subsubsection"));
-		NODES_TYPES_MAP.put(5,asList("paragraph","list","image","code","latex","template"));
+        NODES_TYPES_MAP = new HashMap<>();
+        NODES_TYPES_MAP.put(0, asList(TITLE));
+        NODES_TYPES_MAP.put(1, asList(CHAPTER));
+        NODES_TYPES_MAP.put(2, asList(SECTION));
+        NODES_TYPES_MAP.put(3, asList(SUBSECTION));
+        NODES_TYPES_MAP.put(4, asList(SUBSUBSECTION));
+        NODES_TYPES_MAP.put(5, asList(PARAGRAPH, LIST, IMAGE, CODE, LATEX, TEMPLATE));
 	}
 }
