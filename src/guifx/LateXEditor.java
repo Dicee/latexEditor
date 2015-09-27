@@ -79,7 +79,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import properties.LanguageProperties;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -220,7 +219,7 @@ public class LateXEditor extends Application {
 				}
 				splitPane.setDividerPositions(0.40);
 				splitPane.autosize();
-				bindProperty(info.textProperty(),newItem.getValue().bean.getType() + "Tip");
+				bindProperty(info.textProperty(), newItem.getValue().bean.getType() + "Tip");
 				currentNode = newItem;
 			}
 		};
@@ -236,8 +235,8 @@ public class LateXEditor extends Application {
 		borderPane.setCenter(splitPane);
 		borderPane.setPadding(new Insets(15));
 
-		HBox.setHgrow(textEditor,Priority.ALWAYS);
-		HBox.setHgrow(treeView  ,Priority.NEVER);
+		HBox.setHgrow(textEditor, Priority.ALWAYS);
+		HBox.setHgrow(treeView  , Priority.NEVER);
 		treeView.setMinWidth (210);
 
 		return borderPane;
@@ -249,17 +248,17 @@ public class LateXEditor extends Application {
 		outputTextArea.setEditable(false);
 		outputTextArea.setPrefHeight(screenBounds.getHeight()/2);
 
-		TitledPane textEditorPane = new TitledPane("",textEditor);
-		TitledPane outputCodePane = new TitledPane("",setOutputCode());
-		bindProperty(textEditorPane.textProperty(),TEXT_EDITOR);
-		bindProperty(outputCodePane.textProperty(),LATEX_VIEW);
+		TitledPane textEditorPane = new TitledPane("", textEditor);
+		TitledPane outputCodePane = new TitledPane("", setOutputCode());
+		bindProperty(textEditorPane.textProperty(), TEXT_EDITOR);
+		bindProperty(outputCodePane.textProperty(), LATEX_VIEW);
 		
-		Accordion accordion = new Accordion(textEditorPane,outputCodePane);
+		Accordion accordion = new Accordion(textEditorPane, outputCodePane);
 		accordion.setExpandedPane(textEditorPane);
 
 		splitPane = new SplitPane();
 		splitPane.setOrientation(Orientation.VERTICAL);
-		splitPane.getItems().addAll(textMode = accordion,outputTextArea);
+		splitPane.getItems().addAll(textMode = accordion, outputTextArea);
 		splitPane.setDividerPositions(0.40);
 		splitPane.autosize();
 
@@ -278,17 +277,17 @@ public class LateXEditor extends Application {
 		languages.getItems().addAll(LANGUAGES.keySet());
 		languages.setOnAction(ev -> outputCode.setLanguage(LANGUAGES.get(languages.getSelectionModel().getSelectedItem())));
 
-		bindProperty(label.textProperty(),SELECT_LANGUAGE);
-		bindProperty(clear.textProperty(),CLEAR);
-		bindProperty(paste.textProperty(),PASTE_TO_EDITOR);
+		bindProperty(label.textProperty(), SELECT_LANGUAGE);
+		bindProperty(clear.textProperty(), CLEAR);
+		bindProperty(paste.textProperty(), PASTE_TO_EDITOR);
 
 		clear.setOnAction(ev -> outputCode.setCode(""));
 		paste.setOnAction(ev -> {
 			userTextArea.cut();
-			userTextArea.insertText(userTextArea.getCaretPosition(),outputCode.getCodeAndSnapshot());
+			userTextArea.insertText(userTextArea.getCaretPosition(), outputCode.getCodeAndSnapshot());
 		});
 
-		HBox buttons = new HBox(10,label,languages,clear,paste);
+		HBox buttons = new HBox(10, label, languages, clear, paste);
 		buttons.setPadding(new Insets(10));
 		outputCode.setBottom(buttons);
 		
@@ -493,7 +492,7 @@ public class LateXEditor extends Application {
 	}
 	
 	private void createDocument() {
-		File file = chooseFile(primaryStage,true,"javatex",strings.getProperty(JAVATEX_FILES),"*.javatex");
+		File file = chooseFile(primaryStage, true, "javatex", strings.getProperty(JAVATEX_FILES), "*.javatex");
 		if (file != null) primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.0");
 	}
 	
@@ -501,7 +500,7 @@ public class LateXEditor extends Application {
 		actionManager.perform(new NonCancelableAction() {
 			@Override
 			protected void doAction() {
-				File file = chooseFile(primaryStage,false,"javatex",strings.getProperty(JAVATEX_FILES),"*.javatex");
+				File file = chooseFile(primaryStage, false, "javatex", strings.getProperty(JAVATEX_FILES), "*.javatex");
 				loadFile(file);
 			}
 		});
@@ -515,7 +514,7 @@ public class LateXEditor extends Application {
 					primaryStage,
 					strings.getProperty("error"),
 					strings.getProperty("anErrorOccurredMessage"),
-					String.format(strings.getProperty("unfoundFileError"),file.getAbsolutePath()));
+					String.format(strings.getProperty("unfoundFileError"), file.getAbsolutePath()));
 		} catch (IOException e) {
 			showPreFormattedError(primaryStage,ERROR,AN_ERROR_OCCURRED_MESSAGE,IO_LOAD_ERROR);
 		} catch (WrongFormatException e) {
@@ -523,7 +522,7 @@ public class LateXEditor extends Application {
 					primaryStage,
 					strings.getProperty(ERROR),
 					strings.getProperty(AN_ERROR_OCCURRED_MESSAGE),
-					String.format(strings.getProperty(MALFORMED_JAVATEX_ERROR),e.getMessage()));
+					String.format(strings.getProperty(MALFORMED_JAVATEX_ERROR), e.getMessage()));
 		}
 	}
 	
@@ -533,7 +532,7 @@ public class LateXEditor extends Application {
 			currentFile = file;
 			lm.getParameters().clear();
 			
-			List<Pair<Integer,LateXElement>> elts = JavatexIO.readFromJavatex(file,lm.getParameters());
+			List<Pair<Integer,LateXElement>> elts = JavatexIO.readFromJavatex(file, lm.getParameters());
 			setElements(elts);
 			
 			primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
@@ -552,9 +551,9 @@ public class LateXEditor extends Application {
 						currentNode.getValue().bean.setText(userTextArea.getText());
 		
 					if (currentFile != null) 
-						JavatexIO.saveAsJavatex(currentFile,treeView.getLateXElements(),lm); 
+						JavatexIO.saveAsJavatex(currentFile,treeView.getLateXElements(), lm); 
 				} catch (IOException e) {
-					DialogsFactory.showPreFormattedError(primaryStage,ERROR,AN_ERROR_OCCURRED_MESSAGE,IO_SAVE_ERROR);
+					DialogsFactory.showPreFormattedError(primaryStage, ERROR,AN_ERROR_OCCURRED_MESSAGE, IO_SAVE_ERROR);
 				}
 			}
 		});
@@ -588,8 +587,8 @@ public class LateXEditor extends Application {
 			try {
 				ProcessBuilder pb          = JavatexIO.toPdfProcessBuilder(currentDir,currentFile);
 				Process        p           = pb.start();
-				StreamPrinter  inputStream = new StreamPrinter(p.getInputStream(),consumerFactory.apply(""));
-				StreamPrinter  errorStream = new StreamPrinter(p.getErrorStream(),consumerFactory.apply(""));
+				StreamPrinter  inputStream = new StreamPrinter(p.getInputStream(), consumerFactory.apply(""));
+				StreamPrinter  errorStream = new StreamPrinter(p.getErrorStream(), consumerFactory.apply(""));
 				new Thread(inputStream).start();
 				new Thread(errorStream).start();
 				p.waitFor();
@@ -608,12 +607,12 @@ public class LateXEditor extends Application {
 			List<LateXElement> lateXElements = treeView.getLateXElements().getValue();
 			if (lateXElements.isEmpty()) save();
 			String path = currentFile.getAbsolutePath();
-			JavatexIO.toTex(lm,lateXElements,path);
+			JavatexIO.toTex(lm, lateXElements, path);
 
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
-			outputCode.setCode(Source.fromFile(FileUtils.toExtension(path,".tex"),Codec.UTF8()).mkString());
+			outputCode.setCode(Source.fromFile(FileUtils.toExtension(path, ".tex"),Codec.UTF8()).mkString());
 		} catch (Exception e) {
-			DialogsFactory.showPreFormattedError(primaryStage,ERROR,AN_ERROR_OCCURRED_MESSAGE,UNFOUND_FILE_ERROR);
+			DialogsFactory.showPreFormattedError(primaryStage, ERROR, AN_ERROR_OCCURRED_MESSAGE, UNFOUND_FILE_ERROR);
 			e.printStackTrace();
 		}
 	}
@@ -639,6 +638,6 @@ public class LateXEditor extends Application {
 	static {
 		Settings.init();
 		boolean success = Templates.init();
-		if (!success) showError(null,ERROR,AN_ERROR_OCCURRED_MESSAGE,UNDEFINED_HOME);
+		if (!success) showError(null, ERROR, AN_ERROR_OCCURRED_MESSAGE, UNDEFINED_HOME);
 	}
 }
