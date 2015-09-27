@@ -1,10 +1,9 @@
 package guifx.components.latexEditor;
 
 import static guifx.utils.Settings.bindProperty;
-import static properties.LanguageProperties.*;
 import static guifx.utils.Settings.strings;
+import static properties.LanguageProperties.PICK_COLOR;
 import guifx.LateXEditor;
-import guifx.utils.NamedObject;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,6 +20,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.util.Callback;
 import latex.elements.Template;
+
+import com.dici.javafx.NamedObject;
 
 public class TemplateForm extends BorderPane {
 	public TemplateForm(Template template) {
