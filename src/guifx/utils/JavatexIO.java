@@ -22,6 +22,7 @@ import com.dici.collection.richIterator.RichIterator;
 import com.dici.files.TokenParser;
 import com.dici.files.TokenParser.TokenIterator;
 import com.dici.javafx.components.ControlledTreeView.NamedList;
+import com.google.common.base.Throwables;
 
 public class JavatexIO {
     public static final TokenParser JAVATEX_PARSER = new TokenParser("##"); 
@@ -64,9 +65,15 @@ public class JavatexIO {
 		return readFromJavatex(JAVATEX_PARSER.parse(f), params);
 	}
 
-	public static final List<Pair<Integer,LateXElement>> readFromJavatex(String content, DocumentParameters params) 
-	        throws IOException, FileNotFoundException, WrongFormatException {
-	    return readFromJavatex(JAVATEX_PARSER.parse(content), params);
+	public static final List<Pair<Integer,LateXElement>> readFromJavatex(String content, DocumentParameters params) throws WrongFormatException {
+	    try {
+	        return readFromJavatex(JAVATEX_PARSER.parse(content), params);
+	    } catch (IOException e) {
+	        // should not happen
+	        throw Throwables.propagate(e);
+	    } catch (WrongFormatException e) {
+	        throw e;
+	    }
 	}
 
 	private static final List<Pair<Integer,LateXElement>> readFromJavatex(TokenIterator tokens, DocumentParameters params) 
