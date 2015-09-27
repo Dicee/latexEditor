@@ -55,6 +55,7 @@ import javafx.scene.input.DataFormat;
 import javafx.util.Pair;
 import latex.DocumentParameters;
 import latex.elements.LateXElement;
+import latex.elements.PreprocessorCommand;
 
 import com.dici.check.Check;
 import com.dici.javafx.NamedObject;
@@ -228,9 +229,8 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 		    String clipboard = (String) Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
             List<Pair<Integer, LateXElement>> elements = readFromJavatex(clipboard, new DocumentParameters());
             
-            TreeItem<NamedObject<LateXElement>> fakeRoot = factory.apply(new NamedObject<>(null, null));
+            TreeItem<NamedObject<LateXElement>> fakeRoot = newTreeItem(new PreprocessorCommand(""));
             treeFromFlatList(fakeRoot, namedLateXElements(elements), factory);
-
             if (fakeRoot.getChildren().isEmpty()) return;
             
             boolean insertAsChildren = getValue(fakeRoot.getChildren().get(0)).getDepth() > getSelectedItem().getDepth();
@@ -243,7 +243,6 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
             Check.isTrue(insertAsChildren || parent != null);
             
             actionManager.perform(new CancelableAction() {
-                
                 @Override
                 protected void doAction() {
                     if (insertAsChildren) moveChildrenToNewRoot(fakeRoot, node);                      
