@@ -9,7 +9,6 @@ import static guifx.utils.LateXEditorTreeUtils.newTreeItem;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
-import static java.util.stream.Collectors.toList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import static properties.ConfigProperties.CHECKED_ICON;
@@ -64,7 +63,6 @@ import guifx.utils.WrongFormatException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -119,6 +117,7 @@ import scala.io.Codec;
 import scala.io.Source;
 import utils.StreamPrinter;
 
+import com.dici.collection.richIterator.RichIterators;
 import com.dici.files.FileUtils;
 import com.dici.javafx.actions.ActionManager;
 import com.dici.javafx.actions.ActionManagerImpl;
@@ -461,7 +460,7 @@ public class LateXEditor extends Application {
 	private static boolean isControlShortcut   (KeyEvent ev, String   symbol) { return ev.getText().equalsIgnoreCase(symbol) && ev.isControlDown(); }
 	private static void consumeEventAfterAction(KeyEvent ev, Runnable action) { action.run(); ev.consume(); }
 	
-	private void setElements(List<Pair<Integer,LateXElement>> elts) {
+	private void setElements(List<Pair<Integer, LateXElement>> elts) {
 		treeView.setElements(
 			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
 			namedLateXElements(elts));
@@ -470,10 +469,7 @@ public class LateXEditor extends Application {
 	private void newDocument() {
 		actionManager.perform(nonCancelableAction(() -> {
 			createDocument();
-			List<LateXElement> lateXElements = new ArrayList<>();
-			lateXElements.add(new PreprocessorCommand(""));
-			lateXElements.add(new Title());
-			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(toList()));
+			setElements(RichIterators.<LateXElement> of(new PreprocessorCommand(""), new Title()).zipWithIndex().toList());
 		}).before(saveAction(() -> { save(); actionManager.reset(); })));
 	}
 	
