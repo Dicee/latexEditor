@@ -463,7 +463,7 @@ public class LateXEditor extends Application {
 	private void setElements(List<Pair<Integer, LateXElement>> elts) {
 		treeView.setElements(
 			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
-			namedLateXElements(elts));
+			namedLateXElements(elts.isEmpty()? elts : elts.subList(0, elts.size())));
 	}
 	
 	private void newDocument() {
