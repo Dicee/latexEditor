@@ -53,7 +53,6 @@ import javafx.scene.input.DataFormat;
 import javafx.util.Pair;
 import latex.DocumentParameters;
 import latex.elements.LateXElement;
-import properties.LanguageProperties;
 
 import com.dici.check.Check;
 import com.dici.javafx.actions.ActionManager;
@@ -64,7 +63,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	private static final Map<Integer, List<String>>	NODES_TYPES_MAP;
 
 	private static final Set<String> RAW_CONTENT_COPY_ELIGIBLES = setOf(CHAPTER, SECTION, SUBSECTION, SUBSUBSECTION, 
-	        PARAGRAPH, IMAGE, CODE);
+	        PARAGRAPH, IMAGE, CODE, LIST, LATEX);
 	
 	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
 		return factory.apply(namedLateXElement(elt));
