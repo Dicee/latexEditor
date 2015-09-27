@@ -22,6 +22,7 @@ import static javafx.scene.text.FontPosture.ITALIC;
 import static javafx.scene.text.FontWeight.BOLD;
 import static properties.ConfigProperties.CHECKED_ICON;
 import static properties.LanguageProperties.AN_ERROR_OCCURRED_MESSAGE;
+import static properties.LanguageProperties.APP_NAME;
 import static properties.LanguageProperties.CLEAR;
 import static properties.LanguageProperties.DOCUMENTATION;
 import static properties.LanguageProperties.EDIT;
@@ -78,6 +79,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import properties.LanguageProperties;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -185,9 +187,7 @@ public class LateXEditor extends Application {
 		setGlobalEventHandler(root);
 
 		primaryStage.setTitle(strings.getProperty(FRAME_TITLE)); 
-		actionManager.isSavedProperty().addListener((ov,oldValue,newValue) -> 
-		primaryStage.setTitle(currentFile == null ? "LateXEditor 4.0" : 
-		                                             String.format(newValue ? "%s LateXEditor 4.0" : "*%s LateXEditor 4.0",currentFile.getAbsolutePath())));
+		actionManager.isSavedProperty().addListener((ov, oldValue, newValue) -> primaryStage.setTitle((currentFile == null ? "" : newValue ? "" : "*" + currentFile.getAbsolutePath() + " ") + APP_NAME));
 		primaryStage.setX     (screenBounds.getMinX  ());
 		primaryStage.setY     (screenBounds.getMinY  ());
 		primaryStage.setWidth (screenBounds.getWidth ());

@@ -1,6 +1,8 @@
 package properties;
 
 public class LanguageProperties {
+    public static final String APP_NAME                  = "LateXEditor 4.0";
+
     // Main menu and window
     public static final String FILE                      = "file";
     public static final String EDIT                      = "edit";
