@@ -1,19 +1,25 @@
 package guifx.components.latexEditor;
 
 import static com.dici.collection.CollectionUtils.setOf;
+import static com.dici.collection.richIterator.PairRichIterator.pairIterator;
+import static guifx.utils.DialogsFactory.showPreFormattedError;
+import static guifx.utils.JavatexIO.readFromJavatex;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.strings;
 import static java.util.Arrays.asList;
 import static properties.LanguageProperties.ADD_CHILD_HEAD;
 import static properties.LanguageProperties.ADD_CHILD_TAIL;
 import static properties.LanguageProperties.ADD_SIBLING;
+import static properties.LanguageProperties.AN_ERROR_OCCURRED_MESSAGE;
 import static properties.LanguageProperties.CHAPTER;
 import static properties.LanguageProperties.CODE;
 import static properties.LanguageProperties.COPY;
 import static properties.LanguageProperties.COPY_RAW;
 import static properties.LanguageProperties.CUT;
 import static properties.LanguageProperties.DELETE;
+import static properties.LanguageProperties.ERROR;
 import static properties.LanguageProperties.IMAGE;
+import static properties.LanguageProperties.MALFORMED_JAVATEX_ERROR;
 import static properties.LanguageProperties.PARAGRAPH;
 import static properties.LanguageProperties.PASTE;
 import static properties.LanguageProperties.PASTE_RAW;
@@ -22,6 +28,7 @@ import static properties.LanguageProperties.SUBSECTION;
 import static properties.LanguageProperties.SUBSUBSECTION;
 import static properties.LanguageProperties.TITLE;
 import guifx.utils.NamedObject;
+import guifx.utils.WrongFormatException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +46,9 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TreeItem;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.DataFormat;
 import javafx.util.Pair;
+import latex.DocumentParameters;
 import latex.elements.LateXElement;
 
 import com.dici.check.Check;
@@ -54,11 +63,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	        PARAGRAPH, IMAGE, CODE);
 	
 	private TreeItem<NamedObject<LateXElement>> newTreeItem(LateXElement elt) {
-		return factory.apply(newNamedObject(elt));
-	}
-	
-	public static NamedObject<LateXElement> newNamedObject(LateXElement elt) {
-		return new NamedObject<>(strings.getObservableProperty(elt.getType()),elt);
+		return factory.apply(namedLateXElement(elt));
 	}
 	
 	public LateXEditorTreeView(TreeItem<NamedObject<LateXElement>> root, ActionManager actionManager, 
@@ -128,7 +133,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 					item.textProperty().bind(strings.getObservableProperty(type));
 					addChild.getItems().add(item);
 					item.setOnAction(ev -> {
-						addChildToSelectedNode(type,entry.getValue());
+						addChildToSelectedNode(type, entry.getValue());
 						addMenu.hide();
 					});
 				}
@@ -214,13 +219,69 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	
 	private void addChildToSelectedNode(String command, int option) {
 		LateXElement elt = LateXElement.newLateXElement(command,"");
-		addChildToSelectedNode(new NamedObject<>(strings.getObservableProperty(command),elt),option);
+		addChildToSelectedNode(namedLateXElement(elt), option);
 	}
 	
 	public void pasteRawContentToSelectedNode() {
-		
+		try {
+		    String clipboard = (String) Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
+            List<Pair<Integer, LateXElement>> elements = readFromJavatex(clipboard, new DocumentParameters());
+            
+            TreeItem<NamedObject<LateXElement>> fakeRoot = factory.apply(new NamedObject<>(null, null));
+            treeFromFlatList(fakeRoot, namedLateXElements(elements), factory);
+
+            if (fakeRoot.getChildren().isEmpty()) return;
+            
+            boolean insertAsChildren = getValue(fakeRoot.getChildren().get(0)).getDepth() > getSelectedItem().getDepth();
+            int     numChildren      = fakeRoot.getChildren().size(); 
+            
+            // cannot insert as siblings if there is no parent
+            TreeItem<NamedObject<LateXElement>> node        = currentNode;
+            TreeItem<NamedObject<LateXElement>> parent      = node.getParent();
+            int                                 indexOfNode = parent == null ? -1 : parent.getChildren().indexOf(node);
+            Check.isTrue(insertAsChildren || parent != null);
+            
+            actionManager.perform(new CancelableAction() {
+                
+                @Override
+                protected void doAction() {
+                    if (insertAsChildren) moveChildrenToNewRoot(fakeRoot, node);                      
+                    else {
+                        // insert as siblings
+                        for (int i = 0; i < numChildren; i++) parent.getChildren().add(indexOfNode + 1 + i, fakeRoot.getChildren().remove(0));
+                    }
+                }
+                
+                @Override
+                public void cancel() {
+                    if (insertAsChildren) moveChildrenToNewRoot(node, fakeRoot);
+                    else {
+                        // remove siblings from selected node, add back as children of the fake root
+                        for (int i = 0; i < numChildren; i++) fakeRoot.getChildren().add(parent.getChildren().remove(indexOfNode + 1));
+                    }
+                }
+                
+                private <T> void moveChildrenToNewRoot(TreeItem<T> root, TreeItem<T> newRoot) {
+                    // make the code simple, not optimized. I don't expect the tree to get big (typically less than a few
+                    // hundred leaves), so this is fine.
+                    for (int i = 0; i < numChildren; i++) newRoot.getChildren().add(i, root.getChildren().remove(0));      
+                }
+            });
+        } catch (WrongFormatException e) {
+            showPreFormattedError(this, ERROR, AN_ERROR_OCCURRED_MESSAGE, MALFORMED_JAVATEX_ERROR);
+        }
 	}
-		
+	
+	private static LateXElement getValue(TreeItem<NamedObject<LateXElement>> treeItem) { return treeItem.getValue().bean; }
+	
+	private static NamedObject<LateXElement> namedLateXElement(LateXElement elt) {
+        return new NamedObject<>(strings.getObservableProperty(elt.getType()), elt);
+    }
+	
+	public static List<Pair<Integer,NamedObject<LateXElement>>> namedLateXElements(List<Pair<Integer, LateXElement>> elts) {
+	    return pairIterator(elts.iterator(), Pair::getKey, pair -> namedLateXElement(pair.getValue())).toList();
+	}
+	
 	public void copySelectedNodeRawContent() {
 		ClipboardContent clipboardContent = new ClipboardContent();
 		clipboardContent.putString(currentNode.getValue().bean.textify());
@@ -247,7 +308,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 	
 	private void addSibling(String command) { 
-		addSiblingToSelectedNode(new NamedObject<>(strings.getObservableProperty(command),LateXElement.newLateXElement(command,"")));
+		addSiblingToSelectedNode(new NamedObject<>(strings.getObservableProperty(command), LateXElement.newLateXElement(command,"")));
 	} 
 	
 	@Override
@@ -319,7 +380,7 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 	
 	public boolean      isSelectedItemRawContentCopiable() { return RAW_CONTENT_COPY_ELIGIBLES.contains(getSelectedItem().getType()); }
-	public LateXElement getSelectedItem                 () { return getSelectionModel().getSelectedItem().getValue().bean           ; }
+	public LateXElement getSelectedItem                 () { return getValue(getSelectionModel().getSelectedItem())                 ; }
 	
 	public NamedList<LateXElement> getLateXElements() {
 		NamedList<NamedObject<LateXElement>> elts = super.getElements();

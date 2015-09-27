@@ -2,11 +2,13 @@ package guifx;
 
 import static com.dici.javafx.actions.NonCancelableAction.nonCancelableAction;
 import static com.dici.javafx.actions.SaveAction.saveAction;
+import static guifx.components.latexEditor.LateXEditorTreeView.namedLateXElements;
 import static guifx.utils.DialogsFactory.showError;
 import static guifx.utils.DialogsFactory.showPreFormattedError;
 import static guifx.utils.Settings.bindProperty;
 import static guifx.utils.Settings.properties;
 import static guifx.utils.Settings.strings;
+import static java.util.stream.Collectors.toList;
 import static javafx.scene.input.KeyCombination.ALT_DOWN;
 import static javafx.scene.input.KeyCombination.CONTROL_DOWN;
 import static properties.ConfigProperties.CHECKED_ICON;
@@ -69,7 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javafx.application.Application;
@@ -473,7 +474,7 @@ public class LateXEditor extends Application {
 	private void setElements(List<Pair<Integer,LateXElement>> elts) {
 		treeView.setElements(
 			newTreeItem(elts.isEmpty() ? new PreprocessorCommand("") : elts.get(0).getValue()),
-			elts.stream().map(pair -> new Pair<>(pair.getKey(),LateXEditorTreeView.newNamedObject(pair.getValue()))).collect(Collectors.toList()));
+			namedLateXElements(elts));
 	}
 	
 	private void newDocument() {
@@ -482,7 +483,7 @@ public class LateXEditor extends Application {
 			List<LateXElement> lateXElements = new ArrayList<>();
 			lateXElements.add(new PreprocessorCommand(""));
 			lateXElements.add(new Title());
-			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(Collectors.toList()));
+			setElements(IntStream.range(0,2).mapToObj(k -> new Pair<>(k,lateXElements.get(k))).collect(toList()));
 		}).before(saveAction(() -> { save(); actionManager.reset(); })));
 	}
 	
