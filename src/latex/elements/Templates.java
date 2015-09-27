@@ -19,6 +19,7 @@ public class Templates {
 	public static final String LATEX_INCLUDES = FileUtils.toCanonicalPath(System.getenv("LATEX_INCLUDES"));
 	
 	public static boolean init() {
+	    TEMPLATES.clear();
 		if (LATEX_INCLUDES != null) {
 			File dir = new File(LATEX_INCLUDES + "/templates");
 			Arrays.stream(dir.listFiles()).filter(File::isDirectory)
