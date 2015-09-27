@@ -23,6 +23,9 @@ import static javafx.scene.text.Font.font;
 import static javafx.scene.text.FontPosture.ITALIC;
 import static javafx.scene.text.FontWeight.BOLD;
 import static properties.ConfigProperties.CHECKED_ICON;
+import static properties.ConfigProperties.PDF_ICON;
+import static properties.ConfigProperties.PREVIEW_ICON;
+import static properties.ConfigProperties.TEX_ICON;
 import static properties.LanguageProperties.AN_ERROR_OCCURRED_MESSAGE;
 import static properties.LanguageProperties.APP_NAME;
 import static properties.LanguageProperties.CLEAR;
@@ -82,6 +85,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import properties.ConfigProperties;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -167,7 +171,9 @@ public class LateXEditor extends Application {
     private final LateXPidia                encyclopedia      = new LateXPidia();
     private final ActionManager             actionManager     = new ActionManagerImpl();
 
-	public static final Image getResourceImage(String path) { return new Image(LateXEditor.class.getResourceAsStream(path)); }
+	public static final Image getResourceImage(String propertyName) { 
+	    return new Image(LateXEditor.class.getResourceAsStream(properties.getProperty(propertyName))); 
+	}
 	
 	@Override
 	public void start(Stage primaryStage) {
@@ -435,9 +441,9 @@ public class LateXEditor extends Application {
 
 	private VBox setHeader() {
 		VBox header           = new VBox();
-		ImageView pdfIcon     = new ImageView(getResourceImage(properties.getProperty("pdfIcon"    )));
-		ImageView texIcon     = new ImageView(getResourceImage(properties.getProperty("texIcon"    )));
-		ImageView previewIcon = new ImageView(getResourceImage(properties.getProperty("previewIcon")));
+		ImageView pdfIcon     = new ImageView(getResourceImage(PDF_ICON    ));
+		ImageView texIcon     = new ImageView(getResourceImage(TEX_ICON    ));
+		ImageView previewIcon = new ImageView(getResourceImage(PREVIEW_ICON));
 		
 		Button tex     = new Button("", texIcon);
 		Button preview = new Button("", previewIcon);
@@ -636,7 +642,11 @@ public class LateXEditor extends Application {
 	// load the templates and all associated localized texts
 	static {
 		Settings.init();
-		boolean success = Templates.init();
-		if (!success) showError(null, ERROR, AN_ERROR_OCCURRED_MESSAGE, UNDEFINED_HOME);
+		loadTemplates();
 	}
+
+    private static void loadTemplates() {
+        boolean success = Templates.init();
+		if (!success) showError(null, ERROR, AN_ERROR_OCCURRED_MESSAGE, UNDEFINED_HOME);
+    }
 }

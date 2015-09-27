@@ -1,8 +1,12 @@
 package guifx.components.latexEditor;
 
-import static guifx.utils.Settings.properties;
+import static guifx.LateXEditor.getResourceImage;
 import static guifx.utils.Settings.strings;
-import guifx.LateXEditor;
+import static properties.ConfigProperties.ALPHABET_ICON;
+import static properties.ConfigProperties.OPERATORS_ICON;
+import static properties.LanguageProperties.BOX_TITLE;
+import static properties.LanguageProperties.GREEK_ALPHABET;
+import static properties.LanguageProperties.OPERATORS;
 import guifx.utils.Settings;
 
 import java.awt.event.ActionEvent;
@@ -10,7 +14,6 @@ import java.awt.event.ActionListener;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.TitledPane;
-import javafx.scene.image.Image;
 
 import com.dici.javafx.components.IconSelectionBox;
 import com.dici.javafx.components.IconSelectionView;
@@ -30,7 +33,7 @@ public class LateXEditorShortcutsPane extends TitledPane {
 		box.setPadding(new Insets(5,5,5,20));
 		
 		setContent(box);
-		Settings.bindProperty(textProperty(),"boxTitle");
+		Settings.bindProperty(textProperty(),BOX_TITLE);
 	}
 	
 	private IconSelectionView setOperators() {
@@ -42,8 +45,7 @@ public class LateXEditorShortcutsPane extends TitledPane {
 				"^{}","_{}","\\leq","\\geq","\\neq",
 				"\\mid\\mid.\\mid\\mid"
 		};
-		Image img = LateXEditor.getResourceImage(properties.getProperty("operatorsIcon"));
-		return new IconSelectionView(img,6,5,ops,strings.getObservableProperty("operators"));
+		return new IconSelectionView(getResourceImage(OPERATORS_ICON),6,5,ops,strings.getObservableProperty(OPERATORS));
 	}
 
 	private IconSelectionView setGreekAlphabet() {
@@ -52,8 +54,7 @@ public class LateXEditorShortcutsPane extends TitledPane {
 				"\\omega","\\Omega","\\theta","\\Delta","\\Psi","\\eta","\\lambda","\\sigma","\\tau",
 				"\\chi","\\phi","\\infty"
 		};
-		Image img = LateXEditor.getResourceImage(properties.getProperty("alphabetIcon"));
-		return new IconSelectionView(img,5,5,ctes,strings.getObservableProperty("greekAlphabet"));
+		return new IconSelectionView(getResourceImage(ALPHABET_ICON),5,5,ctes,strings.getObservableProperty(GREEK_ALPHABET));
 	}
 
 	public void setOnClick(ActionListener onClick) { 
