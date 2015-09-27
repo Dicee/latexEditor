@@ -6,5 +6,4 @@
 
 - refresh while keeping the structure of the tree
 - better CX on error handling
-- visual hint for the selected template
 - autocompletion

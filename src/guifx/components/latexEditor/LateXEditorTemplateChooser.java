@@ -4,23 +4,29 @@ import static guifx.utils.Settings.bindProperty;
 import static javafx.geometry.Pos.CENTER;
 import static javafx.geometry.Side.RIGHT;
 import static latex.elements.Templates.TEMPLATES;
+import static properties.ConfigProperties.CHECKED_ICON;
 import static properties.LanguageProperties.SHOW_AVAILABLE_TEMPLATES;
 import static properties.LanguageProperties.TITLE;
+import guifx.LateXEditor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import latex.elements.Template;
 
 public class LateXEditorTemplateChooser extends BorderPane {
-	private final ContextMenu	templatesList = new ContextMenu();
+    private final ContextMenu  templatesList    = new ContextMenu();
+    private Optional<MenuItem> selectedTemplate = Optional.empty();
 	
 	public LateXEditorTemplateChooser(Template template) {
 		super();
@@ -51,7 +57,7 @@ public class LateXEditorTemplateChooser extends BorderPane {
 				.filter(entry -> template.getType().equals(TITLE) ^ !entry.getKey().equals("titlePage"))
 				.collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
 				
-		for (Map.Entry<String,List<Template>> entry : templatesToShow.entrySet())
+		for (Map.Entry<String, List<Template>> entry : templatesToShow.entrySet())
 			createMenuBuilderFromTemplateTitle(entry.getKey(), template, entry.getValue());
 	}
 	
@@ -61,7 +67,7 @@ public class LateXEditorTemplateChooser extends BorderPane {
 		setAlignment(form, CENTER);
 	}
 	
-	private final void createMenuBuilderFromTemplateTitle(String title, Template template, List<Template> availableTemplates) {
+	private void createMenuBuilderFromTemplateTitle(String title, Template template, List<Template> availableTemplates) {
 		Menu menu = new Menu(title);
 		availableTemplates.stream().forEach(availableTemplate -> {
 			MenuItem item = new MenuItem(availableTemplate.getTemplateName());
@@ -70,6 +76,14 @@ public class LateXEditorTemplateChooser extends BorderPane {
 				TemplateForm form = new TemplateForm(template);
 				setCenter(form);
 				BorderPane.setAlignment(form, CENTER);
+				
+				Node checkedIcon = selectedTemplate.isPresent() ? 
+				    selectedTemplate.get().getGraphic() : 
+				    new ImageView(LateXEditor.getResourceImage(CHECKED_ICON));
+				
+				selectedTemplate.ifPresent(t -> t.setGraphic(null));
+				item.setGraphic(checkedIcon);
+				selectedTemplate = Optional.of(item);
 			});
 			menu.getItems().add(item);
 		});
