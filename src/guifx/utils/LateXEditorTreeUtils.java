@@ -15,6 +15,8 @@ import javafx.scene.image.ImageView;
 import javafx.util.Pair;
 import latex.elements.LateXElement;
 
+import com.dici.javafx.NamedObject;
+
 public class LateXEditorTreeUtils {
     public static List<Pair<Integer,NamedObject<LateXElement>>> namedLateXElements(List<Pair<Integer, LateXElement>> elts) {
         return pairIterator(elts.iterator(), Pair::getKey, pair -> namedLateXElement(pair.getValue())).toList();

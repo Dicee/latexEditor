@@ -34,7 +34,6 @@ import static properties.LanguageProperties.SUBSUBSECTION;
 import static properties.LanguageProperties.TEMPLATE;
 import static properties.LanguageProperties.TITLE;
 import guifx.utils.LateXEditorTreeUtils;
-import guifx.utils.NamedObject;
 import guifx.utils.WrongFormatException;
 
 import java.util.HashMap;
@@ -58,6 +57,7 @@ import latex.DocumentParameters;
 import latex.elements.LateXElement;
 
 import com.dici.check.Check;
+import com.dici.javafx.NamedObject;
 import com.dici.javafx.actions.ActionManager;
 import com.dici.javafx.actions.CancelableAction;
 import com.dici.javafx.components.ControlledTreeView;

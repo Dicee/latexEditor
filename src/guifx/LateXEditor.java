@@ -56,7 +56,7 @@ import guifx.components.latexEditor.LateXPidia;
 import guifx.components.latexEditor.PreferencesPane;
 import guifx.utils.DialogsFactory;
 import guifx.utils.JavatexIO;
-import guifx.utils.NamedObject;
+import com.dici.javafx.NamedObject;
 import guifx.utils.Settings;
 import guifx.utils.WrongFormatException;
 
