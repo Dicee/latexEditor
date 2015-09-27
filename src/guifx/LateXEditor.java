@@ -451,6 +451,7 @@ public class LateXEditor extends Application {
 			        else DialogsFactory.showPreFormattedWarning(primaryStage, WARNING, READ_THIS_MESSAGE, "");
 			    }); 
 			}
+			else if (isControlShortcut(ev, "V") && ev.isShiftDown()) { consumeEventAfterAction(ev, treeView::pasteRawContentToSelectedNode); }
 			else if (isControlShortcut(ev, "X")) { consumeEventAfterAction(ev, () -> treeView.cutSelectedNode                 (true)); }
 			else if (isControlShortcut(ev, "C")) { consumeEventAfterAction(ev, () -> treeView.copySelectedNode                (    )); }
 			else if (isControlShortcut(ev, "V")) { consumeEventAfterAction(ev, () -> treeView.pasteFromClipboardToSelectedNode(    )); }
