@@ -8,4 +8,3 @@
 - better CX on error handling
 - visual hint for the selected template
 - autocompletion
-- reload templates dynamically (possibly indexing them to make it faster)

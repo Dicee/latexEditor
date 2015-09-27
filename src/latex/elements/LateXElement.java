@@ -19,16 +19,19 @@ import java.util.regex.Pattern;
 
 import latex.LateXMaker;
 import latex.Textifiable;
-import properties.LanguageProperties;
+
+import com.google.common.base.Objects;
 
 public interface LateXElement extends Textifiable {
 	public static int DEPTH_MIN = -1;
 	public static int DEPTH_MAX =  5;
 	
-	public String latexify(LateXMaker lm);
-	public int getDepth();
-	public java.util.List<LateXElement> getChildren();
-	public LateXElement clone();
+	String latexify(LateXMaker lm);
+	int getDepth();
+	java.util.List<LateXElement> getChildren();
+	LateXElement clone();
+	
+	default boolean isOfType(String type) { return Objects.equal(getType(), type); }
 	
 	public static LateXElement newLateXElement(String opName, String content) {
     	LateXElement elt;

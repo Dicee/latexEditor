@@ -25,6 +25,7 @@ import static javafx.scene.text.FontWeight.BOLD;
 import static properties.ConfigProperties.CHECKED_ICON;
 import static properties.ConfigProperties.PDF_ICON;
 import static properties.ConfigProperties.PREVIEW_ICON;
+import static properties.ConfigProperties.REFRESH_TEMPLATES_ICON;
 import static properties.ConfigProperties.TEX_ICON;
 import static properties.LanguageProperties.AN_ERROR_OCCURRED_MESSAGE;
 import static properties.LanguageProperties.APP_NAME;
@@ -53,6 +54,7 @@ import static properties.LanguageProperties.QUIT;
 import static properties.LanguageProperties.READ_THIS_MESSAGE;
 import static properties.LanguageProperties.REDO;
 import static properties.LanguageProperties.REFRESH;
+import static properties.LanguageProperties.REFRESH_TEMPLATES;
 import static properties.LanguageProperties.SAVE;
 import static properties.LanguageProperties.SAVE_AS;
 import static properties.LanguageProperties.SELECT_LANGUAGE;
@@ -85,7 +87,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import properties.ConfigProperties;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -388,8 +389,8 @@ public class LateXEditor extends Application {
 
 		// set submenu Options
 		MenuItem  settings    = new MenuItem();
-		ImageView checkedIcon = new ImageView(getResourceImage(properties.getProperty(CHECKED_ICON)));
-		menuOptions.getItems().addAll(settings, getChooseLanguageMenu(checkedIcon), getChooseStyleMenu(checkedIcon), getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
+		ImageView checkedIcon = new ImageView(getResourceImage(CHECKED_ICON));
+		menuOptions.getItems( ).addAll(settings, getChooseLanguageMenu(checkedIcon), getChooseStyleMenu(checkedIcon), getChooseThemeMenu(checkedIcon,s -> outputCode.refresh()));
 
 		// set submenu Help
 		MenuItem doc = new MenuItem();
@@ -441,28 +442,21 @@ public class LateXEditor extends Application {
 
 	private VBox setHeader() {
 		VBox header           = new VBox();
-		ImageView pdfIcon     = new ImageView(getResourceImage(PDF_ICON    ));
-		ImageView texIcon     = new ImageView(getResourceImage(TEX_ICON    ));
-		ImageView previewIcon = new ImageView(getResourceImage(PREVIEW_ICON));
+		Button tex     = new Button("", new ImageView(getResourceImage(TEX_ICON              )));
+		Button preview = new Button("", new ImageView(getResourceImage(PREVIEW_ICON          )));
+		Button pdf     = new Button("", new ImageView(getResourceImage(PDF_ICON              )));
+		Button refresh = new Button("", new ImageView(getResourceImage(REFRESH_TEMPLATES_ICON)));
 		
-		Button tex     = new Button("", texIcon);
-		Button preview = new Button("", previewIcon);
-		Button pdf     = new Button("", pdfIcon);
-		bindProperty(tex    .textProperty(), GENERATE_LATEX);
-		bindProperty(pdf    .textProperty(), GENERATE_PDF);
-		bindProperty(preview.textProperty(), PREVIEW);
+		bindProperty(tex    .textProperty(), GENERATE_LATEX   );
+		bindProperty(preview.textProperty(), PREVIEW          );
+		bindProperty(pdf    .textProperty(), GENERATE_PDF     );
+		bindProperty(refresh.textProperty(), REFRESH_TEMPLATES);
 		
-		tex.setOnAction(ev -> generate());
-//		preview.setOnAction(ev -> {
-//			try {
-//				preview();
-//			} catch (IOException ex) {
-//				ex.printStackTrace();
-//			}
-//		});
-		pdf.setOnAction(ev -> toPdf());
+		tex    .setOnAction(ev -> generate     ());
+		pdf    .setOnAction(ev -> toPdf        ());
+		refresh.setOnAction(ev -> loadTemplates());
 		
-		ToolBar tb = new ToolBar(tex, preview, pdf);
+		ToolBar tb = new ToolBar(tex, preview, pdf, refresh);
 		header.getChildren().addAll(menuBar, tb);
 		return header;
 	}

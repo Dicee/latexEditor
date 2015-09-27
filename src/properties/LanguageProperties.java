@@ -51,6 +51,7 @@ public class LanguageProperties {
     public static final String GENERATE_LATEX            = "generateLatex";
     public static final String PREVIEW                   = "preview";
     public static final String GENERATE_PDF              = "generatePdf";
+    public static final String REFRESH_TEMPLATES         = "refreshTemplates";
     public static final String OPERATORS                 = "operators";
     public static final String GREEK_ALPHABET            = "greekAlphabet";
     public static final String OUTPUT_LABEL              = "outputLabel";
@@ -130,5 +131,4 @@ public class LanguageProperties {
 
     // Warning messages
     public static final String NOT_RAW_CONTENT_COPIABLE  = "notRawContentCopiable";
-
 }
