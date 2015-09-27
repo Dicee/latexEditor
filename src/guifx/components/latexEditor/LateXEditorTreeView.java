@@ -70,8 +70,8 @@ public class LateXEditorTreeView extends ControlledTreeView<NamedObject<LateXEle
 	}
 	
 	public LateXEditorTreeView(TreeItem<NamedObject<LateXElement>> root, ActionManager actionManager, 
-			Function<NamedObject<LateXElement>,TreeItem<NamedObject<LateXElement>>> factory) {
-		super(root,actionManager,factory);
+			Function<NamedObject<LateXElement>, TreeItem<NamedObject<LateXElement>>> factory) {
+		super(root, actionManager, factory);
 		getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 	}
 
