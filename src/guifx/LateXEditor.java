@@ -87,10 +87,8 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Rectangle2D;
@@ -132,7 +130,6 @@ import latex.elements.Templates;
 import latex.elements.Title;
 import scala.io.Codec;
 import scala.io.Source;
-import utils.StreamPrinter;
 
 import com.dici.collection.richIterator.RichIterators;
 import com.dici.files.FileUtils;
@@ -141,6 +138,7 @@ import com.dici.javafx.actions.ActionManager;
 import com.dici.javafx.actions.ActionManagerImpl;
 import com.dici.javafx.actions.NonCancelableAction;
 import com.dici.javafx.actions.SaveAction;
+import com.dici.javafx.components.ExternalCommandRunner;
 
 public class LateXEditor extends Application {
     public static final Map<String, String> LANGUAGES;
@@ -165,7 +163,7 @@ public class LateXEditor extends Application {
     private Label                           info;
     private Node                            textMode;
 
-    private TextArea                        outputTextArea;
+    private ExternalCommandRunner           externalCommandRunner;
 
     private Consumer<Node>                  setEditorZone;
     private SplitPane                       splitPane;
@@ -253,7 +251,8 @@ public class LateXEditor extends Application {
 	}
 
 	private SplitPane setSplitPane(VBox textEditor) {
-		outputTextArea = new TextArea();
+	    externalCommandRunner   = new ExternalCommandRunner();
+	    TextArea outputTextArea = externalCommandRunner.getOutputTextArea();
 		outputTextArea.setMinHeight(50);
 		outputTextArea.setEditable(false);
 		outputTextArea.setPrefHeight(screenBounds.getHeight()/2);
@@ -268,11 +267,11 @@ public class LateXEditor extends Application {
 
 		splitPane = new SplitPane();
 		splitPane.setOrientation(Orientation.VERTICAL);
-		splitPane.getItems().addAll(textMode = accordion, outputTextArea);
+        splitPane.getItems().addAll(textMode = accordion, externalCommandRunner);
 		splitPane.setDividerPositions(0.40);
 		splitPane.autosize();
 
-		this.setEditorZone = nodes -> splitPane.getItems().set(0,nodes);
+		this.setEditorZone = nodes -> splitPane.getItems().set(0, nodes);
 		return splitPane;
 	}
 
@@ -538,7 +537,7 @@ public class LateXEditor extends Application {
 			List<Pair<Integer,LateXElement>> elts = JavatexIO.readFromJavatex(file, lm.getParameters());
 			setElements(elts);
 			
-			primaryStage.setTitle(currentFile.getName() + " - LateXEditor 4.1");
+			primaryStage.setTitle(currentFile.getName() + " - " + APP_NAME);
 			actionManager.isSavedProperty().set(true);
 			actionManager.reset();
 		}
@@ -577,45 +576,25 @@ public class LateXEditor extends Application {
 	public void toPdf() {
 		if (currentFile != null) {
 			generate();
-
-			Consumer<String> logInputHandler = line -> Platform.runLater(() -> outputTextArea.appendText(line + "\n"));
-			new Thread(new Task<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    Process process = null;
-                    try {
-                        ProcessBuilder processBuilder = JavatexIO.toPdfProcessBuilder(currentDir, currentFile);
-                        process                       = processBuilder.start();
-                        StreamPrinter  inputStream    = new StreamPrinter(process.getInputStream(), logInputHandler);
-                        StreamPrinter  errorStream    = new StreamPrinter(process.getErrorStream(), logInputHandler);
-                        outputTextArea.clear();
-                        
-                        new Thread(inputStream).start();
-                        new Thread(errorStream).start();
-                        process.waitFor();
-                    } catch (IOException | InterruptedException ex) {
-                        killProcess(process);
-                        ex.printStackTrace();
-                    }
-                    return null;
-                }
-            }).start();
+			
+            try {
+                ProcessBuilder processBuilder = JavatexIO.toPdfProcessBuilder(currentDir, currentFile);
+                externalCommandRunner.run(processBuilder);
+            } catch (IOException | InterruptedException ex) {
+                ex.printStackTrace();
+            }
 		}
-	}
-	
-	private static void killProcess(Process proc) {
-	    if (proc != null) proc.destroyForcibly();
 	}
 	
 	private void generate() {
 		try {
 			List<LateXElement> lateXElements = treeView.getLateXElements().getValue();
 			if (lateXElements.isEmpty()) save();
-			String path = currentFile.getAbsolutePath();
-			JavatexIO.toTex(lm, lateXElements, path);
+			String path   = currentFile.getAbsolutePath();
+			File   output = JavatexIO.toTex(lm, lateXElements, path);
 
 			outputCode.setLanguage(LANGUAGES.get("LaTeX"));
-			outputCode.setCode(Source.fromFile(FileUtils.toExtension(path, ".tex"), Codec.UTF8()).mkString());
+			outputCode.setCode(Source.fromFile(output, Codec.UTF8()).mkString());
 		} catch (Exception e) {
 			DialogsFactory.showPreFormattedError(primaryStage, ERROR, AN_ERROR_OCCURRED_MESSAGE, UNFOUND_FILE_ERROR);
 			e.printStackTrace();
