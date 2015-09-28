@@ -1,15 +1,17 @@
 package scalatex
 
 import java.io.File
-import java.io.FileReader
+
+import scala.collection.JavaConversions
+import scala.collection.JavaConversions.bufferAsJavaList
+import scala.collection.mutable.ArrayBuffer
+import scala.sys.process.stringSeqToProcess
+
+import com.dici.collection.richIterator.RichIterators
+
 import latex.LateXMaker
 import latex.elements.LateXElement
-import scala.collection.mutable.ArrayBuffer
-import scala.sys.process._
-import scala.collection.JavaConversions._
 import latex.elements.Templates
-import com.dici.collection.richIterator.RichIterators
-import scala.collection.JavaConversions
 
 object scalatex extends App {
     val lm            = new LateXMaker
