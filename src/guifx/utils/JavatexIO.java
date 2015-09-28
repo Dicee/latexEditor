@@ -35,7 +35,6 @@ public class JavatexIO {
 	}
 	
 	public static final File toTex(LateXMaker lm, List<LateXElement> elts, String path) throws IOException {
-	    System.out.println(toExtension(path, "tex").getAbsolutePath() + " " + path);
 		return lm.makeDocument(toExtension(path, "tex"), elts);
 	}
 	
