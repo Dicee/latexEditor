@@ -1,13 +1,12 @@
 package latex;
 
-import java.io.BufferedWriter;
-
-import static latex.LateXFilter.filter;
 import static java.lang.String.format;
+import static latex.LateXFilter.filter;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -23,7 +22,6 @@ public class LateXMaker {
 	private static final String[]	romanNumbers	= { "I", "II", "III", "IV", "VI", "VII", "VIII", "IX" };
 	private DocumentParameters		parameters;
 	private boolean					preproc;
-	private BufferedWriter			out;
 	
 	public LateXMaker() { this(new DocumentParameters()); }
 	public LateXMaker(DocumentParameters dp) { this.parameters = dp; }
@@ -93,15 +91,12 @@ public class LateXMaker {
 		return "\\end{document}";
 	}
 
-	public void makeDocument(File f, List<LateXElement> latexElements) throws IOException {
+	public File makeDocument(File f, List<LateXElement> latexElements) throws IOException {
 		chapterCount = 0;
 		figureCount  = 1;
 		preproc      = false;
 		
-		out = null;
-		try {
-			out = new BufferedWriter(new FileWriter(f));
-			
+		try (BufferedWriter bw = Files.newBufferedWriter(f.toPath())) {
 			String begin;
 			if (latexElements.get(0) instanceof PreprocessorCommand) {
 				PreprocessorCommand preproc = (PreprocessorCommand) latexElements.get(0);
@@ -109,53 +104,15 @@ public class LateXMaker {
 				latexElements               = latexElements.subList(1,latexElements.size());
 			}
 			else begin = beginDocument();
-			out.write(begin + "\n");
+			bw.write(begin + "\n");
 			
 			for (LateXElement elt : latexElements) 
-				out.write(elt.latexify(this) + "\n");	
-			out.write(finishDocument() + "\n");
-		} finally {
-			if (out != null) {
-				out.flush();
-				out.close();
-			}
+				bw.write(elt.latexify(this) + "\n");	
+			bw.write(finishDocument() + "\n");
 		}
+		return f;
 	}
-//	
-//	private void makeRoot(LateXElement root) {
-//		if (root instanceof PreprocessorCommand) {
-//			PreprocessorCommand preproc = (PreprocessorCommand) root;
-//			out.write(beginDocument(preproc.latexify(this)) + "\n");
-//			List<LateXElement>  elts    = root.getChildren();
-//		}
-//		else out.write(beginDocument() + "\n");
-//	}
-	
-//	public void makeDocument(File f, LateXElement root) throws IOException {
-//		chapterCount = 0;
-//		figureCount  = 1;
-//		preproc      = false;
-//		
-//		out = null;
-//		try {
-//			out = new BufferedWriter(new FileWriter(f));
-//			
-//			String begin;
-//			if (root instanceof PreprocessorCommand) {
-//				PreprocessorCommand preproc = (PreprocessorCommand) root;
-//				begin                       = beginDocument(preproc.latexify(this));
-//				List<LateXElement>  elts    = root.getChildren();
-//			}
-//			else begin = beginDocument();
-//			out.write(begin + "\n");
-//		} finally {
-//			if (out != null) {
-//				out.flush();
-//				out.close();
-//			}
-//		}
-//	}
-	
+
 	public String includeGraphic(String path, String caption, String scale) {			
 		return includeGraphic(path,caption,Float.parseFloat(scale));		
 	}
