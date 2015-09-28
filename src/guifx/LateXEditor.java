@@ -84,12 +84,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Rectangle2D;
@@ -568,7 +569,7 @@ public class LateXEditor extends Application {
 		if (selectedFile != null) {
 			currentFile = selectedFile;
 			currentDir  = currentFile.getParentFile();			
-			return JavatexIO.fixExtension(selectedFile,wantedExtension);
+			return FileUtils.toExtension(selectedFile, wantedExtension);
 		}
 		return null;
     }
@@ -577,28 +578,33 @@ public class LateXEditor extends Application {
 		if (currentFile != null) {
 			generate();
 
-			StringBuilder sb = new StringBuilder();
-			Function<String, Consumer<String>> consumerFactory = s -> str -> {
-				sb.append(str);
-				sb.append("\n");
-			};
-
-			try {
-				ProcessBuilder pb          = JavatexIO.toPdfProcessBuilder(currentDir,currentFile);
-				Process        p           = pb.start();
-				StreamPrinter  inputStream = new StreamPrinter(p.getInputStream(), consumerFactory.apply(""));
-				StreamPrinter  errorStream = new StreamPrinter(p.getErrorStream(), consumerFactory.apply(""));
-				new Thread(inputStream).start();
-				new Thread(errorStream).start();
-				p.waitFor();
-
-				outputTextArea.clear();
-				outputTextArea.setText(sb.toString());
-				outputTextArea.positionCaret(outputTextArea.getLength());
-			} catch (IOException | InterruptedException ex) {
-				ex.printStackTrace();
-			}
+			Consumer<String> logInputHandler = line -> Platform.runLater(() -> outputTextArea.appendText(line + "\n"));
+			new Thread(new Task<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    Process process = null;
+                    try {
+                        ProcessBuilder processBuilder = JavatexIO.toPdfProcessBuilder(currentDir, currentFile);
+                        process                       = processBuilder.start();
+                        StreamPrinter  inputStream    = new StreamPrinter(process.getInputStream(), logInputHandler);
+                        StreamPrinter  errorStream    = new StreamPrinter(process.getErrorStream(), logInputHandler);
+                        outputTextArea.clear();
+                        
+                        new Thread(inputStream).start();
+                        new Thread(errorStream).start();
+                        process.waitFor();
+                    } catch (IOException | InterruptedException ex) {
+                        killProcess(process);
+                        ex.printStackTrace();
+                    }
+                    return null;
+                }
+            }).start();
 		}
+	}
+	
+	private static void killProcess(Process proc) {
+	    if (proc != null) proc.destroyForcibly();
 	}
 	
 	private void generate() {
