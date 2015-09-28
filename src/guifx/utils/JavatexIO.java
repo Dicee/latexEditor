@@ -22,8 +22,8 @@ import scala.collection.mutable.StringBuilder;
 
 import com.dici.files.TokenParser;
 import com.dici.files.TokenParser.TokenIterator;
+import com.dici.io.IOUtils;
 import com.dici.javafx.components.ControlledTreeView.NamedList;
-import com.google.common.base.Throwables;
 
 public class JavatexIO {
     public static final TokenParser JAVATEX_PARSER = new TokenParser("##"); 
@@ -34,8 +34,9 @@ public class JavatexIO {
 		return pb;
 	}
 	
-	public static final void toTex(LateXMaker lm, List<LateXElement> elts, String path) throws IOException {
-		lm.makeDocument(toExtension(path, "tex"), elts);
+	public static final File toTex(LateXMaker lm, List<LateXElement> elts, String path) throws IOException {
+	    System.out.println(toExtension(path, "tex").getAbsolutePath() + " " + path);
+		return lm.makeDocument(toExtension(path, "tex"), elts);
 	}
 	
 	public static final void saveAsJavatex(File file, NamedList<LateXElement> elts, LateXMaker lm) throws IOException {
@@ -57,37 +58,39 @@ public class JavatexIO {
 	public static final List<Pair<Integer, LateXElement>> readFromJavatex(String content, DocumentParameters params) throws WrongFormatException {
 	    try {
 	        return readFromJavatex(JAVATEX_PARSER.parse(content), params);
-	    } catch (IOException e) {
-	        // should not happen
-	        throw Throwables.propagate(e);
 	    } catch (WrongFormatException e) {
 	        throw e;
 	    }
 	}
 
 	private static final List<Pair<Integer, LateXElement>> readFromJavatex(TokenIterator tokens, DocumentParameters params) 
-	        throws WrongFormatException, IOException {
-        List<Pair<Integer,LateXElement>> res = new LinkedList<>();  
-        while (tokens.hasNext()) {
-            String decl    = tokens.next().trim();
-            String content = tokens.next().trim();
-
-            switch (decl) {
-                case "packages"        : params.addPackages(content.split("[;\\s+]|;\\s+")); break;
-                case "commands"        : params.include(content.split("[;\\s+]|;\\s+"    )); break;
-                case "documentSettings": params.loadSettings(content);                       break;
-                default:
-                    Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
-                    Matcher m = p.matcher(decl);
-
-                    if (m.matches()) {
-                        String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
-                        res.add(new Pair<>(m.group(1).length(), newLateXElement(m.group(2) + param, content)));
-                    } else
-                        throw new WrongFormatException(decl);
+	        throws WrongFormatException {
+	    try {
+            List<Pair<Integer,LateXElement>> res = new LinkedList<>();  
+            while (tokens.hasNext()) {
+                String decl    = tokens.next().trim();
+                String content = tokens.next().trim();
+    
+                switch (decl) {
+                    case "packages"        : params.addPackages(content.split("[;\\s+]|;\\s+")); break;
+                    case "commands"        : params.include(content.split("[;\\s+]|;\\s+"    )); break;
+                    case "documentSettings": params.loadSettings(content);                       break;
+                    default:
+                        Pattern p = Pattern.compile("(>*)\\s*(\\w+)\\s*(\\[(.*)\\])?");
+                        Matcher m = p.matcher(decl);
+    
+                        if (m.matches()) {
+                            String param = (m.group(4) == null || m.group(4).isEmpty()) ? "" : m.group(3);
+                            res.add(new Pair<>(m.group(1).length(), newLateXElement(m.group(2) + param, content)));
+                        } else
+                            throw new WrongFormatException(decl);
+                }
             }
-        }
-        tokens.close();
-        return res;
+            return res;
+	    } catch (Exception e) {
+	        throw new WrongFormatException(e);
+	    } finally {
+	        IOUtils.closeQuietly(tokens);
+	    }
     }
 }
