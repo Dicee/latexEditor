@@ -1,4 +1,0 @@
-http://www.latextemplates.com/cat/title-pages, template title page
-http://linuxcommand.org/man_pages/pdflatex1.html, pdflatex command line help options
-http://latex.wikia.com/wiki/Array_%28LaTeX_environment%29, array environment arrays
-http://latextutorials.co.uk/documentation/tables-and-arrays/, array arrays tabular environment
