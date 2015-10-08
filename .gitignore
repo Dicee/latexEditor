@@ -9,3 +9,4 @@ tmp/
 bak/
 /bin/
 .cache-main
+target/
